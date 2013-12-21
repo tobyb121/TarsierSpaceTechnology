@@ -33,7 +33,6 @@ namespace TarsierSpaceTech
         [KSPField]
         public float xmitDataScalar = 0.5f;
 
-        [KSPField]
         public float labBoostScalar = 0f;
 
         public override void OnStart(StartState state)
