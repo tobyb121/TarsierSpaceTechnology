@@ -1,7 +1,7 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-
 using UnityEngine;
 
 class Utils
@@ -23,5 +23,21 @@ class Utils
             total += pr.amount;
         }
         return total;
+    }
+
+    public static Camera findCameraByName(string camera)
+    {
+        foreach (Camera cam in Camera.allCameras)
+            if (cam.name == camera)
+                return cam;
+        return null;
+    }
+
+    public static IEnumerator WaitForAnimation(Animation animation, string name)
+    {
+        do
+        {
+           yield return null;
+        } while (animation.IsPlaying(name));
     }
 }
