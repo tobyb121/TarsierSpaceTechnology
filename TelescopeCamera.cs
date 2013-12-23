@@ -69,7 +69,7 @@ namespace TarsierSpaceTech
 
         public void Update()
         {
-            if (enabled)
+            if (_enabled)
             {
                 _skyBoxCam.reset();
                 draw();
@@ -214,7 +214,7 @@ namespace TarsierSpaceTech
             }
             _camera.rect = new Rect(0, 0, 1, 1);
             _camera.depth = _depth;
-            _camera.fov = _fov;
+            _camera.fieldOfView = _fov;
             _camera.enabled = enabled;
         }
     }

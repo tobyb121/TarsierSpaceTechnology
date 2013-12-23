@@ -107,6 +107,7 @@ namespace TarsierSpaceTech
         private void hideGUI()
         {
             windowState = WindowSate.Hidden;
+            _camera.Enabled = false;
             Events["eventShowGUI"].active = true;
         }
 
@@ -115,6 +116,7 @@ namespace TarsierSpaceTech
         {
             Events["eventShowGUI"].active = false;
             windowState = WindowSate.Small;
+            _camera.Enabled = true;
         }
 
         [KSPEvent(active = true, guiActive = true, name = "eventOpenCamera", guiName = "Open Camera")]
