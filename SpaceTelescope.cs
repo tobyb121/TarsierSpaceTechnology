@@ -136,6 +136,7 @@ namespace TarsierSpaceTech
                 windowState = windowState == WindowSate.Small ? WindowSate.Large : WindowSate.Small;
                 int w=(windowState == WindowSate.Small ? GUI_WIDTH_SMALL : GUI_WIDTH_LARGE);
                 _camera.changeSize(w,w);
+                windowPos.height = 0;
             };
             if (GUILayout.Button("Hide")) hideGUI();
 			GUILayout.EndHorizontal();
