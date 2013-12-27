@@ -19,9 +19,11 @@ namespace TarsierSpaceTech
         private Transform _cameraTransform;
         private Transform _lookTransform;
         private TelescopeCamera _camera;
+
+        private bool _showTarget = false;
         
         private bool _saveToFile = false;
-
+        
         private List<ScienceData> _scienceData = new List<ScienceData>();
 
         private Rect windowPos = new Rect(128, 128, 0, 0);
@@ -35,10 +37,29 @@ namespace TarsierSpaceTech
 
         public float labBoostScalar = 0f;
 
+        private int targetId = 0;
+
+        private static List<byte[]> targets_raw = new List<byte[]> {
+            Properties.Resources.target_01,
+            Properties.Resources.target_02,
+            Properties.Resources.target_03,
+            Properties.Resources.target_04,
+            Properties.Resources.target_05,
+            Properties.Resources.target_06,
+            Properties.Resources.target_07,
+            Properties.Resources.target_08,
+            Properties.Resources.target_09,
+            Properties.Resources.target_10,
+            Properties.Resources.target_11,
+            Properties.Resources.target_12
+        };
+        private static List<Texture2D> targets = new List<Texture2D>();
+
         public override void OnStart(StartState state)
         {
             base.OnStart(state);
             Utils.print("Starting Telescope");
+            part.CoMOffset = part.attachNodes[0].position;
             if (state == StartState.Editor)
             {
                 _inEditor = true;
@@ -56,7 +77,14 @@ namespace TarsierSpaceTech
             Events["eventShowGUI"].active = false;
             Events["eventControlFromHere"].active = false;
             Events["eventReviewScience"].active = false;
+            for (int i = 0; i < targets_raw.Count; i++)
+            {
+                Texture2D tex = new Texture2D(40, 40);
+                tex.LoadImage(targets_raw[i]);
+                targets.Add(tex);
+            }
             Utils.print("On end start");
+            
         }
 
         public override void OnUpdate()
@@ -77,18 +105,44 @@ namespace TarsierSpaceTech
             _camera.ZoomLevel = GUILayout.HorizontalSlider(_camera.ZoomLevel, -1, maxZoom, GUILayout.ExpandWidth(true));
             GUILayout.Label(getZoomString(_camera.ZoomLevel), GUILayout.ExpandWidth(false), GUILayout.Width(60));
             GUILayout.EndHorizontal();
-            GUILayout.Box(_camera.Texture2D, GUIStyle.none);
+            Texture2D texture2D = _camera.Texture2D;
+            Rect imageRect=GUILayoutUtility.GetRect(texture2D.width, texture2D.height);
+            Vector2 center = imageRect.center;
+            imageRect.width = texture2D.width;
+            imageRect.height = texture2D.height;
+            imageRect.center = center;
+            GUI.DrawTexture(imageRect, texture2D);
+            Rect rect=new Rect(0,0,40,40);
+            Utils.print("DrawingTarget");
+            if (_showTarget && FlightGlobals.fetch.VesselTarget != null)
+            {
+                Vector3d r = FlightGlobals.fetch.vesselTargetTransform.position - _cameraTransform.position;
+                double dx = Vector3d.Dot(_cameraTransform.right.normalized, r.normalized);
+                double thetax = 90 - Math.Acos(dx) * Mathf.Rad2Deg;
+                double dy = Vector3d.Dot(_cameraTransform.up.normalized, r.normalized);
+                double thetay = 90 - Math.Acos(dy) * Mathf.Rad2Deg;
+                double dz = Vector3d.Dot(_cameraTransform.forward.normalized, r.normalized);
+                double xpos = texture2D.width * thetax / _camera.fov;
+                double ypos = texture2D.height * thetay / _camera.fov;
+                if (dz > 0 && Math.Abs(xpos) < texture2D.width / 2 && Math.Abs(ypos) < texture2D.height / 2)
+                {
+                    rect.center = imageRect.center + new Vector2((float)xpos, -(float)ypos);
+                    GUI.DrawTexture(rect, targets[(targetId++ / 5) % targets.Count], ScaleMode.StretchToFill, true);
+                }
+            }
+            Utils.print("DrawnTarget");
             GUILayout.BeginHorizontal();
             if (GUILayout.Button("Reset Zoom")) _camera.ZoomLevel = 0;
             if (GUILayout.Button(windowState == WindowSate.Small ? "Large" : "Small"))
             {
                 windowState = windowState == WindowSate.Small ? WindowSate.Large : WindowSate.Small;
                 int w=(windowState == WindowSate.Small ? GUI_WIDTH_SMALL : GUI_WIDTH_LARGE);
-                _camera.changeSize(w,w*Screen.height/Screen.width);
+                _camera.changeSize(w,w);
             };
             if (GUILayout.Button("Hide")) hideGUI();
 			GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
+            _showTarget = GUILayout.Toggle(_showTarget, "Show Target");
             _saveToFile = GUILayout.Toggle(_saveToFile, "Save To File");
             if (GUILayout.Button("Take Picture")) takePicture(_saveToFile);
             GUILayout.EndHorizontal();
@@ -135,7 +189,7 @@ namespace TarsierSpaceTech
             Events["eventControlFromHere"].active = true;
             _camera.Enabled = true;
             windowState = WindowSate.Small;
-            _camera.changeSize(GUI_WIDTH_SMALL, GUI_WIDTH_SMALL * Screen.height / Screen.width);
+            _camera.changeSize(GUI_WIDTH_SMALL, GUI_WIDTH_SMALL );
         }
 
         [KSPEvent(active = false, guiActive = true, name = "eventCloseCamera", guiName = "Close Camera")]
@@ -170,31 +224,58 @@ namespace TarsierSpaceTech
         public void takePicture(bool saveToFile)
         {
             _scienceData.Clear();
-            List<CelestialBody> bodies = new List<CelestialBody>(FlightGlobals.Bodies);
-            bodies.Add(Sun.Instance.sun);
-            foreach (CelestialBody body in FlightGlobals.Bodies)
+
+            foreach (CelestialBody body in getLookingAt())
             {
-                Vector3 r = (body.transform.position - _cameraTransform.position);
-                float distance = r.magnitude;
-                double theta = Vector3d.Angle(_cameraTransform.forward, r);
-                double visibleWidth=(2*body.Radius/distance)*180/Mathf.PI;
-                Utils.print(body.theName + ": |r|=" + distance.ToString() + "  theta=" + theta.ToString()+"  angle="+visibleWidth.ToString());
-                if (theta < _camera.fov/2)
-                {
-                    Utils.print("Looking at: " + body.theName);
-                    if (visibleWidth > 0.05 * _camera.fov)
-                    {
-                        Utils.print("Can see: " + body.theName);
-                        doScience(body);
-                    }
-                }
+                doScience(body);
             }
+
             if (saveToFile)
             {
                 int i = 0;
                 while (KSP.IO.File.Exists<SpaceTelescope>("Telescope_" + DateTime.Now.ToString("d-m-y")+"_"+i.ToString() + ".png",null)) i++;
                 _camera.saveToFile("Telescope_" + DateTime.Now.ToString("d-m-y") + "_" + i.ToString() + ".png");
             }
+        }
+
+        private List<CelestialBody> getInFov()
+        {
+            List<CelestialBody> result = new List<CelestialBody>();
+            List<CelestialBody> bodies = new List<CelestialBody>(FlightGlobals.Bodies);
+            bodies.Add(Sun.Instance.sun);
+            foreach (CelestialBody body in bodies)
+            {
+                Vector3 r = (body.transform.position - _cameraTransform.position);
+                float distance = r.magnitude;
+                double theta = Vector3d.Angle(_cameraTransform.forward, r);
+                if (theta < _camera.fov / 2)
+                {
+                    result.Add(body);
+                }
+            }
+            return result;
+        }
+
+        public List<CelestialBody> getLookingAt()
+        {
+            List<CelestialBody> result = new List<CelestialBody>();
+            List<CelestialBody> bodies = new List<CelestialBody>(FlightGlobals.Bodies);
+            bodies.Add(Sun.Instance.sun);
+            foreach (CelestialBody body in bodies)
+            {
+                Vector3 r = (body.transform.position - _cameraTransform.position);
+                float distance = r.magnitude;
+                double theta = Vector3d.Angle(_cameraTransform.forward, r);
+                double visibleWidth = (2 * body.Radius / distance) * 180 / Mathf.PI;
+                if (theta < _camera.fov / 2)
+                {
+                    if (visibleWidth > 0.05 * _camera.fov)
+                    {
+                        result.Add(body);
+                    }
+                }
+            }
+            return result;
         }
 
         public void doScience(CelestialBody planet)

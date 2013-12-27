@@ -17,6 +17,8 @@ namespace TarsierSpaceTech
 
         private RenderTexture _renderTexture;
         private Texture2D _texture2D;
+        private Renderer[] skyboxRenderers;
+        private ScaledSpaceFader[] scaledSpaceFaders;
         public Texture2D Texture2D
         {
             get { return _texture2D; }
@@ -44,6 +46,8 @@ namespace TarsierSpaceTech
                 _skyBoxCam.enabled = value;
                 _farCam.enabled = value;
                 _nearCam.enabled = value;
+                skyboxRenderers = (from Renderer r in (FindObjectsOfType(typeof(Renderer)) as IEnumerable<Renderer>) where (r.name == "XP" || r.name == "XN" || r.name == "YP" || r.name == "YN" || r.name == "ZP" || r.name == "ZN") select r).ToArray<Renderer>();
+                scaledSpaceFaders = FindObjectsOfType(typeof(ScaledSpaceFader)) as ScaledSpaceFader[];
             }
         }
 
@@ -82,7 +86,7 @@ namespace TarsierSpaceTech
             float fov = Mathf.Rad2Deg * Mathf.Atan(z * Mathf.Tan(Mathf.Deg2Rad * CameraHelper.DEFAULT_FOV));
             _skyBoxCam.fov = fov;
             _farCam.fov = fov;
-            _nearCam.fov = fov;
+            _nearCam.fov = fov;           
         }
 
         public void changeSize(int width, int height)
@@ -108,21 +112,18 @@ namespace TarsierSpaceTech
 
         public Texture2D draw()
         {
-            Renderer[] ren = (from Renderer r in (FindObjectsOfType(typeof(Renderer)) as IEnumerable<Renderer>) where (r.name == "XP" || r.name == "XN" || r.name == "YP" || r.name == "YN" || r.name == "ZP" || r.name == "ZN") select r).ToArray<Renderer>();
-            ScaledSpaceFader[] scaled = FindObjectsOfType(typeof(ScaledSpaceFader)) as ScaledSpaceFader[];
-            
             RenderTexture activeRT = RenderTexture.active;
             RenderTexture.active = _renderTexture;
 
             _skyBoxCam.camera.Render();
-            foreach (Renderer r in ren)
+            foreach (Renderer r in skyboxRenderers)
                 r.enabled = false;
-            foreach (ScaledSpaceFader s in scaled)
+            foreach (ScaledSpaceFader s in scaledSpaceFaders)
                 s.r.enabled = true;
             _skyBoxCam.camera.clearFlags = CameraClearFlags.Depth;
             _skyBoxCam.camera.farClipPlane = 3e15f;
             _skyBoxCam.camera.Render();
-            foreach (Renderer r in ren)
+            foreach (Renderer r in skyboxRenderers)
                 r.enabled = true;
             _farCam.camera.Render();
             _nearCam.camera.Render();
