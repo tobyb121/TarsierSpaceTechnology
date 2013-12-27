@@ -113,7 +113,6 @@ namespace TarsierSpaceTech
             imageRect.center = center;
             GUI.DrawTexture(imageRect, texture2D);
             Rect rect=new Rect(0,0,40,40);
-            Utils.print("DrawingTarget");
             if (_showTarget && FlightGlobals.fetch.VesselTarget != null)
             {
                 Vector3d r = FlightGlobals.fetch.vesselTargetTransform.position - _cameraTransform.position;
@@ -130,7 +129,6 @@ namespace TarsierSpaceTech
                     GUI.DrawTexture(rect, targets[(targetId++ / 5) % targets.Count], ScaleMode.StretchToFill, true);
                 }
             }
-            Utils.print("DrawnTarget");
             GUILayout.BeginHorizontal();
             if (GUILayout.Button("Reset Zoom")) _camera.ZoomLevel = 0;
             if (GUILayout.Button(windowState == WindowSate.Small ? "Large" : "Small"))
