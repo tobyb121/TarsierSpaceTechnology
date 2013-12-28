@@ -15,6 +15,9 @@ namespace TarsierSpaceTech
         private CameraHelper _farCam;
         private CameraHelper _nearCam;
 
+        private CameraHelper _VECam;
+        private bool _VEenabled = false;
+
         private RenderTexture _renderTexture;
         private Texture2D _texture2D;
         private Renderer[] skyboxRenderers;
@@ -44,6 +47,7 @@ namespace TarsierSpaceTech
             {
                 _enabled = value;
                 _skyBoxCam.enabled = value;
+                if (_VEenabled) _VECam.enabled = value;
                 _farCam.enabled = value;
                 _nearCam.enabled = value;
                 skyboxRenderers = (from Renderer r in (FindObjectsOfType(typeof(Renderer)) as IEnumerable<Renderer>) where (r.name == "XP" || r.name == "XN" || r.name == "YP" || r.name == "YN" || r.name == "ZP" || r.name == "ZN") select r).ToArray<Renderer>();
@@ -62,11 +66,19 @@ namespace TarsierSpaceTech
         {
             Utils.print("Setting up cameras");
             _skyBoxCam = new CameraHelper(gameObject, Utils.findCameraByName("Camera ScaledSpace"), _renderTexture, 3, false);
-            _farCam = new CameraHelper(gameObject, Utils.findCameraByName("Camera 01"), _renderTexture, 4, true);
-            _nearCam = new CameraHelper(gameObject, Utils.findCameraByName("Camera 00"), _renderTexture, 5, true);
+
+            Camera VEcam = Utils.findCameraByName("Camera VE Overlay");
+            if (VEcam != null)
+            {
+                _VEenabled = true;
+                _VECam = new CameraHelper(gameObject, VEcam, _renderTexture, 4, false);
+            }
+            _farCam = new CameraHelper(gameObject, Utils.findCameraByName("Camera 01"), _renderTexture, 5, true);
+            _nearCam = new CameraHelper(gameObject, Utils.findCameraByName("Camera 00"), _renderTexture, 6, true);
             setupRenderTexture();
             _skyBoxCam.reset();
             _farCam.reset();
+            if (_VEenabled) _VECam.reset();
             _nearCam.reset();
             Utils.print("Camera setup complete");
         }
@@ -76,6 +88,7 @@ namespace TarsierSpaceTech
             if (_enabled)
             {
                 _skyBoxCam.reset();
+                if (_VEenabled) _VECam.reset();
                 draw();
             }
         }
@@ -85,6 +98,7 @@ namespace TarsierSpaceTech
             float z = Mathf.Pow(10, -_zoomLevel);
             float fov = Mathf.Rad2Deg * Mathf.Atan(z * Mathf.Tan(Mathf.Deg2Rad * CameraHelper.DEFAULT_FOV));
             _skyBoxCam.fov = fov;
+            if (_VEenabled) _VECam.fov = fov;
             _farCam.fov = fov;
             _nearCam.fov = fov;           
         }
@@ -105,6 +119,7 @@ namespace TarsierSpaceTech
             _renderTexture.Create();
             _texture2D = new Texture2D(textureWidth, textureHeight, TextureFormat.RGB24, false, false);
             _skyBoxCam.renderTarget = _renderTexture;
+            if (_VEenabled) _VECam.renderTarget = _renderTexture;
             _farCam.renderTarget = _renderTexture;
             _nearCam.renderTarget = _renderTexture;
             Utils.print("Finish Setting Up Render Texture");
@@ -125,6 +140,7 @@ namespace TarsierSpaceTech
             _skyBoxCam.camera.Render();
             foreach (Renderer r in skyboxRenderers)
                 r.enabled = true;
+            if (_VEenabled) _VECam.camera.Render();
             _farCam.camera.Render();
             _nearCam.camera.Render();
             _texture2D.ReadPixels(new Rect(0, 0, textureWidth, textureHeight), 0, 0);
