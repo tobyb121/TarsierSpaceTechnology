@@ -18,7 +18,7 @@ namespace TarsierSpaceTech
         private Transform _baseTransform;
         private Transform _cameraTransform;
         private Transform _lookTransform;
-        private TelescopeCamera _camera;
+        private CameraModule _camera;
 
         private bool _showTarget = false;
         
@@ -30,7 +30,16 @@ namespace TarsierSpaceTech
         private WindowSate windowState = WindowSate.Small;
 
         [KSPField(guiActive = false, guiName = "maxZoom", isPersistant = true)]
-        private int maxZoom = 5;
+        public int maxZoom = 5;
+
+        [KSPField]
+        public string baseTransformName = "Telescope";
+
+        [KSPField]
+        public string cameraTransformName = "CameraTransform";
+
+        [KSPField]
+        public string lookTransformName = "LookTransform";
 
         [KSPField]
         public float xmitDataScalar = 0.5f;
@@ -65,12 +74,12 @@ namespace TarsierSpaceTech
                 _inEditor = true;
                 return;
             }
-            _baseTransform = transform.FindChild("model/Telescope");
-            _cameraTransform = transform.FindChild("model/Telescope/Body/MainMirror/Armature/CameraTransform");
-            _lookTransform = transform.FindChild("model/Telescope/Body/MainMirror/Armature/LookTransform");
+            _baseTransform = Utils.FindChildRecursive(transform,baseTransformName);
+            _cameraTransform = Utils.FindChildRecursive(transform,cameraTransformName);
+            _lookTransform = Utils.FindChildRecursive(transform,lookTransformName);
             Utils.print(_baseTransform);
             Utils.print(_cameraTransform);
-            _camera = _cameraTransform.gameObject.AddComponent<TelescopeCamera>();
+            _camera = _cameraTransform.gameObject.AddComponent<CameraModule>();
             _animation = _baseTransform.animation;
             Events["eventOpenCamera"].active = true;
             Events["eventCloseCamera"].active = false;
@@ -83,8 +92,13 @@ namespace TarsierSpaceTech
                 tex.LoadImage(targets_raw[i]);
                 targets.Add(tex);
             }
+            Utils.print("Getting ExpIDs");
+            foreach (String expID in ResearchAndDevelopment.GetExperimentIDs())
+            {
+                Utils.print("Got ExpID: " + expID);
+            }
+            Utils.print("Got ExpIDs");
             Utils.print("On end start");
-            
         }
 
         public override void OnUpdate()
@@ -222,37 +236,29 @@ namespace TarsierSpaceTech
 
         public void takePicture(bool saveToFile)
         {
+            Utils.print("Taking Picture");
             _scienceData.Clear();
-
-            foreach (CelestialBody body in getLookingAt())
+            Utils.print("Checking Look At");
+            List<CelestialBody> bodies=getLookingAt();
+            Utils.print("Looking at: " + bodies.Count.ToString() + " bodies");
+            foreach (CelestialBody body in bodies)
             {
+                Utils.print("Looking at " + body.theName);
                 doScience(body);
+            }
+            Utils.print("Gather Science complete");
+            if (bodies.Count == 0)
+            {
+                ScreenMessages.PostScreenMessage("Nothing to see here",3f,ScreenMessageStyle.UPPER_CENTER);
             }
 
             if (saveToFile)
             {
+                Utils.print("Saving to File");
                 int i = 0;
                 while (KSP.IO.File.Exists<SpaceTelescope>("Telescope_" + DateTime.Now.ToString("d-m-y")+"_"+i.ToString() + ".png",null)) i++;
                 _camera.saveToFile("Telescope_" + DateTime.Now.ToString("d-m-y") + "_" + i.ToString() + ".png");
             }
-        }
-
-        private List<CelestialBody> getInFov()
-        {
-            List<CelestialBody> result = new List<CelestialBody>();
-            List<CelestialBody> bodies = new List<CelestialBody>(FlightGlobals.Bodies);
-            bodies.Add(Sun.Instance.sun);
-            foreach (CelestialBody body in bodies)
-            {
-                Vector3 r = (body.transform.position - _cameraTransform.position);
-                float distance = r.magnitude;
-                double theta = Vector3d.Angle(_cameraTransform.forward, r);
-                if (theta < _camera.fov / 2)
-                {
-                    result.Add(body);
-                }
-            }
-            return result;
         }
 
         public List<CelestialBody> getLookingAt()
@@ -266,10 +272,13 @@ namespace TarsierSpaceTech
                 float distance = r.magnitude;
                 double theta = Vector3d.Angle(_cameraTransform.forward, r);
                 double visibleWidth = (2 * body.Radius / distance) * 180 / Mathf.PI;
+                Utils.print(body.theName + ": |r|=" + distance.ToString() + "  theta=" + theta.ToString() + "  angle=" + visibleWidth.ToString());
                 if (theta < _camera.fov / 2)
                 {
+                    Utils.print("Looking at: " + body.theName);
                     if (visibleWidth > 0.05 * _camera.fov)
                     {
+                        Utils.print("Can see: " + body.theName); 
                         result.Add(body);
                     }
                 }
@@ -279,13 +288,19 @@ namespace TarsierSpaceTech
 
         public void doScience(CelestialBody planet)
         {
+            Utils.print("Doing Science for " + planet.theName);
             ScienceExperiment experiment = ResearchAndDevelopment.GetExperiment("TarsierSpaceTech.SpaceTelescope");
+            Utils.print("Got experiment");
             ScienceSubject subject = ResearchAndDevelopment.GetExperimentSubject(experiment, getExperimentSituation(),planet, "LookingAt"+planet.name);
+            Utils.print("Got subject");
             if (experiment.IsAvailableWhile(getExperimentSituation(), vessel.mainBody))
             {
-                ScienceData data=new ScienceData(experiment.baseValue * subject.dataScale, xmitDataScalar,labBoostScalar, subject.id, subject.title);
-                data.title="Tarsier Space Telescope: Oriting "+vessel.mainBody.theName+" looking at "+planet.theName;
+                ScienceData data = new ScienceData(experiment.baseValue * subject.dataScale, xmitDataScalar, labBoostScalar, subject.id, subject.title);
+                Utils.print("Got data");
+                data.title = "Tarsier Space Telescope: Oriting " + vessel.mainBody.theName + " looking at " + planet.theName;
                 _scienceData.Add(data);
+                Utils.print("Added Data");
+                ScreenMessages.PostScreenMessage("Collected Science for " + planet.theName,3f,ScreenMessageStyle.UPPER_CENTER);
             }
         }
 
