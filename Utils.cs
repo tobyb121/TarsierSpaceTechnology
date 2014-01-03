@@ -13,6 +13,11 @@ class Utils
 #endif
     }
 
+    public static Transform FindChildRecursive(Transform parent,string name)
+    {
+       return parent.gameObject.GetComponentsInChildren<Transform>().FirstOrDefault(t=>t.name==name);
+    }
+
     public static double GetAvailableResource(Part part, String resourceName)
     {
         var resources = new List<PartResource>();
