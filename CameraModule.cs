@@ -11,9 +11,9 @@ namespace TarsierSpaceTech
         private int textureWidth = 256;
         private int textureHeight = 256;
         
-        private CameraHelper _skyBoxCam;
-        private CameraHelper _farCam;
-        private CameraHelper _nearCam;
+        public CameraHelper _skyBoxCam;
+        public CameraHelper _farCam;
+        public CameraHelper _nearCam;
 
         private RenderTexture _renderTexture;
         private Texture2D _texture2D;
@@ -30,15 +30,17 @@ namespace TarsierSpaceTech
             get { return _zoomLevel; }
             set { _zoomLevel = value; updateZoom(); }
         }
-
+        
         public float fov
         {
             get { return _nearCam.fov; }
             set
             {
                 float z = Mathf.Tan(value / Mathf.Rad2Deg) / Mathf.Tan(Mathf.Deg2Rad * CameraHelper.DEFAULT_FOV);
-                _zoomLevel = Mathf.Log10(z);
-                updateZoom();
+                _zoomLevel = -Mathf.Log10(z);
+                _nearCam.fov = value;
+                _farCam.fov = value;
+                _skyBoxCam.fov = value;
             }
         }
 
