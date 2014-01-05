@@ -43,6 +43,7 @@ namespace TarsierSpaceTech
                 _zoomLevel = -Mathf.Log10(z);
                 _nearCam.fov = value;
                 _farCam.fov = value;
+                if (_VEenabled) _VECam.fov = value;
                 _skyBoxCam.fov = value;
             }
         }
