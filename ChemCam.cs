@@ -172,8 +172,8 @@ namespace TarsierSpaceTech
                 if (rotZ > 180f) rotZ = rotZ - 360;
                 float rotX = _headTransform.localEulerAngles.x;
                 if (rotX > 180f) rotX = rotX - 360;
-                _upperArmTransform.Rotate(Vector3.forward, rotZ* -0.3f);
-                _headTransform.Rotate(Vector3.right, rotX * -0.3f);
+                _upperArmTransform.Rotate(Vector3.forward, Mathf.Clamp(rotZ* -0.3f,-10,10));
+                _headTransform.Rotate(Vector3.right, Mathf.Clamp(rotX * -0.3f,-10,10));
                 if (_upperArmTransform.localEulerAngles.magnitude < 0.5f) _upperArmTransform.localEulerAngles = Vector3.zero;
                 if (_headTransform.localEulerAngles.magnitude < 0.5f) _headTransform.localEulerAngles = Vector3.zero;
                 yield return null;
