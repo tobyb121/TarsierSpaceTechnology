@@ -42,6 +42,9 @@ namespace TarsierSpaceTech
         public string lookTransformName = "LookTransform";
 
         [KSPField]
+        public bool servoControl = true;
+
+        [KSPField]
         public float xmitDataScalar = 0.5f;
 
         public float labBoostScalar = 0f;
@@ -99,7 +102,46 @@ namespace TarsierSpaceTech
             }
             Utils.print("Got ExpIDs");
             Utils.print("On end start");
+
+            vessel.OnFlyByWire += new FlightInputCallback(onFlightInput);
         }
+
+        [KSPEvent(active = false, guiActive = true, guiName = "Disable Servos")]
+        public void toggleServos()
+        {
+            servoControl = !servoControl;
+            Events["toggleServos"].guiName = servoControl ? "Disable Servos" : "Enable Servos";
+        }
+
+        private void onFlightInput(FlightCtrlState ctrl)
+        {
+            if (_camera.Enabled && servoControl)
+            {
+                float rotX = _cameraTransform.localEulerAngles.x;
+                if (rotX > 180f) rotX = rotX - 360;
+                float rotY = _cameraTransform.localEulerAngles.y;
+                if (rotY > 180f) rotY = rotY - 360;
+
+                if (ctrl.X > 0 && rotY > -1.5f)
+                {
+                    _cameraTransform.Rotate(Vector3.up, -0.005f * _camera.fov);
+                }
+                else if (ctrl.X < 0 && rotY < 1.5f)
+                {
+                    _cameraTransform.Rotate(Vector3.up, 0.005f * _camera.fov);
+                }
+                if (ctrl.Y > 0 && rotX > -1.5f)
+                {
+                    _cameraTransform.Rotate(Vector3.right, -0.005f * _camera.fov);
+                }
+                else if (ctrl.Y < 0 && rotX < 1.5f)
+                {
+                    _cameraTransform.Rotate(Vector3.right, 0.005f * _camera.fov);
+                }
+            }
+        }
+
+
 
         public override void OnUpdate()
         {
@@ -200,9 +242,11 @@ namespace TarsierSpaceTech
             while (wait.MoveNext()) yield return null;
             Events["eventCloseCamera"].active = true;
             Events["eventControlFromHere"].active = true;
+            Events["toggleServos"].active = true;
             _camera.Enabled = true;
             windowState = WindowSate.Small;
             _camera.changeSize(GUI_WIDTH_SMALL, GUI_WIDTH_SMALL );
+            _cameraTransform.localEulerAngles = Vector3.zero;
         }
 
         [KSPEvent(active = false, guiActive = true, name = "eventCloseCamera", guiName = "Close Camera")]
@@ -211,6 +255,7 @@ namespace TarsierSpaceTech
             Events["eventShowGUI"].active = false;
             Events["eventCloseCamera"].active = false;
             Events["eventControlFromHere"].active = false;
+            Events["toggleServos"].active = false;
             _camera.Enabled = false;
             StartCoroutine(closeCamera());
             if (vessel.ReferenceTransform == _lookTransform)
@@ -375,6 +420,20 @@ namespace TarsierSpaceTech
                 transmitters.First().TransmitData(new List<ScienceData> { data });
                 _scienceData.Remove(data);
             }
+        }
+
+        [KSPEvent(active=true,externalToEVAOnly=true,guiActiveUnfocused=true,guiName="Collect Data",unfocusedRange=2)]
+        public void CollectScience()
+        {
+           List<ModuleScienceContainer> containers =  FlightGlobals.ActiveVessel.FindPartModulesImplementing<ModuleScienceContainer>();
+           foreach (ModuleScienceContainer container in containers)
+           {
+               if (_scienceData.Count > 0)
+               {
+                   if(container.StoreData(new List<IScienceDataContainer>(){this},false))
+                       ScreenMessages.PostScreenMessage("Transferred Data to "+vessel.vesselName,3f,ScreenMessageStyle.UPPER_CENTER);
+               }
+           }
         }
 
         private void _onPageSendToLab(ScienceData data)
