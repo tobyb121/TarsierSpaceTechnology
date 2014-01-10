@@ -5,20 +5,20 @@ using UnityEngine;
 
 namespace TarsierSpaceTech
 {
-    class ScienceHardDrive:PartModule,IScienceDataContainer
+    class ScienceHardDrive : PartModule, IScienceDataContainer
     {
         private List<ScienceData> _scienceData = new List<ScienceData>();
 
-        [KSPField(guiActive=true,guiName="Capacity",isPersistant=true, guiUnits=" Mits")]
+        [KSPField(guiActive = true, guiName = "Capacity", isPersistant = true, guiUnits = " Mits")]
         public float Capacity = 50f;
 
         [KSPField(guiActive = false, isPersistant = true)]
         public float corruption = 0.2f;
-        
+
         [KSPField(guiActive = false, isPersistant = true)]
         public float powerUsage = 0.5f;
 
-        private float _dataAmount=0;
+        private float _dataAmount = 0;
         private float _DataAmount
         {
             get
@@ -28,7 +28,7 @@ namespace TarsierSpaceTech
             set
             {
                 _dataAmount = value;
-                PercentageFull = Mathf.Round(1000*_dataAmount / Capacity)/10;
+                PercentageFull = Mathf.Round(1000 * _dataAmount / Capacity) / 10;
             }
         }
 
@@ -40,7 +40,7 @@ namespace TarsierSpaceTech
         {
             Utils.print("FILLING DRIVE");
 
-            List<Part> parts = vessel.Parts.Where(p => p.FindModulesImplementing<IScienceDataContainer>().Count>0).ToList();
+            List<Part> parts = vessel.Parts.Where(p => p.FindModulesImplementing<IScienceDataContainer>().Count > 0).ToList();
             parts.RemoveAll(p => p.FindModulesImplementing<ScienceHardDrive>().Count > 0);
             Utils.print(parts.Count);
             foreach (Part p in parts)
@@ -59,28 +59,25 @@ namespace TarsierSpaceTech
                             Utils.print("Checking Space: " + d.dataAmount.ToString() + " " + _dataAmount.ToString() + " " + Capacity.ToString());
                             if (d.dataAmount * corruption + _dataAmount <= Capacity)
                             {
-                                if (!_scienceData.Exists(dat => dat.subjectID == d.subjectID))
+                                if (Utils.GetAvailableResource(part, "ElectricCharge") >= d.dataAmount * powerUsage)
                                 {
-                                    if (Utils.GetAvailableResource(part, "ElectricCharge") >= d.dataAmount * powerUsage)
-                                    {
-                                        Utils.print("Removing Electric Charge");
-                                        part.RequestResource("ElectricCharge", d.dataAmount * powerUsage);
-                                        Utils.print("Adding Data");
-                                        _scienceData.Add(d);
-                                        d.dataAmount *= (1 - corruption);
-                                        Utils.print("Incrementing stored val");
-                                        _DataAmount += d.dataAmount;
-                                        Utils.print("Removing Data from target");
-                                        container.DumpData(d);
-                                        Utils.print("Data Added");
-                                    }
+                                    Utils.print("Removing Electric Charge");
+                                    part.RequestResource("ElectricCharge", d.dataAmount * powerUsage);
+                                    Utils.print("Adding Data");
+                                    _scienceData.Add(d);
+                                    d.dataAmount *= (1 - corruption);
+                                    Utils.print("Incrementing stored val");
+                                    _DataAmount += d.dataAmount;
+                                    Utils.print("Removing Data from target");
+                                    container.DumpData(d);
+                                    Utils.print("Data Added");
                                 }
                             }
                         }
                     }
                 }
             }
-            Events["reviewScience"].guiActive=_scienceData.Count>0;
+            Events["reviewScience"].guiActive = _scienceData.Count > 0;
         }
 
         [KSPEvent(name = "reviewScience", active = true, guiActive = false, externalToEVAOnly = false, guiName = "Review Data")]
@@ -91,22 +88,22 @@ namespace TarsierSpaceTech
 
         public override void OnLoad(ConfigNode node)
         {
-			base.OnLoad(node);
+            base.OnLoad(node);
             if (node.HasNode("ScienceData"))
-			{
+            {
                 foreach (ConfigNode dataNode in node.GetNodes("ScienceData"))
                 {
                     ScienceData data = new ScienceData(dataNode);
                     _scienceData.Add(data);
                     _DataAmount += data.dataAmount;
-				}
-			}
-			Events["reviewScience"].guiActive=_scienceData.Count>0;
+                }
+            }
+            Events["reviewScience"].guiActive = _scienceData.Count > 0;
         }
 
         public override void OnSave(ConfigNode node)
         {
-			base.OnSave(node);
+            base.OnSave(node);
             foreach (ScienceData dat in _scienceData)
             {
                 ConfigNode dataNode = node.AddNode("ScienceData");
@@ -118,8 +115,8 @@ namespace TarsierSpaceTech
         {
             return "Capacity: " + Capacity.ToString() + "Mits\n";
         }
-		
-		// Results Dialog Page Callbacks
+
+        // Results Dialog Page Callbacks
         private void _onPageDiscard(ScienceData data)
         {
             DumpData(data);
@@ -146,7 +143,7 @@ namespace TarsierSpaceTech
 
         private void _onPageSendToLab(ScienceData data)
         {
-            
+
         }
 
         // IScienceDataContainer
@@ -154,7 +151,7 @@ namespace TarsierSpaceTech
         {
             _DataAmount -= data.dataAmount;
             _scienceData.Remove(data);
-            Events["reviewScience"].guiActive=_scienceData.Count>0;
+            Events["reviewScience"].guiActive = _scienceData.Count > 0;
         }
 
         public ScienceData[] GetData()
@@ -177,7 +174,7 @@ namespace TarsierSpaceTech
                     data.transmitValue,
                     data.labBoost,
                     true,
-                    "If you transmit this data it will only be worth: "+Mathf.Round(data.transmitValue*100).ToString()+"% of the full scienc value",
+                    "If you transmit this data it will only be worth: " + Mathf.Round(data.transmitValue * 100).ToString() + "% of the full scienc value",
                     true,
                     false,
                     new Callback<ScienceData>(_onPageDiscard),
