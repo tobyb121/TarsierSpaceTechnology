@@ -31,7 +31,7 @@ namespace TarsierSpaceTech
 
         private static Texture2D viewfinder = new Texture2D(1, 1);
 
-        private static List<string> PlanetNames = (from CelestialBody b in FlightGlobals.Bodies select b.name).ToList();
+        private static List<string> PlanetNames;
 
         public override void OnStart(StartState state)
         {
@@ -71,6 +71,8 @@ namespace TarsierSpaceTech
             vessel.OnFlyByWire += new FlightInputCallback(handleInput);
 
             viewfinder.LoadImage(Properties.Resources.viewfinder);
+
+            PlanetNames = (from CelestialBody b in FlightGlobals.Bodies select b.name).ToList();
         }
 
         public override void OnUpdate()
@@ -80,6 +82,7 @@ namespace TarsierSpaceTech
             {
                 if (_camera.Enabled && f++ % frameLimit == 0)
                 {
+                    Utils.print("Cam Draw");
                     _camera.draw();
                 }
             }
@@ -153,7 +156,7 @@ namespace TarsierSpaceTech
             Events["ResetExperimentExternal"].active = true;
             Actions["ResetAction"].active = true;
             _camera.Enabled = true;
-            _camera.fov = 100;
+            _camera.fov = 80;
             _camera.changeSize(GUI_WIDTH_SMALL, GUI_WIDTH_SMALL);
             if (_camera.gameObject.GetComponentInChildren<NoiseEffect>() == null)
             {

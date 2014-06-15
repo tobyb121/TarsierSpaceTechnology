@@ -57,7 +57,7 @@ namespace TarsierSpaceTech
                         if (d != null)
                         {
                             Utils.print("Checking Space: " + d.dataAmount.ToString() + " " + _dataAmount.ToString() + " " + Capacity.ToString());
-                            if (d.dataAmount * corruption + _dataAmount <= Capacity)
+                            if (d.dataAmount + _dataAmount <= Capacity)
                             {
                                 if (Utils.GetAvailableResource(part, "ElectricCharge") >= d.dataAmount * powerUsage)
                                 {
