@@ -44,6 +44,8 @@ namespace TarsierSpaceTech
         [KSPField]
         public bool servoControl = true;
 
+        private Quaternion zeroRotation;
+
         [KSPField]
         public float xmitDataScalar = 0.5f;
 
@@ -82,6 +84,7 @@ namespace TarsierSpaceTech
             _lookTransform = Utils.FindChildRecursive(transform,lookTransformName);
             Utils.print(_baseTransform);
             Utils.print(_cameraTransform);
+            zeroRotation = _cameraTransform.localRotation;
             _camera = _cameraTransform.gameObject.AddComponent<CameraModule>();
             _animation = _baseTransform.animation;
             Events["eventOpenCamera"].active = true;
@@ -117,26 +120,29 @@ namespace TarsierSpaceTech
         {
             if (_camera.Enabled && servoControl)
             {
-                float rotX = _cameraTransform.localEulerAngles.x;
-                if (rotX > 180f) rotX = rotX - 360;
-                float rotY = _cameraTransform.localEulerAngles.y;
-                if (rotY > 180f) rotY = rotY - 360;
-
-                if (ctrl.X > 0 && rotY > -1.5f)
+               
+                if (ctrl.X > 0)
                 {
                     _cameraTransform.Rotate(Vector3.up, -0.005f * _camera.fov);
                 }
-                else if (ctrl.X < 0 && rotY < 1.5f)
+                else if (ctrl.X < 0)
                 {
                     _cameraTransform.Rotate(Vector3.up, 0.005f * _camera.fov);
                 }
-                if (ctrl.Y > 0 && rotX > -1.5f)
+                if (ctrl.Y > 0)
                 {
                     _cameraTransform.Rotate(Vector3.right, -0.005f * _camera.fov);
                 }
-                else if (ctrl.Y < 0 && rotX < 1.5f)
+                else if (ctrl.Y < 0)
                 {
                     _cameraTransform.Rotate(Vector3.right, 0.005f * _camera.fov);
+                }
+
+                float angle=Mathf.Abs(Quaternion.Angle(_cameraTransform.localRotation, zeroRotation));
+
+                if (angle > 1.5f)
+                {
+                    _cameraTransform.localRotation = Quaternion.Slerp(zeroRotation, _cameraTransform.localRotation, 1.5f / angle);
                 }
             }
         }
@@ -246,7 +252,7 @@ namespace TarsierSpaceTech
             _camera.Enabled = true;
             windowState = WindowSate.Small;
             _camera.changeSize(GUI_WIDTH_SMALL, GUI_WIDTH_SMALL );
-            _cameraTransform.localEulerAngles = Vector3.zero;
+            _cameraTransform.localRotation = zeroRotation;
         }
 
         [KSPEvent(active = false, guiActive = true, name = "eventCloseCamera", guiName = "Close Camera")]
