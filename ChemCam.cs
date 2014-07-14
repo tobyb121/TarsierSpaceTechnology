@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace TarsierSpaceTech
 {
-    class ChemCam : ModuleScienceExperiment
+    class ChemCam : PartModule, IScienceDataContainer
     {
         private bool _inEditor = false;
 
@@ -28,10 +28,20 @@ namespace TarsierSpaceTech
 
         private int frameLimit = 5;
         private int f = 0;
+        
+        private List<ScienceData> _scienceData = new List<ScienceData>();
 
         private static Texture2D viewfinder = new Texture2D(1, 1);
 
         private static List<string> PlanetNames;
+
+        [KSPField]
+        public float xmitDataScalar = 0.5f;
+
+        [KSPField]
+        public string ExperimentID = "TarsierSpaceTech.ChemCam";
+
+        public float labBoostScalar = 0f;
 
         public override void OnStart(StartState state)
         {
@@ -82,7 +92,6 @@ namespace TarsierSpaceTech
             {
                 if (_camera.Enabled && f++ % frameLimit == 0)
                 {
-                    Utils.print("Cam Draw");
                     _camera.draw();
                 }
             }
@@ -92,7 +101,7 @@ namespace TarsierSpaceTech
         {
             GUILayout.Box(_camera.Texture2D);
             GUI.DrawTexture(GUILayoutUtility.GetLastRect(), viewfinder);
-            if (GUILayout.Button("Fire")) CollectData();
+            if (GUILayout.Button("Fire")) StartCoroutine(fireCamera());
             GUI.DragWindow();
         }
 
@@ -129,13 +138,14 @@ namespace TarsierSpaceTech
             }
         }
 
-        [KSPEvent(guiName = "Deploy", active = true, guiActive = true)]
-        new public void DeployExperiment()
+        [KSPEvent(guiName = "Open Camera", active = true, guiActive = true)]
+        public void eventOpenCamera()
         {
             StartCoroutine(openCamera());
         }
 
-        new public void DeployAction(KSPActionParam actParams)
+        [KSPAction("Open Camera")]
+        public void actionOpenCamera(KSPActionParam actParams)
         {
             StartCoroutine(openCamera());
         }
@@ -143,70 +153,46 @@ namespace TarsierSpaceTech
         private IEnumerator openCamera()
         {
             _animationObj.Play("open");
-            Events["DeployExperiment"].active = false;
-            Actions["DeployAction"].active = false;
+            Events["eventOpenCamera"].active = false;
+            Actions["actionOpenCamera"].active = false;
             IEnumerator wait = Utils.WaitForAnimation(_animationObj, "open");
             while (wait.MoveNext()) yield return null;
             string anim="wiggle"+UnityEngine.Random.Range(1,5).ToString();
             _animationObj.Play(anim);
             wait = Utils.WaitForAnimation(_animationObj, anim);
             while (wait.MoveNext()) yield return null;
-            Events["CollectData"].active = true;
-            Events["ResetExperiment"].active = true;
-            Events["ResetExperimentExternal"].active = true;
-            Actions["ResetAction"].active = true;
+            Events["eventCloseCamera"].active = true;
+            Actions["actionCloseCamera"].active = true;
             _camera.Enabled = true;
             _camera.fov = 80;
             _camera.changeSize(GUI_WIDTH_SMALL, GUI_WIDTH_SMALL);
-            if (_camera.gameObject.GetComponentInChildren<NoiseEffect>() == null)
-            {
-                NoiseEffect noise = _camera._nearCam.camera.gameObject.AddComponent<NoiseEffect>();
-                noise.shaderRGB = Shader.Find("Hidden/Noise Shader RGB");
-                noise.shaderYUV = Shader.Find("Hidden/Noise Shader YUV");
-                noise.monochrome = true;
-                Texture2D scratch = new Texture2D(1, 1);
-                scratch.LoadImage(Properties.Resources.NoiseEffectScratch);
-                noise.scratchTexture = scratch;
-                Texture2D grain = new Texture2D(1, 1);
-                grain.LoadImage(Properties.Resources.NoiseEffectGrain);
-                noise.grainTexture = grain;
-                noise.grainSize = 2f;
-                noise.grainIntensityMax = 0.5f;
-                noise.grainIntensityMin = 0.2f;
-            }
+            
         }
 
-        [KSPEvent (guiName = "Close", active = true, guiActive = true)]
-	    new public void ResetExperiment ()
+        [KSPEvent (guiName = "Close Camera", active = false, guiActive = true)]
+	    public void eventCloseCamera ()
 	    {
 		    StartCoroutine (closeCamera());
 	    }
 	    
-        new public void ResetAction (KSPActionParam actParams){
+        [KSPAction("Close Camera")]
+        public void actionCloseCamera (KSPActionParam actParams){
             StartCoroutine(closeCamera());
-        }
-
-        [KSPEvent(guiName = "Close", active = true, guiActiveUnfocused = true, externalToEVAOnly = true, guiActive = false)]
-        new public void ResetExperimentExternal()
-        {
-            StartCoroutine (closeCamera());
         }
 
         private IEnumerator closeCamera()
         {
-            Events["CollectData"].active = false;
-            Events["ResetExperiment"].active = false;
-            Events["ResetExperimentExternal"].active = false;
-            Actions["ResetAction"].active = false;
+            Events["eventCloseCamera"].active = false;
+            Actions["actionCloseCamera"].active = false;
             _camera.Enabled = false;
-            while (_upperArmTransform.localEulerAngles != Vector3.zero && _headTransform.localEulerAngles != Vector3.zero)
+            while (_upperArmTransform.localEulerAngles != Vector3.zero || _headTransform.localEulerAngles != Vector3.zero)
             {
                 float rotZ = _upperArmTransform.localEulerAngles.z;
                 if (rotZ > 180f) rotZ = rotZ - 360;
                 float rotX = _headTransform.localEulerAngles.x;
                 if (rotX > 180f) rotX = rotX - 360;
-                _upperArmTransform.Rotate(Vector3.forward, Mathf.Clamp(rotZ* -0.3f,-10,10));
-                _headTransform.Rotate(Vector3.right, Mathf.Clamp(rotX * -0.3f,-10,10));
+                _upperArmTransform.Rotate(Vector3.forward, Mathf.Clamp(rotZ* -0.3f,-2,2));
+                _headTransform.Rotate(Vector3.right, Mathf.Clamp(rotX * -0.3f,-2,2));
                 if (_upperArmTransform.localEulerAngles.magnitude < 0.5f) _upperArmTransform.localEulerAngles = Vector3.zero;
                 if (_headTransform.localEulerAngles.magnitude < 0.5f) _headTransform.localEulerAngles = Vector3.zero;
                 yield return null;
@@ -214,14 +200,24 @@ namespace TarsierSpaceTech
             _animationObj.Play("close");
             IEnumerator wait = Utils.WaitForAnimation(_animationObj, "close");
             while (wait.MoveNext()) yield return null;
-            Events["DeployExperiment"].active = true;
-            Actions["DeployAction"].active = true;
+            Events["eventOpenCamera"].active = true;
+            Actions["actionOpenCamera"].active = true;
         }
 
-        [KSPEvent(active = false, guiActive = true, guiName = "Collect Data")]
-        public void CollectData()
+
+        [KSPEvent(active = true, externalToEVAOnly = true, guiActiveUnfocused = true, guiName = "Collect Data", unfocusedRange = 2)]
+        public void eventCollectDataExternal()
         {
-            StartCoroutine(fireCamera());
+            List<ModuleScienceContainer> containers = FlightGlobals.ActiveVessel.FindPartModulesImplementing<ModuleScienceContainer>();
+            foreach (ModuleScienceContainer container in containers)
+            {
+                if (_scienceData.Count > 0)
+                {
+                    if (container.StoreData(new List<IScienceDataContainer>() { this }, false))
+                        ScreenMessages.PostScreenMessage("Transferred Data to " + vessel.vesselName, 3f, ScreenMessageStyle.UPPER_CENTER);
+                }
+            }
+            updateAvailableEvents();
         }
 
         private IEnumerator fireCamera()
@@ -244,12 +240,126 @@ namespace TarsierSpaceTech
                     }
                     if (t != null)
                     {
-                        base.DeployExperiment();
+                        doScience(FlightGlobals.Bodies.Find(c=>c.name==t.name));
                         yield break;
                     }
                 }
             }
-            ScreenMessages.PostScreenMessage("No Terrain in Range");
+            ScreenMessages.PostScreenMessage("No Terrain in Range",3f,ScreenMessageStyle.UPPER_CENTER);
+        }
+
+        public void doScience(CelestialBody planet)
+        {
+            Utils.print("Doing Science for " + planet.theName);
+            ScienceExperiment experiment = ResearchAndDevelopment.GetExperiment(ExperimentID);
+            Utils.print("Got experiment");
+            string biome = ScienceUtil.GetExperimentBiome(planet, FlightGlobals.ship_latitude, FlightGlobals.ship_longitude);
+            ScienceSubject subject = ResearchAndDevelopment.GetExperimentSubject(experiment, ScienceUtil.GetExperimentSituation(vessel), planet, biome);
+            Utils.print("Got subject");
+            if (experiment.IsAvailableWhile(ScienceUtil.GetExperimentSituation(vessel), planet))
+            {
+                ScienceData data = new ScienceData(experiment.baseValue * subject.dataScale, xmitDataScalar, labBoostScalar, subject.id, subject.title);
+                Utils.print("Got data");
+                _scienceData.Add(data);
+                Utils.print("Added Data");
+                ScreenMessages.PostScreenMessage("Collected Science for " + planet.theName, 3f, ScreenMessageStyle.UPPER_CENTER);
+            }
+            updateAvailableEvents();
+        }
+
+        private void updateAvailableEvents()
+        {
+            if (_scienceData.Count > 0)
+            {
+                Events["eventReviewScience"].active = true;
+                Events["eventCollectDataExternal"].active = true;
+            }
+            else
+            {
+                Events["eventReviewScience"].active = false;
+                Events["eventCollectDataExternal"].active = false;
+            }
+        }
+
+        [KSPEvent(active = false, guiActive = true, guiName = "Check Results")]
+        public void eventReviewScience()
+        {
+            foreach (ScienceData data in _scienceData)
+            {
+                ReviewDataItem(data);
+            }
+        }
+
+        private void _onPageDiscard(ScienceData data)
+        {
+            _scienceData.Remove(data);
+        }
+
+        private void _onPageKeep(ScienceData data)
+        {
+
+        }
+
+        private void _onPageTransmit(ScienceData data)
+        {
+            List<IScienceDataTransmitter> transmitters = vessel.FindPartModulesImplementing<IScienceDataTransmitter>();
+            if (transmitters.Count > 0 && _scienceData.Contains(data))
+            {
+                transmitters.First().TransmitData(new List<ScienceData> { data });
+                _scienceData.Remove(data);
+                updateAvailableEvents();
+            }
+        }
+
+        private void _onPageSendToLab(ScienceData data)
+        {
+            Utils.print("Sent to lab");
+        }
+
+        // IScienceDataContainer
+        public void DumpData(ScienceData data)
+        {
+            _scienceData.Remove(data);
+        }
+
+        public ScienceData[] GetData()
+        {
+            return _scienceData.ToArray();
+        }
+
+        public int GetScienceCount()
+        {
+            return _scienceData.Count;
+        }
+
+        public void ReviewData()
+        {
+            eventReviewScience();
+        }
+
+
+        public bool IsRerunnable()
+        {
+            Utils.print("Is rerunnable");
+            return true;
+        }
+
+        public void ReviewDataItem(ScienceData data)
+        {
+            ExperimentResultDialogPage page = new ExperimentResultDialogPage(
+                    part,
+                    data,
+                    xmitDataScalar,
+                    data.labBoost,
+                    false,
+                    "",
+                    true,
+                    false,
+                    new Callback<ScienceData>(_onPageDiscard),
+                    new Callback<ScienceData>(_onPageKeep),
+                    new Callback<ScienceData>(_onPageTransmit),
+                    new Callback<ScienceData>(_onPageSendToLab));
+            ExperimentsResultDialog.DisplayResult(page);
         }
     }
 }

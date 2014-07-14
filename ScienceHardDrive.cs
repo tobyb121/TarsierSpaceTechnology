@@ -146,6 +146,20 @@ namespace TarsierSpaceTech
 
         }
 
+        [KSPEvent(active = true, externalToEVAOnly = true, guiActiveUnfocused = true, guiName = "Collect Data", unfocusedRange = 2)]
+        public void CollectScience()
+        {
+            List<ModuleScienceContainer> containers = FlightGlobals.ActiveVessel.FindPartModulesImplementing<ModuleScienceContainer>();
+            foreach (ModuleScienceContainer container in containers)
+            {
+                if (_scienceData.Count > 0)
+                {
+                    if (container.StoreData(new List<IScienceDataContainer>() { this },false))
+                        ScreenMessages.PostScreenMessage("Transferred Data to " + vessel.vesselName, 3f, ScreenMessageStyle.UPPER_CENTER);
+                }
+            }
+        }
+
         // IScienceDataContainer
         public void DumpData(ScienceData data)
         {
