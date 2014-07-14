@@ -83,6 +83,13 @@ namespace TarsierSpaceTech
             viewfinder.LoadImage(Properties.Resources.viewfinder);
 
             PlanetNames = (from CelestialBody b in FlightGlobals.Bodies select b.name).ToList();
+            
+            Events["eventOpenCamera"].active = true;
+            Actions["actionOpenCamera"].active = true;
+            Events["eventCloseCamera"].active = false;
+            Actions["actionCloseCamera"].active = false;
+            _camera.Enabled = false;
+            updateAvailableEvents();
         }
 
         public override void OnUpdate()
