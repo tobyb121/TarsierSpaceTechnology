@@ -116,7 +116,7 @@ namespace TarsierSpaceTech
         {
             if (!_inEditor && _camera.Enabled)
             {
-                _windowRect = GUILayout.Window(1, _windowRect, drawWindow, "ChemCam");
+                _windowRect = GUILayout.Window(1, _windowRect, drawWindow, "ChemCam - Use I,J,K,L to move camera");
             }
         }
 
