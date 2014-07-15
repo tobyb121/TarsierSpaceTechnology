@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace TarsierSpaceTech
 {
-    class ScienceHardDrive : PartModule, IScienceDataContainer
+    class TSTScienceHardDrive : PartModule, IScienceDataContainer
     {
         private List<ScienceData> _scienceData = new List<ScienceData>();
 
@@ -41,7 +41,7 @@ namespace TarsierSpaceTech
             Utils.print("FILLING DRIVE");
 
             List<Part> parts = vessel.Parts.Where(p => p.FindModulesImplementing<IScienceDataContainer>().Count > 0).ToList();
-            parts.RemoveAll(p => p.FindModulesImplementing<ScienceHardDrive>().Count > 0);
+            parts.RemoveAll(p => p.FindModulesImplementing<TSTScienceHardDrive>().Count > 0);
             Utils.print(parts.Count);
             foreach (Part p in parts)
             {

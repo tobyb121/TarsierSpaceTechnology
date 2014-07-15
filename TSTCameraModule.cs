@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace TarsierSpaceTech
 {
-    class CameraModule : MonoBehaviour
+    class TSTCameraModule : MonoBehaviour
     {
         private int textureWidth = 256;
         private int textureHeight = 256;
@@ -145,7 +145,7 @@ namespace TarsierSpaceTech
         public void saveToFile(string fileName)
         {
             byte[] data = _texture2D.EncodeToPNG();
-            using (KSP.IO.FileStream file = KSP.IO.File.Open<SpaceTelescope>(fileName, KSP.IO.FileMode.Create,null))
+            using (KSP.IO.FileStream file = KSP.IO.File.Open<TSTSpaceTelescope>(fileName, KSP.IO.FileMode.Create,null))
             {
                 file.Write(data, 0, data.Length);
             }

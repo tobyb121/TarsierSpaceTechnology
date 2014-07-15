@@ -8,7 +8,7 @@ using UnityEngineInternal;
 
 namespace TarsierSpaceTech
 {
-    class SpaceTelescope : PartModule, IScienceDataContainer
+    class TSTSpaceTelescope : PartModule, IScienceDataContainer
     {
         private const int GUI_WIDTH_SMALL = 256;
         private const int GUI_WIDTH_LARGE = 512;
@@ -18,7 +18,7 @@ namespace TarsierSpaceTech
         private Transform _baseTransform;
         private Transform _cameraTransform;
         private Transform _lookTransform;
-        private CameraModule _camera;
+        private TSTCameraModule _camera;
 
         private bool _showTarget = false;
         
@@ -85,7 +85,7 @@ namespace TarsierSpaceTech
             Utils.print(_baseTransform);
             Utils.print(_cameraTransform);
             zeroRotation = _cameraTransform.localRotation;
-            _camera = _cameraTransform.gameObject.AddComponent<CameraModule>();
+            _camera = _cameraTransform.gameObject.AddComponent<TSTCameraModule>();
             _animation = _baseTransform.animation;
             Events["eventOpenCamera"].active = true;
             Events["eventCloseCamera"].active = false;
@@ -307,7 +307,7 @@ namespace TarsierSpaceTech
             {
                 Utils.print("Saving to File");
                 int i = 0;
-                while (KSP.IO.File.Exists<SpaceTelescope>("Telescope_" + DateTime.Now.ToString("d-m-y")+"_"+i.ToString() + ".png",null)) i++;
+                while (KSP.IO.File.Exists<TSTSpaceTelescope>("Telescope_" + DateTime.Now.ToString("d-m-y")+"_"+i.ToString() + ".png",null)) i++;
                 _camera.saveToFile("Telescope_" + DateTime.Now.ToString("d-m-y") + "_" + i.ToString() + ".png");
             }
         }

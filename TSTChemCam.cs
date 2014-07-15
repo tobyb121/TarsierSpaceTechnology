@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace TarsierSpaceTech
 {
-    class ChemCam : PartModule, IScienceDataContainer
+    class TSTChemCam : PartModule, IScienceDataContainer
     {
         private bool _inEditor = false;
 
@@ -15,7 +15,7 @@ namespace TarsierSpaceTech
         private const int GUI_WIDTH_LARGE = 512;
 
         private Transform _lookTransform;
-        private CameraModule _camera;
+        private TSTCameraModule _camera;
 
         private Transform _lazerTransform;
         private LineRenderer _lazerObj;
@@ -54,7 +54,7 @@ namespace TarsierSpaceTech
 
             Utils.print("Starting ChemCam");
             _lookTransform = Utils.FindChildRecursive(transform,"CameraTransform");
-            _camera=_lookTransform.gameObject.AddComponent<CameraModule>();
+            _camera=_lookTransform.gameObject.AddComponent<TSTCameraModule>();
 
             Utils.print("Adding Lazer");
             _lazerTransform = Utils.FindChildRecursive(transform, "LazerTransform");
