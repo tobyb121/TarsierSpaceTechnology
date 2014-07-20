@@ -95,7 +95,8 @@ namespace TarsierSpaceTech
         public override void OnUpdate()
         {
             base.OnUpdate();
-            if (!_inEditor)
+            updateAvailableEvents();
+            if (!_inEditor && vessel.isActiveVessel)
             {
                 if (_camera.Enabled && f++ % frameLimit == 0)
                 {
@@ -114,7 +115,7 @@ namespace TarsierSpaceTech
 
         public void OnGUI()
         {
-            if (!_inEditor && _camera.Enabled)
+            if (!_inEditor && _camera.Enabled && vessel.isActiveVessel && FlightUIModeController.Instance.Mode != FlightUIMode.ORBITAL)
             {
                 _windowRect = GUILayout.Window(1, _windowRect, drawWindow, "ChemCam - Use I,J,K,L to move camera");
             }
@@ -247,7 +248,8 @@ namespace TarsierSpaceTech
                     }
                     if (t != null)
                     {
-                        doScience(FlightGlobals.Bodies.Find(c=>c.name==t.name));
+                        CelestialBody body=FlightGlobals.Bodies.Find(c=>c.name==t.name);
+                        doScience(body);
                         yield break;
                     }
                 }
@@ -270,6 +272,10 @@ namespace TarsierSpaceTech
                 _scienceData.Add(data);
                 Utils.print("Added Data");
                 ScreenMessages.PostScreenMessage("Collected Science for " + planet.theName, 3f, ScreenMessageStyle.UPPER_CENTER);
+                if (TSTProgressTracker.isActive)
+                {
+                    TSTProgressTracker.OnChemCamFire(planet,biome);
+                }
             }
             updateAvailableEvents();
         }
@@ -321,6 +327,27 @@ namespace TarsierSpaceTech
         private void _onPageSendToLab(ScienceData data)
         {
             Utils.print("Sent to lab");
+        }
+
+        public override void OnSave(ConfigNode node)
+        {
+            ConfigNode science = node.AddNode("SCIENCE");
+            foreach (ScienceData data in _scienceData)
+            {
+                data.Save(science.AddNode("DATA"));
+            }
+        }
+
+        public override void OnLoad(ConfigNode node)
+        {
+            if (node.HasNode("SCIENCE"))
+            {
+                ConfigNode science = node.GetNode("SCIENCE");
+                foreach (ConfigNode n in science.GetNodes("DATA"))
+                {
+                    _scienceData.Add(new ScienceData(n));
+                }
+            }
         }
 
         // IScienceDataContainer

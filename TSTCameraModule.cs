@@ -70,7 +70,6 @@ namespace TarsierSpaceTech
         {
             Utils.print("Setting up cameras");
             _skyBoxCam = new CameraHelper(gameObject, Utils.findCameraByName("Camera ScaledSpace"), _renderTexture, 3, false);
-
             _farCam = new CameraHelper(gameObject, Utils.findCameraByName("Camera 01"), _renderTexture, 5, true);
             _nearCam = new CameraHelper(gameObject, Utils.findCameraByName("Camera 00"), _renderTexture, 6, true);
             setupRenderTexture();
