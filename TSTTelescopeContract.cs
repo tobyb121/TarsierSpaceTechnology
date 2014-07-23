@@ -86,7 +86,7 @@ namespace TarsierSpaceTech
             param2.matchFields.Add("LookingAt" + target.name);
             AddParameter(param2);
             prestige=TSTProgressTracker.getTelescopePrestige(target.name);
-            SetFunds(10000, 20000,target);
+            SetFunds(100, 200,target);
             SetReputation(20,target);
             SetScience(30,target);
 

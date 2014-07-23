@@ -80,8 +80,8 @@ namespace TarsierSpaceTech
         protected override bool Generate()
         {
             agent = Contracts.Agents.AgentList.Instance.GetAgent("Tarsier Space Technology");
-            expiryType = DeadlineType.Floating;
-            deadlineType = DeadlineType.Floating;
+            expiryType = DeadlineType.None;
+            deadlineType = DeadlineType.None;
 
             System.Random r = new System.Random(MissionSeed);
             IEnumerable<CelestialBody> availableBodies=FlightGlobals.Bodies.Where(b=>b.name!="Sun"&&b.name!="Jool");
@@ -96,9 +96,9 @@ namespace TarsierSpaceTech
                 param2.matchFields.Add(biome);
             }
             AddParameter(param2);
-            prestige=TSTProgressTracker.getTelescopePrestige(target.name);
-            SetFunds(10000, 20000,target);
-            SetReputation(20,target);
+            prestige = TSTProgressTracker.getChemCamPrestige(target);
+            SetFunds(300, 400,target);
+            SetReputation(35,target);
             SetScience(30,target);
 
             return true;

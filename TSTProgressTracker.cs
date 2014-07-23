@@ -117,7 +117,18 @@ namespace TarsierSpaceTech
         public static Contracts.Contract.ContractPrestige getTelescopePrestige(string bodyName)
         {
             int i=Array.IndexOf(TarsierPlanetOrder, bodyName);
-            if (i < 3)
+            if (i < 4)
+                return Contracts.Contract.ContractPrestige.Trivial;
+            else if (i < 7)
+                return Contracts.Contract.ContractPrestige.Significant;
+            else
+                return Contracts.Contract.ContractPrestige.Exceptional;
+        }
+
+        public static Contracts.Contract.ContractPrestige getChemCamPrestige(CelestialBody body)
+        {
+            int i = Array.IndexOf(TarsierPlanetOrder, body.name);
+            if (i < 4)
                 return Contracts.Contract.ContractPrestige.Trivial;
             else if (i < 7)
                 return Contracts.Contract.ContractPrestige.Significant;
