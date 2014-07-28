@@ -79,7 +79,7 @@ namespace TarsierSpaceTech
 
             Utils.print("Adding Input Callback");
             vessel.OnFlyByWire += new FlightInputCallback(handleInput);
-
+            Utils.print("Added Input Callback");
             viewfinder.LoadImage(Properties.Resources.viewfinder);
 
             PlanetNames = (from CelestialBody b in FlightGlobals.Bodies select b.name).ToList();
@@ -88,16 +88,15 @@ namespace TarsierSpaceTech
             Actions["actionOpenCamera"].active = true;
             Events["eventCloseCamera"].active = false;
             Actions["actionCloseCamera"].active = false;
-            _camera.Enabled = false;
             updateAvailableEvents();
         }
 
         public override void OnUpdate()
         {
             base.OnUpdate();
-            updateAvailableEvents();
             if (!_inEditor && vessel.isActiveVessel)
             {
+                updateAvailableEvents();
                 if (_camera.Enabled && f++ % frameLimit == 0)
                 {
                     _camera.draw();
@@ -262,7 +261,11 @@ namespace TarsierSpaceTech
             Utils.print("Doing Science for " + planet.theName);
             ScienceExperiment experiment = ResearchAndDevelopment.GetExperiment(ExperimentID);
             Utils.print("Got experiment");
-            string biome = ScienceUtil.GetExperimentBiome(planet, FlightGlobals.ship_latitude, FlightGlobals.ship_longitude);
+            string biome = "";
+            if (part.vessel.landedAt != string.Empty)
+                biome = part.vessel.landedAt;
+            else
+                biome = ScienceUtil.GetExperimentBiome(planet, FlightGlobals.ship_latitude, FlightGlobals.ship_longitude);
             ScienceSubject subject = ResearchAndDevelopment.GetExperimentSubject(experiment, ScienceUtil.GetExperimentSituation(vessel), planet, biome);
             Utils.print("Got subject");
             if (experiment.IsAvailableWhile(ScienceUtil.GetExperimentSituation(vessel), planet))

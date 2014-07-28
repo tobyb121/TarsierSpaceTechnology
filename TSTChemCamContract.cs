@@ -96,11 +96,14 @@ namespace TarsierSpaceTech
                 param2.matchFields.Add(biome);
             }
             AddParameter(param2);
-            prestige = TSTProgressTracker.getChemCamPrestige(target);
+            ContractPrestige p = TSTProgressTracker.getChemCamPrestige(target);
+            if (p != base.prestige)
+                return false;
             SetFunds(300, 400,target);
             SetReputation(35,target);
             SetScience(30,target);
-
+            if (new System.Random(MissionSeed).Next(10) > 4)
+                return false;
             return true;
         }
     }

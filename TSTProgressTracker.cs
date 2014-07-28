@@ -25,6 +25,10 @@ namespace TarsierSpaceTech
         {
             Utils.print("Starting Tarsier Progress Tracking");
             Instance = this;
+
+            foreach(Type t in Contracts.ContractSystem.ContractTypes){
+                Utils.print(t.Name);
+            }
         }
 
         int i = 0;
@@ -92,6 +96,11 @@ namespace TarsierSpaceTech
                 target = TarsierPlanetOrder[UnityEngine.Random.Range((int)0, TarsierPlanetOrder.Length)];
 
             return target;
+        }
+
+        public static bool HasTelescopeCompleted(CelestialBody body)
+        {
+            return Instance.TelescopeData[body.name];
         }
 
         private static string[] TarsierPlanetOrder = new string[] {

@@ -24,7 +24,7 @@ namespace TarsierSpaceTech
         public static double GetAvailableResource(Part part, String resourceName)
         {
             var resources = new List<PartResource>();
-            part.GetConnectedResources(PartResourceLibrary.Instance.GetDefinition(resourceName).id, resources);
+            part.GetConnectedResources(PartResourceLibrary.Instance.GetDefinition(resourceName).id, ResourceFlowMode.ALL_VESSEL, resources);
             double total = 0;
             foreach (PartResource pr in resources)
             {
