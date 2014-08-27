@@ -53,6 +53,8 @@ namespace TarsierSpaceTech
 
         private int targetId = 0;
 
+        private FlightInputCallback onFlyByWire;
+
         private static List<byte[]> targets_raw = new List<byte[]> {
             Properties.Resources.target_01,
             Properties.Resources.target_02,
@@ -106,7 +108,12 @@ namespace TarsierSpaceTech
             Utils.print("Got ExpIDs");
             Utils.print("On end start");
 
-            vessel.OnFlyByWire += new FlightInputCallback(onFlightInput);
+            onFlyByWire = new FlightInputCallback(onFlightInput);
+            Utils.print("Adding Input Callback");
+            vessel.OnFlyByWire += onFlyByWire;
+            Utils.print("Added Input Callback");
+
+            GameEvents.onVesselChange.Add(new EventData<Vessel>.OnEvent(refreshFlightInputHandler));
         }
 
         [KSPEvent(active = false, guiActive = true, guiName = "Disable Servos")]
@@ -114,6 +121,19 @@ namespace TarsierSpaceTech
         {
             servoControl = !servoControl;
             Events["toggleServos"].guiName = servoControl ? "Disable Servos" : "Enable Servos";
+        }
+
+        private void refreshFlightInputHandler(Vessel target)
+        {
+            if (vessel != FlightGlobals.ActiveVessel && vessel.OnFlyByWire.GetInvocationList().Contains(onFlyByWire))
+                vessel.OnFlyByWire -= onFlyByWire;
+            Utils.print("OnVesselSwitch");
+            if (!vessel.OnFlyByWire.GetInvocationList().Contains(onFlyByWire))
+            {
+                Utils.print("Adding Input Callback");
+                vessel.OnFlyByWire += onFlyByWire;
+                Utils.print("Added Input Callback");
+            }
         }
 
         private void onFlightInput(FlightCtrlState ctrl)
@@ -146,9 +166,7 @@ namespace TarsierSpaceTech
                 }
             }
         }
-
-
-
+        
         public override void OnUpdate()
         {
             Events["eventReviewScience"].active=(_scienceData.Count > 0);

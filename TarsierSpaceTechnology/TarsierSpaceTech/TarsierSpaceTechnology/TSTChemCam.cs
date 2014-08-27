@@ -43,6 +43,8 @@ namespace TarsierSpaceTech
 
         public float labBoostScalar = 0f;
 
+        private FlightInputCallback onFlyByWire;
+
         public override void OnStart(StartState state)
         {
             base.OnStart(state);
@@ -77,13 +79,17 @@ namespace TarsierSpaceTech
             Utils.print("Finding Animation Object");
             _animationObj = Utils.FindChildRecursive(transform, "ChemCam").animation;
 
-            Utils.print("Adding Input Callback");
-            vessel.OnFlyByWire += new FlightInputCallback(handleInput);
-            Utils.print("Added Input Callback");
             viewfinder.LoadImage(Properties.Resources.viewfinder);
 
             PlanetNames = (from CelestialBody b in FlightGlobals.Bodies select b.name).ToList();
             
+            onFlyByWire = new FlightInputCallback(handleInput);
+            Utils.print("Adding Input Callback");
+            vessel.OnFlyByWire += onFlyByWire;
+            Utils.print("Added Input Callback");
+
+            GameEvents.onVesselChange.Add(new EventData<Vessel>.OnEvent(refreshFlightInputHandler));
+
             Events["eventOpenCamera"].active = true;
             Actions["actionOpenCamera"].active = true;
             Events["eventCloseCamera"].active = false;
@@ -120,6 +126,19 @@ namespace TarsierSpaceTech
             }
         }
 
+        private void refreshFlightInputHandler(Vessel target)
+        {
+            if (vessel != FlightGlobals.ActiveVessel && vessel.OnFlyByWire.GetInvocationList().Contains(onFlyByWire))
+                vessel.OnFlyByWire -= onFlyByWire;
+            Utils.print("OnVesselSwitch");
+            if (!vessel.OnFlyByWire.GetInvocationList().Contains(onFlyByWire))
+            {
+                Utils.print("Adding Input Callback");
+                vessel.OnFlyByWire += onFlyByWire;
+                Utils.print("Added Input Callback");
+            }
+        }
+  
         private void handleInput(FlightCtrlState ctrl)
         {
             if (_camera.Enabled)
