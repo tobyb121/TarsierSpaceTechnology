@@ -6,8 +6,24 @@ using UnityEngine;
 
 namespace TarsierSpaceTech
 {
-    class TSTGalaxy : MonoBehaviour
+    public class TSTGalaxy : MonoBehaviour
     {
+
+        private static Mesh mesh = null;
+
+        private Material mat = new Material(Shader.Find("Unlit/Transparent"));
+        public new string name;
+
+        private float _size = 1e3f;
+        public float size
+        {
+            get { return _size * ScaledSpace.ScaleFactor; }
+            set {
+                _size = value / ScaledSpace.ScaleFactor;
+                transform.localScale = _size * Vector3.one;
+            }
+        }
+        
         public void Start()
         {
             if (mesh == null)
@@ -35,22 +51,44 @@ namespace TarsierSpaceTech
                 
             }
             gameObject.GetComponent<MeshFilter>().mesh = mesh;
-            print("Creating Mat");
-            Material mat = new Material(Shader.Find("Unlit/Transparent"));
-            print("Getting tex");
-            mat.mainTexture = GameDatabase.Instance.GetTexture("TarsierSpaceTech/galaxy1", false);
-            print("assinging mat");
             renderer.material = mat;
             gameObject.layer = 10;
             renderer.castShadows = false;
             renderer.receiveShadows = false;
         }
-
-        private static Mesh mesh = null;
         
         public void Update()
         {
             transform.LookAt(transform.parent.position);
+        }
+
+
+        public void setTexture(Texture texture)
+        {
+            mat.mainTexture = texture;
+        }
+
+        public Vector3 scaledPosition{
+            get
+            {
+                return transform.localPosition;
+            }
+            set
+            {
+                transform.localPosition = value;
+            }
+
+        }
+
+        public Vector3 position
+        {
+            get
+            {
+                return ScaledSpace.ScaledToLocalSpace(transform.position);
+            }
+            set{
+                transform.position = ScaledSpace.LocalToScaledSpace(value);
+            }
         }
     }
 }

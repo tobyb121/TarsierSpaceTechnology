@@ -28,6 +28,9 @@ namespace TarsierSpaceTech
 
         private Rect windowPos = new Rect(128, 128, 0, 0);
         private WindowSate windowState = WindowSate.Small;
+        private Rect targetWindowPos = new Rect(512, 128, 0, 0);
+        private bool showTargetsWindow = false;
+        int selectedTargetIndex = -1;
 
         [KSPField(guiActive = false, guiName = "maxZoom", isPersistant = true)]
         public int maxZoom = 5;
@@ -72,20 +75,7 @@ namespace TarsierSpaceTech
         private static List<Texture2D> targets = new List<Texture2D>();
 
         public TargettingMode targettingMode = TargettingMode.Galaxy;
-        private TSTGalaxy galaxyTarget
-        {
-            get
-            {
-                try
-                {
-                    return TSTGalaxies.galaxy.GetComponent<TSTGalaxy>();
-                }
-                catch
-                {
-                    return null;
-                }
-            }
-        }
+        private TSTGalaxy galaxyTarget;
 
         public override void OnStart(StartState state)
         {
@@ -137,6 +127,8 @@ namespace TarsierSpaceTech
         {
             servoControl = !servoControl;
             Events["toggleServos"].guiName = servoControl ? "Disable Servos" : "Enable Servos";
+            if (!servoControl)
+                _cameraTransform.localRotation = zeroRotation;
         }
 
         private void refreshFlightInputHandler(Vessel target)
@@ -182,15 +174,21 @@ namespace TarsierSpaceTech
                 }
             }
         }
-        
+
+        private ITargetable _lastTarget;
         public override void OnUpdate()
         {
             Events["eventReviewScience"].active=(_scienceData.Count > 0);
+            if (vessel.targetObject != _lastTarget && vessel.targetObject != null)
+            {
+                targettingMode = TargettingMode.Planet;
+                selectedTargetIndex = -1;
+                _lastTarget = vessel.targetObject;
+            }
             if (!_inEditor && _camera.Enabled && windowState != WindowSate.Hidden && vessel.isActiveVessel)
             {
                 _camera.draw();
             }
-
         }
 
         private void WindowGUI(int windowID)
@@ -249,6 +247,7 @@ namespace TarsierSpaceTech
                 _camera.changeSize(w,w);
                 windowPos.height = 0;
             };
+            if (GUILayout.Button("Galaxies")) showTargetsWindow = !showTargetsWindow;
             if (GUILayout.Button("Hide")) hideGUI();
 			GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
@@ -260,11 +259,31 @@ namespace TarsierSpaceTech
             GUI.DragWindow();
         }
 
+        private void TargettingWindow(int windowID)
+        {
+            GUILayout.BeginVertical();
+            int newTarget = TSTGalaxies.Instance.galaxies.FindIndex(g => GUILayout.Button(g.name));
+            if (newTarget != -1 && newTarget != selectedTargetIndex)
+            {
+                vessel.targetObject = null;
+                FlightGlobals.fetch.SetVesselTarget(null);
+                targettingMode = TargettingMode.Galaxy;
+                selectedTargetIndex = newTarget;
+                galaxyTarget = TSTGalaxies.Instance.galaxies[selectedTargetIndex];
+                Utils.print("Targetting: " + newTarget.ToString() + " " + galaxyTarget.name);
+            }
+            if (GUILayout.Button("Hide")) showTargetsWindow = false;
+            GUILayout.EndVertical();
+            GUI.DragWindow();
+        }
+
         public void OnGUI()
         {
             if (!_inEditor && FlightUIModeController.Instance.Mode != FlightUIMode.ORBITAL && _camera.Enabled && windowState != WindowSate.Hidden && vessel.isActiveVessel)
             {
                 windowPos = GUILayout.Window(1, windowPos, WindowGUI, "Space Telescope", GUILayout.Width(windowState == WindowSate.Small ? GUI_WIDTH_SMALL : GUI_WIDTH_LARGE));
+                if(showTargetsWindow)
+                    targetWindowPos = GUILayout.Window(2, targetWindowPos, TargettingWindow, "Select Target", GUILayout.Width(GUI_WIDTH_SMALL));
             }
         }
 
@@ -339,19 +358,22 @@ namespace TarsierSpaceTech
             Utils.print("Taking Picture");
             _scienceData.Clear();
             Utils.print("Checking Look At");
-            List<CelestialBody> bodies=getLookingAt();
-            Utils.print("Looking at: " + bodies.Count.ToString() + " bodies");
-            foreach (CelestialBody body in bodies)
+            List<TargetableObject> objs=getLookingAt();
+            Utils.print("Looking at: " + objs.Count.ToString() + " celestial objects");
+            foreach (TargetableObject obj in objs)
             {
-                Utils.print("Looking at " + body.theName);
-                doScience(body);
-                if (TSTProgressTracker.isActive)
-                {
-                    TSTProgressTracker.OnTelescopePicture(body);
+                Utils.print("Looking at " + obj.theName);
+                if(obj.type == typeof(CelestialBody)){
+                    CelestialBody body = (CelestialBody)obj.BaseObject;
+                    doScience(body);
+                    if (TSTProgressTracker.isActive)
+                    {
+                        TSTProgressTracker.OnTelescopePicture(body);
+                    }
                 }
             }
             Utils.print("Gather Science complete");
-            if (bodies.Count == 0)
+            if (objs.Count == 0)
             {
                 ScreenMessages.PostScreenMessage("Nothing to see here",3f,ScreenMessageStyle.UPPER_CENTER);
             }
@@ -365,24 +387,25 @@ namespace TarsierSpaceTech
             }
         }
 
-        public List<CelestialBody> getLookingAt()
+        private List<TargetableObject> getLookingAt()
         {
-            List<CelestialBody> result = new List<CelestialBody>();
-            List<CelestialBody> bodies = new List<CelestialBody>(FlightGlobals.Bodies);
-            foreach (CelestialBody body in bodies)
+            List<TargetableObject> result = new List<TargetableObject>();
+            List<TargetableObject> bodies = FlightGlobals.Bodies.Select(b => (TargetableObject)b).ToList();
+            List<TargetableObject> galaxies = TSTGalaxies.Instance.galaxies.Select(g => (TargetableObject)g).ToList();
+            foreach (TargetableObject obj in galaxies.Concat(bodies))
             {
-                Vector3 r = (body.transform.position - _cameraTransform.position);
+                Vector3 r = (obj.position - _cameraTransform.position);
                 float distance = r.magnitude;
                 double theta = Vector3d.Angle(_cameraTransform.forward, r);
-                double visibleWidth = (2 * body.Radius / distance) * 180 / Mathf.PI;
-                Utils.print(body.theName + ": |r|=" + distance.ToString() + "  theta=" + theta.ToString() + "  angle=" + visibleWidth.ToString());
+                double visibleWidth = (2 * obj.size / distance) * 180 / Mathf.PI;
+                Utils.print(obj.theName + ": |r|=" + distance.ToString() + "  theta=" + theta.ToString() + "  angle=" + visibleWidth.ToString());
                 if (theta < _camera.fov / 2)
                 {
-                    Utils.print("Looking at: " + body.theName);
+                    Utils.print("Looking at: " + obj.theName);
                     if (visibleWidth > 0.05 * _camera.fov)
                     {
-                        Utils.print("Can see: " + body.theName); 
-                        result.Add(body);
+                        Utils.print("Can see: " + obj.theName); 
+                        result.Add(obj);
                     }
                 }
             }
@@ -567,10 +590,77 @@ namespace TarsierSpaceTech
             ExperimentsResultDialog.DisplayResult(page);
         }
 
+        //Galaxy Wrapper
         public enum TargettingMode
         {
             Galaxy,
             Planet
+        }
+
+        private class TargetableObject
+        {
+            private TSTGalaxy galaxy;
+            private CelestialBody body;        
+
+            public static implicit operator TargetableObject(TSTGalaxy galaxy)
+            {
+                return new TargetableObject(galaxy);
+            }
+
+            private TargetableObject(TSTGalaxy galaxy)
+            {
+                this.galaxy = galaxy;
+            }
+
+            public static implicit operator TargetableObject(CelestialBody body)
+            {
+                return new TargetableObject(body);
+            }
+
+            private TargetableObject(CelestialBody body)
+            {
+                this.body = body;
+            }
+
+            public Type type
+            {
+                get
+                {
+                    return galaxy == null ? typeof(CelestialBody) : typeof(TSTGalaxy);
+                }
+            }
+
+            public object BaseObject
+            {
+                get
+                {
+                    return galaxy == null ? (object)body : (object)galaxy;
+                }
+            }
+
+            public Vector3 position
+            {
+                get
+                {
+                    return galaxy == null ? body.transform.position : galaxy.position;
+                }
+            }
+
+            public double size
+            {
+                get
+                {
+                    return galaxy == null ? body.Radius : (double) galaxy.size;
+                }
+            }
+
+            public string theName
+            {
+                get
+                {
+                    return galaxy == null ? body.theName : galaxy.name;
+                }
+            }
         }
     }
 }

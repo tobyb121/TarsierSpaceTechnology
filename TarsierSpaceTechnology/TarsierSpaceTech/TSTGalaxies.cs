@@ -13,8 +13,8 @@ namespace TarsierSpaceTech
         public static TSTGalaxies Instance;
 
         private static GameObject baseTransform;
-        public static GameObject galaxy;
-        private static GameObject cube;
+        public List<TSTGalaxy> galaxies = new List<TSTGalaxy>();
+
         public void Start()
         {
             Utils.print("Starting Galaxies");
@@ -26,13 +26,32 @@ namespace TarsierSpaceTech
             baseTransform.transform.parent = ScaledSun.Instance.transform;
             baseTransform.transform.localPosition = Vector3.zero;
             baseTransform.transform.localRotation = Quaternion.identity;
-            
-            galaxy=new GameObject("g1",typeof(MeshFilter),typeof(MeshRenderer),typeof(TSTGalaxy));
-            galaxy.transform.parent = baseTransform.transform;
-            galaxy.transform.localPosition = new Vector3(0f,-130e6f,0f);
-            galaxy.transform.localScale = 1e4f*Vector3.one;
-            cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            cube.collider.enabled = false;
+
+            UrlDir.UrlConfig[] galaxyCfgs = GameDatabase.Instance.GetConfigs("GALAXY");
+            foreach (UrlDir.UrlConfig cfg in galaxyCfgs){
+                string name = cfg.config.GetValue("name");
+                Vector3 pos = ConfigNode.ParseVector3(cfg.config.GetValue("location"));
+                string textureURL = cfg.config.GetValue("textureURL");
+                float size = float.Parse(cfg.config.GetValue("size"));
+
+                Utils.print("Creating Galaxy: " + name + " " + pos.ToString() + " " + textureURL);
+        
+                GameObject go=new GameObject("galaxy_"+name,typeof(MeshFilter),typeof(MeshRenderer),typeof(TSTGalaxy));
+                go.transform.parent = baseTransform.transform;                
+
+                TSTGalaxy galaxy = go.GetComponent<TSTGalaxy>();
+                Utils.print("Setting Name");
+                galaxy.name = name;
+                Utils.print("Setting Size");
+                galaxy.size = 1e3f * size * ScaledSpace.ScaleFactor;
+                Utils.print("Setting Position");
+                galaxy.scaledPosition = -130e6f * pos.normalized;
+                Utils.print("Setting Texture");
+                galaxy.setTexture(GameDatabase.Instance.GetTexture(textureURL, false));
+                Utils.print("Adding Galaxy");
+                galaxies.Add(galaxy);
+                Utils.print("Finished creating galaxy");
+            }
         }
 
         
