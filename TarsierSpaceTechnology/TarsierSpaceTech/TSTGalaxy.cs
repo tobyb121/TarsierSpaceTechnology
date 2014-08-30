@@ -51,16 +51,6 @@ namespace TarsierSpaceTech
         public void Update()
         {
             transform.LookAt(transform.parent.position);
-            if (Input.GetKeyDown(KeyCode.P))
-            {
-                transform.localScale *= 10;
-                print(transform.localScale);
-            }
-            if (Input.GetKeyDown(KeyCode.O))
-            {
-                transform.localScale /= 10;
-                print(transform.localScale);
-            }
         }
     }
 }

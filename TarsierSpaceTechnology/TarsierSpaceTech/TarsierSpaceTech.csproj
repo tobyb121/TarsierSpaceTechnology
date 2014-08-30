@@ -58,10 +58,10 @@
     <Compile Include="TarsierSpaceTechnology\TSTTelescopeContract.cs" />
     <Compile Include="TarsierSpaceTechnology\TSTTelescopeContractParam.cs" />
     <Compile Include="TarsierSpaceTechnology\TSTProgressTracker.cs" />
-    <None Include="TSTGalaxies.cs" />
+    <Compile Include="TSTGalaxies.cs" />
     <Compile Include="TarsierSpaceTechnology\TSTCameraModule.cs" />
     <Compile Include="TarsierSpaceTechnology\TSTChemCam.cs" />
-    <None Include="TSTGalaxy.cs" />
+    <Compile Include="TSTGalaxy.cs" />
     <Compile Include="TarsierSpaceTechnology\TSTScienceHardDrive.cs" />
     <Compile Include="TarsierSpaceTechnology\TSTSpaceTelescope.cs" />
     <Compile Include="TarsierSpaceTechnology\Utils.cs" />

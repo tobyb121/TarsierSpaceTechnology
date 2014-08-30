@@ -13,10 +13,11 @@ namespace TarsierSpaceTech
         public static TSTGalaxies Instance;
 
         private static GameObject baseTransform;
-        private static GameObject galaxy;
+        public static GameObject galaxy;
         private static GameObject cube;
         public void Start()
         {
+            Utils.print("Starting Galaxies");
             if (Instance != null)
                 Destroy(this);
             else
@@ -28,8 +29,8 @@ namespace TarsierSpaceTech
             
             galaxy=new GameObject("g1",typeof(MeshFilter),typeof(MeshRenderer),typeof(TSTGalaxy));
             galaxy.transform.parent = baseTransform.transform;
-            galaxy.transform.localPosition = Vector3.zero;
-            galaxy.transform.localScale = 1e7f*Vector3.one;
+            galaxy.transform.localPosition = new Vector3(0f,-130e6f,0f);
+            galaxy.transform.localScale = 1e4f*Vector3.one;
             cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
             cube.collider.enabled = false;
         }
@@ -38,18 +39,7 @@ namespace TarsierSpaceTech
 
         public void Update()
         {
-            cube.transform.position = galaxy.transform.position;
-            cube.transform.localScale = galaxy.transform.localScale;
-            if (Input.GetKeyDown(KeyCode.H))
-            {
-                galaxy.transform.position+=Vector3.up*1000000;
-                Utils.print(galaxy.transform.position);
-            }
-            if (Input.GetKeyDown(KeyCode.N))
-            {
-                galaxy.transform.position -= Vector3.up * 1000000;
-                Utils.print(galaxy.transform.position);
-            }
+            
         }
 
     }

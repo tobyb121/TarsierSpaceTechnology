@@ -71,6 +71,22 @@ namespace TarsierSpaceTech
         };
         private static List<Texture2D> targets = new List<Texture2D>();
 
+        public TargettingMode targettingMode = TargettingMode.Galaxy;
+        private TSTGalaxy galaxyTarget
+        {
+            get
+            {
+                try
+                {
+                    return TSTGalaxies.galaxy.GetComponent<TSTGalaxy>();
+                }
+                catch
+                {
+                    return null;
+                }
+            }
+        }
+
         public override void OnStart(StartState state)
         {
             base.OnStart(state);
@@ -193,20 +209,35 @@ namespace TarsierSpaceTech
             imageRect.center = center;
             GUI.DrawTexture(imageRect, texture2D);
             Rect rect=new Rect(0,0,40,40);
-            if (_showTarget && FlightGlobals.fetch.VesselTarget != null)
+            if (_showTarget)
             {
-                Vector3d r = FlightGlobals.fetch.vesselTargetTransform.position - _cameraTransform.position;
-                double dx = Vector3d.Dot(_cameraTransform.right.normalized, r.normalized);
-                double thetax = 90 - Math.Acos(dx) * Mathf.Rad2Deg;
-                double dy = Vector3d.Dot(_cameraTransform.up.normalized, r.normalized);
-                double thetay = 90 - Math.Acos(dy) * Mathf.Rad2Deg;
-                double dz = Vector3d.Dot(_cameraTransform.forward.normalized, r.normalized);
-                double xpos = texture2D.width * thetax / _camera.fov;
-                double ypos = texture2D.height * thetay / _camera.fov;
-                if (dz > 0 && Math.Abs(xpos) < texture2D.width / 2 && Math.Abs(ypos) < texture2D.height / 2)
+                Transform cameraTransform = null;
+                Transform targetTransform = null;
+                if (targettingMode == TargettingMode.Planet && FlightGlobals.fetch.VesselTarget != null)
                 {
-                    rect.center = imageRect.center + new Vector2((float)xpos, -(float)ypos);
-                    GUI.DrawTexture(rect, targets[(targetId++ / 5) % targets.Count], ScaleMode.StretchToFill, true);
+                    cameraTransform = _cameraTransform;
+                    targetTransform = FlightGlobals.fetch.vesselTargetTransform;
+                }
+                else if (targettingMode == TargettingMode.Galaxy && galaxyTarget != null)
+                {
+                    cameraTransform = _camera._skyBoxCam.camera.transform;
+                    targetTransform = galaxyTarget.transform;
+                }                    
+                if (cameraTransform != null)
+                {
+                    Vector3d r = targetTransform.position - cameraTransform.position;
+                    double dx = Vector3d.Dot(cameraTransform.right.normalized, r.normalized);
+                    double thetax = 90 - Math.Acos(dx) * Mathf.Rad2Deg;
+                    double dy = Vector3d.Dot(cameraTransform.up.normalized, r.normalized);
+                    double thetay = 90 - Math.Acos(dy) * Mathf.Rad2Deg;
+                    double dz = Vector3d.Dot(cameraTransform.forward.normalized, r.normalized);
+                    double xpos = texture2D.width * thetax / _camera.fov;
+                    double ypos = texture2D.height * thetay / _camera.fov;
+                    if (dz > 0 && Math.Abs(xpos) < texture2D.width / 2 && Math.Abs(ypos) < texture2D.height / 2)
+                    {
+                        rect.center = imageRect.center + new Vector2((float)xpos, -(float)ypos);
+                        GUI.DrawTexture(rect, targets[(targetId++ / 5) % targets.Count], ScaleMode.StretchToFill, true);
+                    }
                 }
             }
             GUILayout.BeginHorizontal();
@@ -534,6 +565,12 @@ namespace TarsierSpaceTech
                     new Callback<ScienceData>(_onPageTransmit),
                     new Callback<ScienceData>(_onPageSendToLab));
             ExperimentsResultDialog.DisplayResult(page);
+        }
+
+        public enum TargettingMode
+        {
+            Galaxy,
+            Planet
         }
     }
 }
