@@ -53,18 +53,18 @@
     <Compile Include="Properties\Resources.Designer.cs" />
     <None Include="TarsierSpaceLab.cs" />
     <None Include="TarsierSpaceLabExperiment.cs" />
-    <Compile Include="TarsierSpaceTechnology\TSTScienceParam.cs" />
-    <Compile Include="TarsierSpaceTechnology\TSTChemCamContract.cs" />
-    <Compile Include="TarsierSpaceTechnology\TSTTelescopeContract.cs" />
-    <Compile Include="TarsierSpaceTechnology\TSTTelescopeContractParam.cs" />
-    <Compile Include="TarsierSpaceTechnology\TSTProgressTracker.cs" />
+    <Compile Include="TSTScienceParam.cs" />
+    <Compile Include="TSTChemCamContract.cs" />
+    <Compile Include="TSTTelescopeContract.cs" />
+    <Compile Include="TSTTelescopeContractParam.cs" />
+    <Compile Include="TSTProgressTracker.cs" />
     <Compile Include="TSTGalaxies.cs" />
-    <Compile Include="TarsierSpaceTechnology\TSTCameraModule.cs" />
-    <Compile Include="TarsierSpaceTechnology\TSTChemCam.cs" />
+    <Compile Include="TSTCameraModule.cs" />
+    <Compile Include="TSTChemCam.cs" />
     <Compile Include="TSTGalaxy.cs" />
-    <Compile Include="TarsierSpaceTechnology\TSTScienceHardDrive.cs" />
-    <Compile Include="TarsierSpaceTechnology\TSTSpaceTelescope.cs" />
-    <Compile Include="TarsierSpaceTechnology\Utils.cs" />
+    <Compile Include="TSTScienceHardDrive.cs" />
+    <Compile Include="TSTSpaceTelescope.cs" />
+    <Compile Include="Utils.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ksp_dir.txt" />
