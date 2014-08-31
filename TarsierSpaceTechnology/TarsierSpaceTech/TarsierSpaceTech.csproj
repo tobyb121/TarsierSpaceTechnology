@@ -75,7 +75,16 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>set /p KSP_DIR=&lt;"$(ProjectDir)ksp_dir.txt"
-xcopy "$(TargetPath)" "%25KSP_DIR%25\GameData\$(ProjectName)"\ /Y</PostBuildEvent>
+xcopy "$(TargetPath)" "$(SolutionDir)..\GameData\" /Y
+where /q 7za
+if %25ERRORLEVEL%25 == 1 (
+   echo Cannot find 7-zip to package build
+) else (
+   echo Packaging build
+   if exist "$(SolutionDir)..\$(ProjectName).zip" del "$(SolutionDir)..\$(ProjectName).zip"
+   7za a -tzip "$(SolutionDir)..\$(ProjectName).zip" "$(SolutionDir)..\GameData" "$(SolutionDir)..\LICENSE"
+)
+xcopy /E /Y "$(SolutionDir)..\GameData" "%25KSP_DIR%25\GameData"</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
