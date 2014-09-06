@@ -53,7 +53,7 @@ namespace TarsierSpaceTech
             return "Use a space telescope to take a picture of "+target.theName;
         }
 
-        private CelestialBody target
+        private TSTSpaceTelescope.TargetableObject target
         {
             get
             {
@@ -73,14 +73,27 @@ namespace TarsierSpaceTech
 
         protected override bool Generate()
         {
+            Utils.print("Generating Telescope Contract");
+
             agent = Contracts.Agents.AgentList.Instance.GetAgent("Tarsier Space Technology");
             expiryType = DeadlineType.None;
             deadlineType = DeadlineType.None;
 
+            Utils.print("Creating Parameter");
             TSTTelescopeContractParam param = new TSTTelescopeContractParam();
             AddParameter(param);
-            target = FlightGlobals.Bodies.Find(b => b.name == TSTProgressTracker.GetNextTelescopeTarget());
+            string target_name = TSTProgressTracker.GetNextTelescopeTarget();
+            Utils.print("Target: "+target_name);
+            Utils.print("Checking Celestial Bodies");
+            target = FlightGlobals.Bodies.Find(b => b.name == target_name);
+            if (target == null)
+            {
+                Utils.print("Checking Galaxies");
+                target = TSTGalaxies.Galaxies.Find(g => g.name == target_name);
+            }
+            Utils.print("Using target: " + target.ToString());
             param.target = target;
+            Utils.print("Creating Science Param");
             TSTScienceParam param2 = new TSTScienceParam();
             param2.matchFields.Add("TarsierSpaceTech.SpaceTelescope");
             param2.matchFields.Add("LookingAt" + target.name);
@@ -88,15 +101,15 @@ namespace TarsierSpaceTech
             prestige=TSTProgressTracker.getTelescopePrestige(target.name);
             if (TSTProgressTracker.HasTelescopeCompleted(target))
             {
-                SetFunds(10, 15, target);
-                SetReputation(5, target);
-                SetReputation(5, target);
+                SetFunds(10, 15, target.type==typeof(TSTGalaxy)?null:(CelestialBody)target.BaseObject);
+                SetReputation(5, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
+                SetReputation(5, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
             }
             else
             {
-                SetScience(30, target);
-                SetFunds(75, 150, target);
-                SetReputation(20, target);
+                SetScience(30, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
+                SetFunds(75, 150, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
+                SetReputation(20, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
             }
             return true;
         }

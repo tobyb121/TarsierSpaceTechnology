@@ -36,6 +36,11 @@ namespace TarsierSpaceTech
             {
                 string t = node.GetValue("target");
                 target = FlightGlobals.Bodies.Find(b => b.name == t);
+                if (target == null)
+                {
+                    Utils.print("Checking Galaxies");
+                    target = TSTGalaxies.Galaxies.Find(g => g.name == t);
+                }
             }
         }
 
@@ -49,9 +54,9 @@ namespace TarsierSpaceTech
             return "TSTParam.Telescope."+target.name;
         }
 
-        public CelestialBody target;
+        public TSTSpaceTelescope.TargetableObject target;
 
-        private void OnTelescopeScience(CelestialBody lookingAt)
+        private void OnTelescopeScience(TSTSpaceTelescope.TargetableObject lookingAt)
         {
             if (target.name == lookingAt.name)
             {

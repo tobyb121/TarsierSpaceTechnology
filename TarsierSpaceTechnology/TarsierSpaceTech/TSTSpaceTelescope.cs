@@ -8,7 +8,7 @@ using UnityEngineInternal;
 
 namespace TarsierSpaceTech
 {
-    class TSTSpaceTelescope : PartModule, IScienceDataContainer
+    public class TSTSpaceTelescope : PartModule, IScienceDataContainer
     {
         private const int GUI_WIDTH_SMALL = 256;
         private const int GUI_WIDTH_LARGE = 512;
@@ -262,15 +262,17 @@ namespace TarsierSpaceTech
         private void TargettingWindow(int windowID)
         {
             GUILayout.BeginVertical();
-            int newTarget = TSTGalaxies.Instance.galaxies.FindIndex(g => GUILayout.Button(g.name));
+            int newTarget = TSTGalaxies.Galaxies.FindIndex(g => GUILayout.Button(g.theName));
             if (newTarget != -1 && newTarget != selectedTargetIndex)
             {
                 vessel.targetObject = null;
                 FlightGlobals.fetch.SetVesselTarget(null);
                 targettingMode = TargettingMode.Galaxy;
                 selectedTargetIndex = newTarget;
-                galaxyTarget = TSTGalaxies.Instance.galaxies[selectedTargetIndex];
+                galaxyTarget = TSTGalaxies.Galaxies[selectedTargetIndex];
                 Utils.print("Targetting: " + newTarget.ToString() + " " + galaxyTarget.name);
+                ScreenMessages.PostScreenMessage("Target: "+galaxyTarget.theName, 3f, ScreenMessageStyle.UPPER_CENTER);
+
             }
             if (GUILayout.Button("Hide")) showTargetsWindow = false;
             GUILayout.EndVertical();
@@ -371,6 +373,15 @@ namespace TarsierSpaceTech
                         TSTProgressTracker.OnTelescopePicture(body);
                     }
                 }
+                else if (obj.type == typeof(TSTGalaxy))
+                {
+                    TSTGalaxy galaxy = (TSTGalaxy)obj.BaseObject;
+                    doScience(galaxy);
+                    if (TSTProgressTracker.isActive)
+                    {
+                        TSTProgressTracker.OnTelescopePicture(galaxy);
+                    }
+                }
             }
             Utils.print("Gather Science complete");
             if (objs.Count == 0)
@@ -391,7 +402,7 @@ namespace TarsierSpaceTech
         {
             List<TargetableObject> result = new List<TargetableObject>();
             List<TargetableObject> bodies = FlightGlobals.Bodies.Select(b => (TargetableObject)b).ToList();
-            List<TargetableObject> galaxies = TSTGalaxies.Instance.galaxies.Select(g => (TargetableObject)g).ToList();
+            List<TargetableObject> galaxies = TSTGalaxies.Galaxies.Select(g => (TargetableObject)g).ToList();
             foreach (TargetableObject obj in galaxies.Concat(bodies))
             {
                 Vector3 r = (obj.position - _cameraTransform.position);
@@ -410,6 +421,25 @@ namespace TarsierSpaceTech
                 }
             }
             return result;
+        }
+
+        public void doScience(TSTGalaxy galaxy)
+        {
+            Utils.print("Doing Science for " + galaxy.theName);
+            ScienceExperiment experiment = ResearchAndDevelopment.GetExperiment("TarsierSpaceTech.SpaceTelescope");
+            Utils.print("Got experiment");
+            ScienceSubject subject = ResearchAndDevelopment.GetExperimentSubject(experiment, getExperimentSituation(), Sun.Instance.sun, "LookingAt" + galaxy.name);
+            subject.title = "Space Telescope picture of " + galaxy.theName;
+            Utils.print("Got subject");
+            if (experiment.IsAvailableWhile(getExperimentSituation(), vessel.mainBody))
+            {
+                ScienceData data = new ScienceData(experiment.baseValue * subject.dataScale, xmitDataScalar, labBoostScalar, subject.id, subject.title);
+                Utils.print("Got data");
+                data.title = "Tarsier Space Telescope: Oriting " + vessel.mainBody.theName + " looking at " + galaxy.theName;
+                _scienceData.Add(data);
+                Utils.print("Added Data");
+                ScreenMessages.PostScreenMessage("Collected Science for " + galaxy.theName, 3f, ScreenMessageStyle.UPPER_CENTER);
+            }
         }
 
         public void doScience(CelestialBody planet)
@@ -597,14 +627,17 @@ namespace TarsierSpaceTech
             Planet
         }
 
-        private class TargetableObject
+        public class TargetableObject
         {
             private TSTGalaxy galaxy;
-            private CelestialBody body;        
+            private CelestialBody body;
 
             public static implicit operator TargetableObject(TSTGalaxy galaxy)
             {
-                return new TargetableObject(galaxy);
+                if (galaxy != null)
+                    return new TargetableObject(galaxy);
+                else
+                    return null;
             }
 
             private TargetableObject(TSTGalaxy galaxy)
@@ -614,7 +647,10 @@ namespace TarsierSpaceTech
 
             public static implicit operator TargetableObject(CelestialBody body)
             {
-                return new TargetableObject(body);
+                if (body != null)
+                    return new TargetableObject(body);
+                else
+                    return null;
             }
 
             private TargetableObject(CelestialBody body)
@@ -654,11 +690,19 @@ namespace TarsierSpaceTech
                 }
             }
 
+            public string name
+            {
+                get
+                {
+                    return galaxy == null ? body.name : galaxy.name;
+                }
+            }
+
             public string theName
             {
                 get
                 {
-                    return galaxy == null ? body.theName : galaxy.name;
+                    return galaxy == null ? body.theName : galaxy.theName;
                 }
             }
         }

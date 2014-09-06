@@ -25,10 +25,6 @@ namespace TarsierSpaceTech
         {
             Utils.print("Starting Tarsier Progress Tracking");
             Instance = this;
-
-            foreach(Type t in Contracts.ContractSystem.ContractTypes){
-                Utils.print(t.Name);
-            }
         }
 
         int i = 0;
@@ -37,7 +33,7 @@ namespace TarsierSpaceTech
         {
         }
 
-        public delegate void TelescopeListener(CelestialBody body);
+        public delegate void TelescopeListener(TSTSpaceTelescope.TargetableObject body);
         public delegate void ChemCamListener(CelestialBody body,string biome);
 
         private List<TelescopeListener> TelescopeListeners = new List<TelescopeListener>();
@@ -54,7 +50,7 @@ namespace TarsierSpaceTech
             Instance.TelescopeListeners.Remove(listener);
         }
 
-        public static void OnTelescopePicture(CelestialBody body)
+        public static void OnTelescopePicture(TSTSpaceTelescope.TargetableObject body)
         {
             if (isActive)
             {
@@ -78,7 +74,7 @@ namespace TarsierSpaceTech
             }
         }
 
-        public static void setTelescopeContractComplete(CelestialBody body)
+        public static void setTelescopeContractComplete(TSTSpaceTelescope.TargetableObject body)
         {
             Instance.TelescopeData[body.name] = true;
         }
@@ -98,7 +94,7 @@ namespace TarsierSpaceTech
             return target;
         }
 
-        public static bool HasTelescopeCompleted(CelestialBody body)
+        public static bool HasTelescopeCompleted(TSTSpaceTelescope.TargetableObject body)
         {
             return Instance.TelescopeData[body.name];
         }
@@ -120,7 +116,15 @@ namespace TarsierSpaceTech
             "Tylo",
             "Vall",
             "Bop",
-            "Pol"
+            "Pol",
+            "Galaxy1",
+            "Galaxy2",
+            "Galaxy3",
+            "Galaxy4",
+            "Galaxy5",
+            "Galaxy6",
+            "Galaxy7",
+            "Galaxy8",
         };
 
         public static Contracts.Contract.ContractPrestige getTelescopePrestige(string bodyName)
@@ -150,19 +154,22 @@ namespace TarsierSpaceTech
 
         public override void OnLoad(ConfigNode node)
         {
+            Utils.print("Loading Tarsier Progress Tracker");
             ConfigNode telescopeNode = node.GetNode("TarsierSpaceTelescope");
             ConfigNode chemCamNode = node.GetNode("TarsierChemCam");
-            if (telescopeNode != null)
-            {
-                foreach (CelestialBody b in FlightGlobals.Bodies)
-                    TelescopeData[b.name] = (telescopeNode.GetValue(b.name) == "true");
-            }
-            else
-            {
-                foreach (CelestialBody b in FlightGlobals.Bodies)
-                    TelescopeData[b.name] = false;
-            }
 
+            Utils.print("Getting Telescope Celestial Body Status");
+            foreach (CelestialBody b in FlightGlobals.Bodies)
+                TelescopeData[b.name] = telescopeNode != null ? (telescopeNode.GetValue(b.name) == "true") : false;
+
+            Utils.print("Getting Telescope Galaxy Status");
+            foreach (TSTGalaxy g in TSTGalaxies.Galaxies)
+                if (telescopeNode.HasNode(g.name))
+                    TelescopeData[g.name] = telescopeNode != null ? (telescopeNode.GetValue(g.name) == "true") : false;
+                else
+                    TelescopeData[g.name] = false;
+
+            Utils.print("Getting ChemCam Celestial Body Status");
             if (chemCamNode != null)
             {
                 foreach (CelestialBody b in FlightGlobals.Bodies)
@@ -177,11 +184,12 @@ namespace TarsierSpaceTech
 
         public override void OnSave(ConfigNode node)
         {
+            Utils.print("Saving TST Progress data");
             ConfigNode telescopeNode = node.AddNode("TarsierSpaceTelescope");
             ConfigNode chemCamNode = node.AddNode("TarsierChemCam");
             foreach (string key in TelescopeData.Keys)
                 telescopeNode.AddValue(key, TelescopeData[key]?"true":"false");
-            foreach (string key in TelescopeData.Keys)
+            foreach (string key in ChemCamData.Keys)
                 chemCamNode.AddValue(key, ChemCamData[key]?"true":"false");
         }
     }

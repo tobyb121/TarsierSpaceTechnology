@@ -12,7 +12,9 @@ namespace TarsierSpaceTech
         private static Mesh mesh = null;
 
         private Material mat = new Material(Shader.Find("Unlit/Transparent"));
-        public new string name;
+        public string theName;
+
+        private ConfigNode config;
 
         private float _size = 1e3f;
         public float size
@@ -62,7 +64,32 @@ namespace TarsierSpaceTech
             transform.LookAt(transform.parent.position);
         }
 
+        public void Load(ConfigNode config)
+        {
+            this.config = config;
+            string name = config.GetValue("name");
+            string theName = config.GetValue("theName");
+            Vector3 pos = ConfigNode.ParseVector3(config.GetValue("location"));
+            string textureURL = config.GetValue("textureURL");
+            float size = float.Parse(config.GetValue("size"));
+            Utils.print("Creating Galaxy: " + name + " " + pos.ToString() + " " + textureURL);
+            Utils.print("Setting Name");
+            this.name = name;
+            this.theName = theName;
+            Utils.print("Setting Size");
+            this.size = 1e3f * size * ScaledSpace.ScaleFactor;
+            Utils.print("Setting Position");
+            this.scaledPosition = -130e6f * pos.normalized;
+            Utils.print("Setting Texture");
+            this.setTexture(GameDatabase.Instance.GetTexture(textureURL, false));
+            Utils.print("Finished creating galaxy");
+        }
 
+        public void attach(GameObject parent)
+        {
+            transform.parent = parent.transform;
+        }
+        
         public void setTexture(Texture texture)
         {
             mat.mainTexture = texture;
