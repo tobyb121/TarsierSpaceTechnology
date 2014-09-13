@@ -247,7 +247,7 @@ namespace TarsierSpaceTech
                 _camera.changeSize(w,w);
                 windowPos.height = 0;
             };
-            if (GUILayout.Button("Galaxies")) showTargetsWindow = !showTargetsWindow;
+            if (GUILayout.Button(showTargetsWindow?"Hide Galaxies":"Show Galaxies")) showTargetsWindow = !showTargetsWindow;
             if (GUILayout.Button("Hide")) hideGUI();
 			GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
@@ -262,7 +262,14 @@ namespace TarsierSpaceTech
         private void TargettingWindow(int windowID)
         {
             GUILayout.BeginVertical();
-            int newTarget = TSTGalaxies.Galaxies.FindIndex(g => GUILayout.Button(g.theName));
+            int newTarget = TSTGalaxies.Galaxies.
+                FindIndex(
+                    g => (
+                        TSTProgressTracker.HasTelescopeCompleted(g) |
+                        Contracts.ContractSystem.Instance.GetCurrentActiveContracts<TSTTelescopeContract>()
+                            .Any(t => t.target.name == g.name
+                    )
+                ) ? GUILayout.Button(g.theName) : false);
             if (newTarget != -1 && newTarget != selectedTargetIndex)
             {
                 vessel.targetObject = null;
@@ -272,9 +279,9 @@ namespace TarsierSpaceTech
                 galaxyTarget = TSTGalaxies.Galaxies[selectedTargetIndex];
                 Utils.print("Targetting: " + newTarget.ToString() + " " + galaxyTarget.name);
                 ScreenMessages.PostScreenMessage("Target: "+galaxyTarget.theName, 3f, ScreenMessageStyle.UPPER_CENTER);
-
             }
-            if (GUILayout.Button("Hide")) showTargetsWindow = false;
+            GUILayout.Space(10);
+            showTargetsWindow = !GUILayout.Button("Hide");
             GUILayout.EndVertical();
             GUI.DragWindow();
         }

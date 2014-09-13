@@ -96,7 +96,7 @@ namespace TarsierSpaceTech
 
         public static bool HasTelescopeCompleted(TSTSpaceTelescope.TargetableObject body)
         {
-            return Instance.TelescopeData[body.name];
+            return isActive ? Instance.TelescopeData[body.name] : true;
         }
 
         private static string[] TarsierPlanetOrder = new string[] {
@@ -164,10 +164,12 @@ namespace TarsierSpaceTech
 
             Utils.print("Getting Telescope Galaxy Status");
             foreach (TSTGalaxy g in TSTGalaxies.Galaxies)
-                if (telescopeNode.HasNode(g.name))
+            {
+                if (telescopeNode.HasValue(g.name))
                     TelescopeData[g.name] = telescopeNode != null ? (telescopeNode.GetValue(g.name) == "true") : false;
                 else
                     TelescopeData[g.name] = false;
+            }
 
             Utils.print("Getting ChemCam Celestial Body Status");
             if (chemCamNode != null)

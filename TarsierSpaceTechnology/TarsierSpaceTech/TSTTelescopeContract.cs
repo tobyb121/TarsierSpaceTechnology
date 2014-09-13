@@ -53,7 +53,7 @@ namespace TarsierSpaceTech
             return "Use a space telescope to take a picture of "+target.theName;
         }
 
-        private TSTSpaceTelescope.TargetableObject target
+        public TSTSpaceTelescope.TargetableObject target
         {
             get
             {
