@@ -562,10 +562,9 @@ namespace TarsierSpaceTech
 
         public override void OnSave(ConfigNode node)
         {
-            ConfigNode science=node.AddNode("SCIENCE");
             foreach (ScienceData data in _scienceData)
             {
-                data.Save(science.AddNode("DATA"));
+                data.Save(node.AddNode("ScienceData"));
             }
         }
 
@@ -578,6 +577,10 @@ namespace TarsierSpaceTech
                 {
                     _scienceData.Add(new ScienceData(n));
                 }
+            }
+            foreach (ConfigNode n in node.GetNodes("ScienceData"))
+            {
+                _scienceData.Add(new ScienceData(n));
             }
         }
 
