@@ -165,7 +165,8 @@ namespace TarsierSpaceTech
             Utils.print("Getting Telescope Galaxy Status");
             foreach (TSTGalaxy g in TSTGalaxies.Galaxies)
             {
-                if (telescopeNode.HasValue(g.name))
+                //Added null check as it was throwing errors in my career games and maybe causing issues with other scenario modules
+                if (telescopeNode!=null &&  telescopeNode.HasValue(g.name)) 
                     TelescopeData[g.name] = telescopeNode != null ? (telescopeNode.GetValue(g.name) == "true") : false;
                 else
                     TelescopeData[g.name] = false;
