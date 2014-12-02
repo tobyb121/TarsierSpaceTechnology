@@ -262,14 +262,17 @@ namespace TarsierSpaceTech
         private void TargettingWindow(int windowID)
         {
             GUILayout.BeginVertical();
+
             int newTarget = TSTGalaxies.Galaxies.
                 FindIndex(
                     g => (
-                        TSTProgressTracker.HasTelescopeCompleted(g) |
-                        Contracts.ContractSystem.Instance.GetCurrentActiveContracts<TSTTelescopeContract>()
-                            .Any(t => t.target.name == g.name
-                    )
+                        TSTProgressTracker.HasTelescopeCompleted(g) ||
+                        (Contracts.ContractSystem.Instance &&
+                            Contracts.ContractSystem.Instance.GetCurrentActiveContracts<TSTTelescopeContract>()
+                                .Any(t => t.target.name == g.name)
+                        )
                 ) ? GUILayout.Button(g.theName) : false);
+
             if (newTarget != -1 && newTarget != selectedTargetIndex)
             {
                 vessel.targetObject = null;
@@ -280,6 +283,7 @@ namespace TarsierSpaceTech
                 Utils.print("Targetting: " + newTarget.ToString() + " " + galaxyTarget.name);
                 ScreenMessages.PostScreenMessage("Target: "+galaxyTarget.theName, 3f, ScreenMessageStyle.UPPER_CENTER);
             }
+
             GUILayout.Space(10);
             showTargetsWindow = !GUILayout.Button("Hide");
             GUILayout.EndVertical();
