@@ -276,7 +276,7 @@ namespace TarsierSpaceTech
                             Contracts.ContractSystem.Instance.GetCurrentActiveContracts<TSTTelescopeContract>()
                                 .Any(t => t.target.name == g.name)
                         )
-                ) ? GUILayout.Button(g.theName + " (contract)") : (filterContractTargets ? false : GUILayout.Button(g.theName)));
+                ) ? GUILayout.Button(g.theName) : (filterContractTargets ? false : GUILayout.Button(g.theName)));
 
             Utils.print(String.Format(" - TargettingWindow - newTarget = {0}", newTarget));
 
