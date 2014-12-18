@@ -30,6 +30,7 @@ namespace TarsierSpaceTech
         private WindowSate windowState = WindowSate.Small;
         private Rect targetWindowPos = new Rect(512, 128, 0, 0);
         private bool showTargetsWindow = false;
+        private bool filterContractTargets = false;
         int selectedTargetIndex = -1;
 
         [KSPField(guiActive = false, guiName = "maxZoom", isPersistant = true)]
@@ -263,6 +264,10 @@ namespace TarsierSpaceTech
         {
             GUILayout.BeginVertical();
 
+            filterContractTargets = GUILayout.Toggle(filterContractTargets, "Show only contract targets");
+
+            Utils.print(String.Format(" - TargettingWindow - TSTGalaxies.Galaxies.Count = {0}", TSTGalaxies.Galaxies.Count));
+
             int newTarget = TSTGalaxies.Galaxies.
                 FindIndex(
                     g => (
@@ -271,7 +276,9 @@ namespace TarsierSpaceTech
                             Contracts.ContractSystem.Instance.GetCurrentActiveContracts<TSTTelescopeContract>()
                                 .Any(t => t.target.name == g.name)
                         )
-                ) ? GUILayout.Button(g.theName) : false);
+                ) ? GUILayout.Button(g.theName) : (filterContractTargets ? false : GUILayout.Button(g.theName)));
+
+            Utils.print(String.Format(" - TargettingWindow - newTarget = {0}", newTarget));
 
             if (newTarget != -1 && newTarget != selectedTargetIndex)
             {
