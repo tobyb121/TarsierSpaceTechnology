@@ -27,7 +27,7 @@ namespace TarsierSpaceTech
             Instance = this;
         }
 
-        int i = 0;
+        //int i = 0;
 
         public void Update()
         {
@@ -163,12 +163,17 @@ namespace TarsierSpaceTech
                 TelescopeData[b.name] = telescopeNode != null ? (telescopeNode.GetValue(b.name) == "true") : false;
 
             Utils.print("Getting Telescope Galaxy Status");
-            foreach (TSTGalaxy g in TSTGalaxies.Galaxies)
-            {
-                if (telescopeNode.HasValue(g.name))
-                    TelescopeData[g.name] = telescopeNode != null ? (telescopeNode.GetValue(g.name) == "true") : false;
-                else
-                    TelescopeData[g.name] = false;
+            try {
+                foreach (TSTGalaxy g in TSTGalaxies.Galaxies)
+                {
+                    //Added null check as it was throwing errors in my career games and maybe causing issues with other scenario modules
+                    if (telescopeNode != null && telescopeNode.HasValue(g.name))
+                        TelescopeData[g.name] = telescopeNode != null ? (telescopeNode.GetValue(g.name) == "true") : false;
+                    else
+                        TelescopeData[g.name] = false;
+                }
+            } catch (Exception ex) {
+                Utils.print("Getting Telescope Galaxy Failed unexpectedly. Ex: " + ex.Message);
             }
 
             Utils.print("Getting ChemCam Celestial Body Status");

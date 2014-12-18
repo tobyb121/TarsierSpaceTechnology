@@ -30,6 +30,7 @@ namespace TarsierSpaceTech
         private WindowSate windowState = WindowSate.Small;
         private Rect targetWindowPos = new Rect(512, 128, 0, 0);
         private bool showTargetsWindow = false;
+        private bool filterContractTargets = false;
         int selectedTargetIndex = -1;
 
         [KSPField(guiActive = false, guiName = "maxZoom", isPersistant = true)]
@@ -262,14 +263,23 @@ namespace TarsierSpaceTech
         private void TargettingWindow(int windowID)
         {
             GUILayout.BeginVertical();
+
+            filterContractTargets = GUILayout.Toggle(filterContractTargets, "Show only contract targets");
+
+            Utils.print(String.Format(" - TargettingWindow - TSTGalaxies.Galaxies.Count = {0}", TSTGalaxies.Galaxies.Count));
+
             int newTarget = TSTGalaxies.Galaxies.
                 FindIndex(
                     g => (
-                        TSTProgressTracker.HasTelescopeCompleted(g) |
-                        Contracts.ContractSystem.Instance.GetCurrentActiveContracts<TSTTelescopeContract>()
-                            .Any(t => t.target.name == g.name
-                    )
-                ) ? GUILayout.Button(g.theName) : false);
+                        TSTProgressTracker.HasTelescopeCompleted(g) ||
+                        (Contracts.ContractSystem.Instance &&
+                            Contracts.ContractSystem.Instance.GetCurrentActiveContracts<TSTTelescopeContract>()
+                                .Any(t => t.target.name == g.name)
+                        )
+                ) ? GUILayout.Button(g.theName) : (filterContractTargets ? false : GUILayout.Button(g.theName)));
+
+            Utils.print(String.Format(" - TargettingWindow - newTarget = {0}", newTarget));
+
             if (newTarget != -1 && newTarget != selectedTargetIndex)
             {
                 vessel.targetObject = null;
@@ -280,6 +290,7 @@ namespace TarsierSpaceTech
                 Utils.print("Targetting: " + newTarget.ToString() + " " + galaxyTarget.name);
                 ScreenMessages.PostScreenMessage("Target: "+galaxyTarget.theName, 3f, ScreenMessageStyle.UPPER_CENTER);
             }
+
             GUILayout.Space(10);
             showTargetsWindow = !GUILayout.Button("Hide");
             GUILayout.EndVertical();
