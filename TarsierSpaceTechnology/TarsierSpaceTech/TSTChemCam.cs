@@ -43,7 +43,9 @@ namespace TarsierSpaceTech
 
         public float labBoostScalar = 0f;
 
-        private FlightInputCallback onFlyByWire;
+        private VesselAutopilotUI ui;
+        private Vessel _vessel;
+
 
         public override void OnStart(StartState state)
         {
@@ -83,9 +85,10 @@ namespace TarsierSpaceTech
 
             PlanetNames = (from CelestialBody b in FlightGlobals.Bodies select b.name).ToList();
             
-            onFlyByWire = new FlightInputCallback(handleInput);
-            Utils.print("Adding Input Callback");
-            vessel.OnFlyByWire += onFlyByWire;
+            Utils.print("Adding Input Callback");            
+            ui = VesselAutopilotUI.FindObjectOfType<VesselAutopilotUI>();
+            _vessel = FlightGlobals.ActiveVessel;
+            vessel.OnAutopilotUpdate += new FlightInputCallback(handleInput);
             Utils.print("Added Input Callback");
 
             GameEvents.onVesselChange.Add(new EventData<Vessel>.OnEvent(refreshFlightInputHandler));
@@ -128,15 +131,19 @@ namespace TarsierSpaceTech
 
         private void refreshFlightInputHandler(Vessel target)
         {
-            if (vessel != FlightGlobals.ActiveVessel && vessel.OnFlyByWire.GetInvocationList().Contains(onFlyByWire))
-                vessel.OnFlyByWire -= onFlyByWire;
             Utils.print("OnVesselSwitch");
-            if (!vessel.OnFlyByWire.GetInvocationList().Contains(onFlyByWire))
-            {
-                Utils.print("Adding Input Callback");
-                vessel.OnFlyByWire += onFlyByWire;
-                Utils.print("Added Input Callback");
-            }
+            //if (vessel != FlightGlobals.ActiveVessel && vessel.OnFlyByWire.GetInvocationList().Contains(onFlyByWire))
+            //		vessel.OnFlyByWire -= onFlyByWire;
+            _vessel.OnAutopilotUpdate -= new FlightInputCallback(handleInput);
+            _vessel = target;
+
+            //if (!vessel.OnFlyByWire.GetInvocationList().Contains(onFlyByWire))
+            //{
+            Utils.print("Adding Input Callback");
+            //vessel.OnFlyByWire += onFlyByWire;
+            _vessel.OnAutopilotUpdate += new FlightInputCallback(handleInput);
+            Utils.print("Added Input Callback");
+            //}
         }
   
         private void handleInput(FlightCtrlState ctrl)

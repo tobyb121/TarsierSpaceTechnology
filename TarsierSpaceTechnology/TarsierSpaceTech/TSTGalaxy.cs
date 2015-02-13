@@ -6,8 +6,12 @@ using UnityEngine;
 
 namespace TarsierSpaceTech
 {
-    public class TSTGalaxy : MonoBehaviour
+    public class TSTGalaxy : MonoBehaviour, ITargetable
     {
+
+        private Orbit _galaxy_orbit = null;
+        private OrbitDriver _galaxy_orbitdriver = null;
+        private VesselTargetModes _galaxy_targetmodes = VesselTargetModes.Direction;
 
         private static Mesh mesh = null;
 
@@ -117,5 +121,50 @@ namespace TarsierSpaceTech
                 transform.position = ScaledSpace.LocalToScaledSpace(value);
             }
         }
+        // ITargetable
+        public Vector3 GetFwdVector()
+        {
+            return Vector3.zero;
+        }
+        
+        public string GetName()
+        {
+            return this.name;
+        }
+
+        public Vector3 GetObtVelocity()
+        {
+            return Vector3.zero;
+        }
+        public Orbit GetOrbit()
+        {
+            return _galaxy_orbit;
+        }
+        
+        public OrbitDriver GetOrbitDriver()
+        {
+            return _galaxy_orbitdriver;
+        }
+        
+        public Vector3 GetSrfVelocity()
+        {
+            return Vector3.zero;
+        }
+        
+        public VesselTargetModes GetTargetingMode()
+        {
+            return _galaxy_targetmodes;
+        }
+        
+        public Transform GetTransform()
+        {
+            return this.transform;
+        }
+        
+        public Vessel GetVessel()
+        {
+            return null;
+        }
+
     }
 }
