@@ -119,12 +119,11 @@ namespace TarsierSpaceTech
 			Utils.print("On end start");
 
             
-			//onFlyByWire = new FlightInputCallback(onFlightInput);
+			
 			Utils.print("Adding Input Callback");
             ui = VesselAutopilotUI.FindObjectOfType<VesselAutopilotUI>();
             _vessel = FlightGlobals.ActiveVessel;
-            vessel.OnAutopilotUpdate += new FlightInputCallback(onFlightInput);
-			//vessel.OnFlyByWire += onFlyByWire;
+            vessel.OnAutopilotUpdate += new FlightInputCallback(onFlightInput);			
 			Utils.print("Added Input Callback");
 			GameEvents.onVesselChange.Add(new EventData<Vessel>.OnEvent(refreshFlightInputHandler));
             
@@ -134,8 +133,8 @@ namespace TarsierSpaceTech
         public override void OnInactive()
         {
             Utils.print("Removing Input Callback");
-            _vessel.OnAutopilotUpdate -= new FlightInputCallback(onFlightInput);
-            GameEvents.onVesselChange.Remove(new EventData<Vessel>.OnEvent(refreshFlightInputHandler));
+            _vessel.OnAutopilotUpdate -= (onFlightInput);
+            GameEvents.onVesselChange.Remove(refreshFlightInputHandler);
             base.OnInactive();
             
         }
@@ -152,9 +151,9 @@ namespace TarsierSpaceTech
 		private void refreshFlightInputHandler(Vessel target)
 		{
             Utils.print("OnVesselSwitch");           
-            _vessel.OnAutopilotUpdate -= new FlightInputCallback(onFlightInput);
+            _vessel.OnAutopilotUpdate -= (onFlightInput);
             _vessel = target;
-            
+            //to-do implement if _new vessel contains spacetelescope add callback 
 			Utils.print("Adding Input Callback");
 			_vessel.OnAutopilotUpdate += new FlightInputCallback(onFlightInput);
 			Utils.print("Added Input Callback");			

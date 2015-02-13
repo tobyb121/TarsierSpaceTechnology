@@ -91,7 +91,7 @@ namespace TarsierSpaceTech
             vessel.OnAutopilotUpdate += new FlightInputCallback(handleInput);
             Utils.print("Added Input Callback");
 
-            GameEvents.onVesselChange.Add(new EventData<Vessel>.OnEvent(refreshFlightInputHandler));
+            GameEvents.onVesselChange.Add(new EventData<Vessel>.OnEvent(refreshFlightInptHandler));
 
             Events["eventOpenCamera"].active = true;
             Actions["actionOpenCamera"].active = true;
@@ -116,8 +116,8 @@ namespace TarsierSpaceTech
         public override void OnInactive()
         {
             Utils.print("Removing Input Callback");
-            _vessel.OnAutopilotUpdate -= new FlightInputCallback(handleInput);
-            GameEvents.onVesselChange.Remove(new EventData<Vessel>.OnEvent(refreshFlightInputHandler));
+            _vessel.OnAutopilotUpdate -= (handleInput);
+            GameEvents.onVesselChange.Remove(refreshFlightInptHandler);
             base.OnInactive();
         }
 
@@ -137,18 +137,13 @@ namespace TarsierSpaceTech
             }
         }
 
-        private void refreshFlightInputHandler(Vessel target)
+        private void refreshFlightInptHandler(Vessel target)
         {
-            Utils.print("OnVesselSwitch");
-            //if (vessel != FlightGlobals.ActiveVessel && vessel.OnFlyByWire.GetInvocationList().Contains(onFlyByWire))
-            //		vessel.OnFlyByWire -= onFlyByWire;
-            _vessel.OnAutopilotUpdate -= new FlightInputCallback(handleInput);
-            _vessel = target;
-
-            //if (!vessel.OnFlyByWire.GetInvocationList().Contains(onFlyByWire))
-            //{
-            Utils.print("Adding Input Callback");
-            //vessel.OnFlyByWire += onFlyByWire;
+            Utils.print("OnVesselSwitch");            
+            _vessel.OnAutopilotUpdate -= (handleInput);
+            _vessel = target;  
+            //to-do implement if _new vessel contains chemcam add callback           
+            Utils.print("Adding Input Callback");            
             _vessel.OnAutopilotUpdate += new FlightInputCallback(handleInput);
             Utils.print("Added Input Callback");
             //}
