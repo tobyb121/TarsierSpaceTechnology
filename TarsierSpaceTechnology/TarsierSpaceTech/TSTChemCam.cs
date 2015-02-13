@@ -113,6 +113,14 @@ namespace TarsierSpaceTech
             }
         }
 
+        public override void OnInactive()
+        {
+            Utils.print("Removing Input Callback");
+            _vessel.OnAutopilotUpdate -= new FlightInputCallback(handleInput);
+            GameEvents.onVesselChange.Remove(new EventData<Vessel>.OnEvent(refreshFlightInputHandler));
+            base.OnInactive();
+        }
+
         private void drawWindow(int windowID)
         {
             GUILayout.Box(_camera.Texture2D);

@@ -131,6 +131,15 @@ namespace TarsierSpaceTech
             
 		}
 
+        public override void OnInactive()
+        {
+            Utils.print("Removing Input Callback");
+            _vessel.OnAutopilotUpdate -= new FlightInputCallback(onFlightInput);
+            GameEvents.onVesselChange.Remove(new EventData<Vessel>.OnEvent(refreshFlightInputHandler));
+            base.OnInactive();
+            
+        }
+
 		[KSPEvent(active = false, guiActive = true, guiName = "Disable Servos")]
 		public void toggleServos()
 		{
