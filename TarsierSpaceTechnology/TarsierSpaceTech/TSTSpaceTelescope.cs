@@ -57,8 +57,6 @@ namespace TarsierSpaceTech
 
 		private int targetId = 0;
 
-		//private FlightInputCallback onFlyByWire;
-        private VesselAutopilotUI ui;
         private Vessel _vessel;
 
 
@@ -120,22 +118,27 @@ namespace TarsierSpaceTech
 
             
 			
-			Utils.print("Adding Input Callback");
-            ui = VesselAutopilotUI.FindObjectOfType<VesselAutopilotUI>();
-            _vessel = FlightGlobals.ActiveVessel;
-            vessel.OnAutopilotUpdate += new FlightInputCallback(onFlightInput);			
-			Utils.print("Added Input Callback");
+			Utils.print("Adding Input Callback");            
+            _vessel = vessel;
+            _vessel.OnAutopilotUpdate += new FlightInputCallback(onFlightInput);				
 			GameEvents.onVesselChange.Add(new EventData<Vessel>.OnEvent(refreshFlightInputHandler));
-            
+            GameEvents.onVesselDestroy.Add(new EventData<Vessel>.OnEvent(removeFlightInputHandler));
+            GameEvents.OnVesselRecoveryRequested.Add(new EventData<Vessel>.OnEvent(removeFlightInputHandler));
+            Utils.print("Added Input Callback");           
             
 		}
 
-        public override void OnInactive()
+        public void removeFlightInputHandler(Vessel target)
         {
-            Utils.print("Removing Input Callback");
-            _vessel.OnAutopilotUpdate -= (onFlightInput);
-            GameEvents.onVesselChange.Remove(refreshFlightInputHandler);
-            base.OnInactive();
+            Utils.print("Removing Input Callback vessel: " + target.name);
+            if (this.vessel == target)
+            {
+                _vessel.OnAutopilotUpdate -= (onFlightInput);
+                GameEvents.onVesselChange.Remove(this.refreshFlightInputHandler);
+                GameEvents.onVesselDestroy.Remove(this.removeFlightInputHandler);
+                GameEvents.OnVesselRecoveryRequested.Remove(this.removeFlightInputHandler);                
+                Utils.print("Input Callbacks removed this vessel");
+            }            
             
         }
 
@@ -150,13 +153,25 @@ namespace TarsierSpaceTech
 
 		private void refreshFlightInputHandler(Vessel target)
 		{
-            Utils.print("OnVesselSwitch");           
-            _vessel.OnAutopilotUpdate -= (onFlightInput);
-            _vessel = target;
-            //to-do implement if _new vessel contains spacetelescope add callback 
-			Utils.print("Adding Input Callback");
-			_vessel.OnAutopilotUpdate += new FlightInputCallback(onFlightInput);
-			Utils.print("Added Input Callback");			
+            Utils.print("OnVesselSwitch curr: " + vessel.name + " target: " + target.name);
+            if (this.vessel != target)
+            {
+                Utils.print("This vessel != target removing Callback");
+                _vessel.OnAutopilotUpdate -= (onFlightInput);
+            }
+            if (this.vessel == target)
+            {
+                _vessel = target;
+                List<TSTSpaceTelescope> vpm = _vessel.FindPartModulesImplementing<TSTSpaceTelescope>();
+                if (vpm.Count > 0)
+                {
+                    Utils.print("Adding Input Callback");
+                    _vessel.OnAutopilotUpdate += new FlightInputCallback(onFlightInput);
+                    Utils.print("Added Input Callback");
+                }
+            }
+                                   
+                                   	
 		}
 
 		private void onFlightInput(FlightCtrlState ctrl)

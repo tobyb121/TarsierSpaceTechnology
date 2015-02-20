@@ -42,8 +42,7 @@ namespace TarsierSpaceTech
         public string ExperimentID = "TarsierSpaceTech.ChemCam";
 
         public float labBoostScalar = 0f;
-
-        private VesselAutopilotUI ui;
+                
         private Vessel _vessel;
 
 
@@ -86,13 +85,13 @@ namespace TarsierSpaceTech
             PlanetNames = (from CelestialBody b in FlightGlobals.Bodies select b.name).ToList();
             
             Utils.print("Adding Input Callback");            
-            ui = VesselAutopilotUI.FindObjectOfType<VesselAutopilotUI>();
-            _vessel = FlightGlobals.ActiveVessel;
+            _vessel = vessel;
             vessel.OnAutopilotUpdate += new FlightInputCallback(handleInput);
+            GameEvents.onVesselChange.Add(new EventData<Vessel>.OnEvent(refreshFlghtInptHandler));
+            GameEvents.onVesselDestroy.Add(new EventData<Vessel>.OnEvent(removeFlghtInptHandler));
+            GameEvents.OnVesselRecoveryRequested.Add(new EventData<Vessel>.OnEvent(removeFlghtInptHandler));
             Utils.print("Added Input Callback");
-
-            GameEvents.onVesselChange.Add(new EventData<Vessel>.OnEvent(refreshFlightInptHandler));
-
+            
             Events["eventOpenCamera"].active = true;
             Actions["actionOpenCamera"].active = true;
             Events["eventCloseCamera"].active = false;
@@ -113,12 +112,17 @@ namespace TarsierSpaceTech
             }
         }
 
-        public override void OnInactive()
+        public void removeFlghtInptHandler(Vessel target)
         {
-            Utils.print("Removing Input Callback");
-            _vessel.OnAutopilotUpdate -= (handleInput);
-            GameEvents.onVesselChange.Remove(refreshFlightInptHandler);
-            base.OnInactive();
+            Utils.print("Removing Input Callback vessel: " + target.name);
+            if (this.vessel == target)
+            {
+                _vessel.OnAutopilotUpdate -= (handleInput);
+                GameEvents.onVesselChange.Remove(this.refreshFlghtInptHandler);
+                GameEvents.onVesselDestroy.Remove(this.removeFlghtInptHandler);
+                GameEvents.OnVesselRecoveryRequested.Remove(this.removeFlghtInptHandler);
+                Utils.print("Input Callbacks removed this vessel");
+            }            
         }
 
         private void drawWindow(int windowID)
@@ -137,16 +141,27 @@ namespace TarsierSpaceTech
             }
         }
 
-        private void refreshFlightInptHandler(Vessel target)
+        private void refreshFlghtInptHandler(Vessel target)
         {
-            Utils.print("OnVesselSwitch");            
-            _vessel.OnAutopilotUpdate -= (handleInput);
-            _vessel = target;  
-            //to-do implement if _new vessel contains chemcam add callback           
-            Utils.print("Adding Input Callback");            
-            _vessel.OnAutopilotUpdate += new FlightInputCallback(handleInput);
-            Utils.print("Added Input Callback");
-            //}
+            Utils.print("OnVesselSwitch curr: " + vessel.name + " target: " + target.name);
+            if (this.vessel != target)
+            {
+                Utils.print("This vessel != target removing Callback");
+                _vessel.OnAutopilotUpdate -= (handleInput);
+            }
+                
+            if (this.vessel == target)
+            {
+                _vessel = target;
+                List<TSTChemCam> vpm = _vessel.FindPartModulesImplementing<TSTChemCam>();
+                if (vpm.Count > 0)
+                {
+                    Utils.print("Adding Input Callback");
+                    _vessel.OnAutopilotUpdate += new FlightInputCallback(handleInput);
+                    Utils.print("Added Input Callback");
+                }            
+            }
+            
         }
   
         private void handleInput(FlightCtrlState ctrl)
