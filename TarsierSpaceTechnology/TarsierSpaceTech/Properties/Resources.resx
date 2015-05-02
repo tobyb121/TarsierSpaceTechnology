@@ -118,40 +118,40 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
-  <data name="target-01" type="System.Resources.ResXFileRef, System.Windows.Forms">
+  <data name="target_01" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\TARGETS\target-01.bin;System.Byte[], mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="target-02" type="System.Resources.ResXFileRef, System.Windows.Forms">
+  <data name="target_02" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\TARGETS\target-02.bin;System.Byte[], mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="target-03" type="System.Resources.ResXFileRef, System.Windows.Forms">
+  <data name="target_03" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\TARGETS\target-03.bin;System.Byte[], mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="target-04" type="System.Resources.ResXFileRef, System.Windows.Forms">
+  <data name="target_04" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\TARGETS\target-04.bin;System.Byte[], mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="target-05" type="System.Resources.ResXFileRef, System.Windows.Forms">
+  <data name="target_05" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\TARGETS\target-05.bin;System.Byte[], mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="target-06" type="System.Resources.ResXFileRef, System.Windows.Forms">
+  <data name="target_06" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\TARGETS\target-06.bin;System.Byte[], mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="target-07" type="System.Resources.ResXFileRef, System.Windows.Forms">
+  <data name="target_07" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\TARGETS\target-07.bin;System.Byte[], mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="target-08" type="System.Resources.ResXFileRef, System.Windows.Forms">
+  <data name="target_08" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\TARGETS\target-08.bin;System.Byte[], mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="target-09" type="System.Resources.ResXFileRef, System.Windows.Forms">
+  <data name="target_09" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\TARGETS\target-09.bin;System.Byte[], mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="target-10" type="System.Resources.ResXFileRef, System.Windows.Forms">
+  <data name="target_10" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\TARGETS\target-10.bin;System.Byte[], mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="target-11" type="System.Resources.ResXFileRef, System.Windows.Forms">
+  <data name="target_11" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\TARGETS\target-11.bin;System.Byte[], mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="target-12" type="System.Resources.ResXFileRef, System.Windows.Forms">
+  <data name="target_12" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\TARGETS\target-12.bin;System.Byte[], mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="viewfinder" type="System.Resources.ResXFileRef, System.Windows.Forms">

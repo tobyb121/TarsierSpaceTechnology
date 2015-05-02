@@ -36,8 +36,11 @@ namespace TarsierSpaceTech
         public static Camera findCameraByName(string camera)
         {
             foreach (Camera cam in Camera.allCameras)
+            {               
                 if (cam.name == camera)
                     return cam;
+            }
+                
             return null;
         }
 

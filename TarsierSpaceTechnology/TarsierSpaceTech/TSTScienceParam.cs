@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-
 using UnityEngine;
 using Contracts;
 
@@ -22,12 +21,18 @@ namespace TarsierSpaceTech
 
         protected override void OnRegister()
         {
-            GameEvents.OnScienceRecieved.Add(new EventData<float,ScienceSubject>.OnEvent(OnScienceData));
+            Utils.print("Adding Callback for science data received on contract");
+            //GameEvents.OnScienceRecieved.Add(new EventData<float,ScienceSubject,ProtoVessel>.OnEvent(OnScienceData));
+            GameEvents.OnScienceRecieved.Add(OnScienceData);            
+            
         }
 
         protected override void OnUnregister()
         {
-            GameEvents.OnScienceRecieved.Remove(new EventData<float, ScienceSubject>.OnEvent(OnScienceData));
+            Utils.print("Removing Callback for science data received on contract");
+            //GameEvents.OnScienceRecieved.Remove(new EventData<float, ScienceSubject,ProtoVessel>.OnEvent(OnScienceData));
+            GameEvents.OnScienceRecieved.Remove(OnScienceData);
+            
         }
 
         protected override string GetHashString()
@@ -53,17 +58,19 @@ namespace TarsierSpaceTech
 
         public List<string> matchFields = new List<string>();
 
-        private void OnScienceData(float amount, ScienceSubject subject)
+        private void OnScienceData(float amount, ScienceSubject subject, ProtoVessel vessel)        
         {
-            Utils.print(subject.id);
+            Utils.print("Received Science Data from " + vessel.vesselName + " subject=" + subject.id);
             bool match=true;
             foreach (string f in matchFields)
             {
+                Utils.print("matchFields=" + f);
                 match &= subject.HasPartialIDstring(f);
             }
+            Utils.print("Match result?=" + match.ToString());
             if (match)
             {
-                SetComplete();
+                base.SetComplete();
             }
         }
     }

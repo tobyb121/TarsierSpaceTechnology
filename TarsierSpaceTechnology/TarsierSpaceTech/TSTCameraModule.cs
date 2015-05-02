@@ -56,6 +56,8 @@ namespace TarsierSpaceTech
                 _nearCam.enabled = value;
                 skyboxRenderers = (from Renderer r in (FindObjectsOfType(typeof(Renderer)) as IEnumerable<Renderer>) where (r.name == "XP" || r.name == "XN" || r.name == "YP" || r.name == "YN" || r.name == "ZP" || r.name == "ZN") select r).ToArray<Renderer>();
                 scaledSpaceFaders = FindObjectsOfType(typeof(ScaledSpaceFader)) as ScaledSpaceFader[];
+                
+                
             }
         }
 
@@ -68,15 +70,15 @@ namespace TarsierSpaceTech
 
         public void Start()
         {
-            Utils.print("Setting up cameras");
-            _skyBoxCam = new CameraHelper(gameObject, Utils.findCameraByName("Camera ScaledSpace"), _renderTexture, 3, false);
-            _farCam = new CameraHelper(gameObject, Utils.findCameraByName("Camera 01"), _renderTexture, 5, true);
-            _nearCam = new CameraHelper(gameObject, Utils.findCameraByName("Camera 00"), _renderTexture, 6, true);
+            Utils.print("Setting up cameras");            
+            _skyBoxCam = new CameraHelper(gameObject, Utils.findCameraByName("Camera ScaledSpace"), _renderTexture, 15, false);
+            _farCam = new CameraHelper(gameObject, Utils.findCameraByName("Camera 01"), _renderTexture, 16, true);
+            _nearCam = new CameraHelper(gameObject, Utils.findCameraByName("Camera 00"), _renderTexture, 17, true);
             setupRenderTexture();
             _skyBoxCam.reset();
             _farCam.reset();
             _nearCam.reset();
-            Utils.print("Camera setup complete");
+            Utils.print("Camera setup complete");                 
         }
 
         public void Update()
@@ -108,7 +110,7 @@ namespace TarsierSpaceTech
         {
             Utils.print("Setting Up Render Texture");
             if(_renderTexture)
-                _renderTexture.Release();
+                _renderTexture.Release();            
             _renderTexture = new RenderTexture(textureWidth, textureHeight, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
             _renderTexture.Create();
             _texture2D = new Texture2D(textureWidth, textureHeight, TextureFormat.RGB24, false, false);
@@ -123,6 +125,7 @@ namespace TarsierSpaceTech
             RenderTexture activeRT = RenderTexture.active;
             RenderTexture.active = _renderTexture;
 
+            _skyBoxCam.camera.clearFlags = CameraClearFlags.Skybox;
             _skyBoxCam.camera.Render();
             foreach (Renderer r in skyboxRenderers)
                 r.enabled = false;

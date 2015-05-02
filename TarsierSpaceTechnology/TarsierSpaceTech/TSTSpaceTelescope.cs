@@ -57,7 +57,7 @@ namespace TarsierSpaceTech
 
 		private int targetId = 0;
 
-        private Vessel _vessel;
+		private Vessel _vessel;
 
 
 		private static List<byte[]> targets_raw = new List<byte[]> {
@@ -94,6 +94,7 @@ namespace TarsierSpaceTech
 			_lookTransform = Utils.FindChildRecursive(transform,lookTransformName);
 			Utils.print(_baseTransform);
 			Utils.print(_cameraTransform);
+			Utils.print(_lookTransform);
 			zeroRotation = _cameraTransform.localRotation;
 			_camera = _cameraTransform.gameObject.AddComponent<TSTCameraModule>();
 			_animation = _baseTransform.animation;
@@ -116,31 +117,31 @@ namespace TarsierSpaceTech
 			Utils.print("Got ExpIDs");
 			Utils.print("On end start");
 
-            
+			
 			
 			Utils.print("Adding Input Callback");            
-            _vessel = vessel;
-            _vessel.OnAutopilotUpdate += new FlightInputCallback(onFlightInput);				
+			_vessel = vessel;
+			_vessel.OnAutopilotUpdate += new FlightInputCallback(onFlightInput);				
 			GameEvents.onVesselChange.Add(new EventData<Vessel>.OnEvent(refreshFlightInputHandler));
-            GameEvents.onVesselDestroy.Add(new EventData<Vessel>.OnEvent(removeFlightInputHandler));
-            GameEvents.OnVesselRecoveryRequested.Add(new EventData<Vessel>.OnEvent(removeFlightInputHandler));
-            Utils.print("Added Input Callback");           
-            
+			GameEvents.onVesselDestroy.Add(new EventData<Vessel>.OnEvent(removeFlightInputHandler));
+			GameEvents.OnVesselRecoveryRequested.Add(new EventData<Vessel>.OnEvent(removeFlightInputHandler));
+			Utils.print("Added Input Callback");           
+			
 		}
 
-        public void removeFlightInputHandler(Vessel target)
-        {
-            Utils.print("Removing Input Callback vessel: " + target.name);
-            if (this.vessel == target)
-            {
-                _vessel.OnAutopilotUpdate -= (onFlightInput);
-                GameEvents.onVesselChange.Remove(this.refreshFlightInputHandler);
-                GameEvents.onVesselDestroy.Remove(this.removeFlightInputHandler);
-                GameEvents.OnVesselRecoveryRequested.Remove(this.removeFlightInputHandler);                
-                Utils.print("Input Callbacks removed this vessel");
-            }            
-            
-        }
+		public void removeFlightInputHandler(Vessel target)
+		{
+			Utils.print("Removing Input Callback vessel: " + target.name);
+			if (this.vessel == target)
+			{
+				_vessel.OnAutopilotUpdate -= (onFlightInput);
+				GameEvents.onVesselChange.Remove(this.refreshFlightInputHandler);
+				GameEvents.onVesselDestroy.Remove(this.removeFlightInputHandler);
+				GameEvents.OnVesselRecoveryRequested.Remove(this.removeFlightInputHandler);                
+				Utils.print("Input Callbacks removed this vessel");
+			}            
+			
+		}
 
 		[KSPEvent(active = false, guiActive = true, guiName = "Disable Servos")]
 		public void toggleServos()
@@ -153,25 +154,25 @@ namespace TarsierSpaceTech
 
 		private void refreshFlightInputHandler(Vessel target)
 		{
-            Utils.print("OnVesselSwitch curr: " + vessel.name + " target: " + target.name);
-            if (this.vessel != target)
-            {
-                Utils.print("This vessel != target removing Callback");
-                _vessel.OnAutopilotUpdate -= (onFlightInput);
-            }
-            if (this.vessel == target)
-            {
-                _vessel = target;
-                List<TSTSpaceTelescope> vpm = _vessel.FindPartModulesImplementing<TSTSpaceTelescope>();
-                if (vpm.Count > 0)
-                {
-                    Utils.print("Adding Input Callback");
-                    _vessel.OnAutopilotUpdate += new FlightInputCallback(onFlightInput);
-                    Utils.print("Added Input Callback");
-                }
-            }
-                                   
-                                   	
+			Utils.print("OnVesselSwitch curr: " + vessel.name + " target: " + target.name);
+			if (this.vessel != target)
+			{
+				Utils.print("This vessel != target removing Callback");
+				_vessel.OnAutopilotUpdate -= (onFlightInput);
+			}
+			if (this.vessel == target)
+			{
+				_vessel = target;
+				List<TSTSpaceTelescope> vpm = _vessel.FindPartModulesImplementing<TSTSpaceTelescope>();
+				if (vpm.Count > 0)
+				{
+					Utils.print("Adding Input Callback");
+					_vessel.OnAutopilotUpdate += new FlightInputCallback(onFlightInput);
+					Utils.print("Added Input Callback");
+				}
+			}
+								   
+									
 		}
 
 		private void onFlightInput(FlightCtrlState ctrl)
@@ -296,9 +297,9 @@ namespace TarsierSpaceTech
 			filterContractTargets = GUILayout.Toggle(filterContractTargets, "Show only contract targets");
 
 			//Utils.print(String.Format(" - TargettingWindow - TSTGalaxies.Galaxies.Count = {0}", TSTGalaxies.Galaxies.Count));
-            
-            
-            int newTarget = TSTGalaxies.Galaxies.
+			
+			
+			int newTarget = TSTGalaxies.Galaxies.
 				FindIndex(
 					g => (TSTProgressTracker.HasTelescopeCompleted(g) ||
 						  (Contracts.ContractSystem.Instance &&
@@ -315,7 +316,7 @@ namespace TarsierSpaceTech
 				targettingMode = TargettingMode.Galaxy;
 				selectedTargetIndex = newTarget;
 				galaxyTarget = TSTGalaxies.Galaxies[selectedTargetIndex];
-                FlightGlobals.fetch.SetVesselTarget(galaxyTarget);                
+				FlightGlobals.fetch.SetVesselTarget(galaxyTarget);                
 				Utils.print("Targetting: " + newTarget.ToString() + " " + galaxyTarget.name);
 				ScreenMessages.PostScreenMessage("Target: "+galaxyTarget.theName, 3f, ScreenMessageStyle.UPPER_CENTER);
 			}
@@ -456,11 +457,12 @@ namespace TarsierSpaceTech
 				float distance = r.magnitude;
 				double theta = Vector3d.Angle(_cameraTransform.forward, r);
 				double visibleWidth = (2 * obj.size / distance) * 180 / Mathf.PI;
-				Utils.print(obj.theName + ": |r|=" + distance.ToString() + "  theta=" + theta.ToString() + "  angle=" + visibleWidth.ToString());
+                double fov = 0.05 * _camera.fov;
+                //Utils.print(obj.theName + ": |r|=" + distance.ToString() + "  theta=" + theta.ToString() + "  angle=" + visibleWidth.ToString() + " fov=" + fov.ToString());                
 				if (theta < _camera.fov / 2)
 				{
 					Utils.print("Looking at: " + obj.theName);
-					if (visibleWidth > 0.05 * _camera.fov)
+					if (visibleWidth > fov)
 					{
 						Utils.print("Can see: " + obj.theName); 
 						result.Add(obj);
@@ -482,7 +484,7 @@ namespace TarsierSpaceTech
 			{
 				ScienceData data = new ScienceData(experiment.baseValue * subject.dataScale, xmitDataScalar, labBoostScalar, subject.id, subject.title);
 				Utils.print("Got data");
-				data.title = "Tarsier Space Telescope: Oriting " + vessel.mainBody.theName + " looking at " + galaxy.theName;
+				data.title = "Tarsier Space Telescope: Orbiting " + vessel.mainBody.theName + " looking at " + galaxy.theName;
 				_scienceData.Add(data);
 				Utils.print("Added Data");
 				ScreenMessages.PostScreenMessage("Collected Science for " + galaxy.theName, 3f, ScreenMessageStyle.UPPER_CENTER);
@@ -573,10 +575,12 @@ namespace TarsierSpaceTech
 
 		private void _onPageTransmit(ScienceData data)
 		{
-			List<IScienceDataTransmitter> transmitters = vessel.FindPartModulesImplementing<IScienceDataTransmitter>();
+			
+            List<IScienceDataTransmitter> transmitters = vessel.FindPartModulesImplementing<IScienceDataTransmitter>();
 			if (transmitters.Count > 0 && _scienceData.Contains(data))
 			{
 				transmitters.First().TransmitData(new List<ScienceData> { data });
+
 				_scienceData.Remove(data);
 			}
 		}

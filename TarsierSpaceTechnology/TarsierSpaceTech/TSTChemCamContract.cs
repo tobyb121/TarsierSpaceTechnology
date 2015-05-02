@@ -79,13 +79,15 @@ namespace TarsierSpaceTech
 
         protected override bool Generate()
         {
+            Utils.print("Generating ChemCam Contract");
             agent = Contracts.Agents.AgentList.Instance.GetAgent("Tarsier Space Technology");
             expiryType = DeadlineType.None;
-            deadlineType = DeadlineType.None;
-
+            deadlineType = DeadlineType.None;            
             System.Random r = new System.Random(MissionSeed);
-            IEnumerable<CelestialBody> availableBodies=FlightGlobals.Bodies.Where(b=>b.name!="Sun"&&b.name!="Jool");
+            IEnumerable<CelestialBody> availableBodies=FlightGlobals.Bodies.Where(b=>b.name!="Sun" && b.name!="Jool");
             target = availableBodies.ElementAt(r.Next(availableBodies.Count() - 1));
+            Utils.print("Target: " + target.name);
+            Utils.print("Creating Science Param");
             TSTScienceParam param2 = new TSTScienceParam();
             param2.matchFields.Add("TarsierSpaceTech.ChemCam");
             param2.matchFields.Add(target.name);
@@ -102,8 +104,12 @@ namespace TarsierSpaceTech
             SetFunds(300, 400,target);
             SetReputation(35,target);
             SetScience(30,target);
-            if (new System.Random(MissionSeed).Next(10) > 4)
+            if (new System.Random(MissionSeed).Next(10) > 3)
+            {
+                Utils.print("Random Seed False, not generating contract");
                 return false;
+            }
+            Utils.print("Random Seed True, generating contract");    
             return true;
         }
     }
