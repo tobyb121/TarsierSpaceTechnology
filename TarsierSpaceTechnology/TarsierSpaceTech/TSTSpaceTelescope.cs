@@ -53,6 +53,7 @@ namespace TarsierSpaceTech
 		[KSPField]
 		public float xmitDataScalar = 0.5f;
 
+        [KSPField]
 		public float labBoostScalar = 0f;
 
 		private int targetId = 0;
@@ -479,15 +480,28 @@ namespace TarsierSpaceTech
 			Utils.print("Got experiment");
 			ScienceSubject subject = ResearchAndDevelopment.GetExperimentSubject(experiment, getExperimentSituation(), Sun.Instance.sun, "LookingAt" + galaxy.name);
 			subject.title = "Space Telescope picture of " + galaxy.theName;
-			Utils.print("Got subject");
+			Utils.print("Got subject, determining science data using " + part.name);
 			if (experiment.IsAvailableWhile(getExperimentSituation(), vessel.mainBody))
 			{
-				ScienceData data = new ScienceData(experiment.baseValue * subject.dataScale, xmitDataScalar, labBoostScalar, subject.id, subject.title);
-				Utils.print("Got data");
-				data.title = "Tarsier Space Telescope: Orbiting " + vessel.mainBody.theName + " looking at " + galaxy.theName;
-				_scienceData.Add(data);
-				Utils.print("Added Data");
-				ScreenMessages.PostScreenMessage("Collected Science for " + galaxy.theName, 3f, ScreenMessageStyle.UPPER_CENTER);
+				if (part.name == "tarsierSpaceTelescope")
+                {
+                    ScienceData data = new ScienceData((experiment.baseValue / 2) * subject.dataScale, xmitDataScalar, labBoostScalar, subject.id, subject.title);
+                    Utils.print("Got data");
+                    data.title = "Tarsier Space Telescope: Orbiting " + vessel.mainBody.theName + " looking at " + galaxy.theName;
+                    _scienceData.Add(data);
+                    Utils.print("Added Data Amt=" + data.dataAmount + " TransmitValue=" + data.transmitValue + " LabBoost=" + data.labBoost + " LabValue=" + data.labValue);
+                    ScreenMessages.PostScreenMessage("Collected Science for " + galaxy.theName, 3f, ScreenMessageStyle.UPPER_CENTER);
+                }
+                else
+                {
+                    ScienceData data = new ScienceData(experiment.baseValue * subject.dataScale, xmitDataScalar, labBoostScalar, subject.id, subject.title);
+                    Utils.print("Got data");
+                    data.title = "Tarsier Space Telescope: Orbiting " + vessel.mainBody.theName + " looking at " + galaxy.theName;
+                    _scienceData.Add(data);
+                    Utils.print("Added Data Amt=" + data.dataAmount + " TransmitValue=" + data.transmitValue + " LabBoost=" + data.labBoost + " LabValue=" + data.labValue);
+                    ScreenMessages.PostScreenMessage("Collected Science for " + galaxy.theName, 3f, ScreenMessageStyle.UPPER_CENTER);
+                }                
+				
 			}
 		}
 
@@ -501,12 +515,24 @@ namespace TarsierSpaceTech
 			Utils.print("Got subject");
 			if (experiment.IsAvailableWhile(getExperimentSituation(), vessel.mainBody))
 			{
-				ScienceData data = new ScienceData(experiment.baseValue * subject.dataScale, xmitDataScalar, labBoostScalar, subject.id, subject.title);
-				Utils.print("Got data");
-				data.title = "Tarsier Space Telescope: Oriting " + vessel.mainBody.theName + " looking at " + planet.theName;
-				_scienceData.Add(data);
-				Utils.print("Added Data");
-				ScreenMessages.PostScreenMessage("Collected Science for " + planet.theName,3f,ScreenMessageStyle.UPPER_CENTER);
+                if (part.name == "tarsierSpaceTelescope")
+                {
+                    ScienceData data = new ScienceData((experiment.baseValue * 0.8f) * subject.dataScale, xmitDataScalar, labBoostScalar, subject.id, subject.title);
+                    Utils.print("Got data");
+                    data.title = "Tarsier Space Telescope: Oriting " + vessel.mainBody.theName + " looking at " + planet.theName;
+                    _scienceData.Add(data);
+                    Utils.print("Added Data Amt=" + data.dataAmount + " TransmitValue=" + data.transmitValue + " LabBoost=" + data.labBoost + " LabValue=" + data.labValue);
+                    ScreenMessages.PostScreenMessage("Collected Science for " + planet.theName, 3f, ScreenMessageStyle.UPPER_CENTER);
+                }
+                else
+                {
+                    ScienceData data = new ScienceData(experiment.baseValue * subject.dataScale, xmitDataScalar, labBoostScalar, subject.id, subject.title);
+                    Utils.print("Got data");
+                    data.title = "Tarsier Space Telescope: Oriting " + vessel.mainBody.theName + " looking at " + planet.theName;
+                    _scienceData.Add(data);
+                    Utils.print("Added Data Amt=" + data.dataAmount + " TransmitValue=" + data.transmitValue + " LabBoost=" + data.labBoost + " LabValue=" + data.labValue);
+                    ScreenMessages.PostScreenMessage("Collected Science for " + planet.theName, 3f, ScreenMessageStyle.UPPER_CENTER);
+                }
 			}
 		}
 

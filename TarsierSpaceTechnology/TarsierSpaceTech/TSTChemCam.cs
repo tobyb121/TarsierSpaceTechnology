@@ -41,6 +41,7 @@ namespace TarsierSpaceTech
         [KSPField]
         public string ExperimentID = "TarsierSpaceTech.ChemCam";
 
+        [KSPField]
         public float labBoostScalar = 0f;
                 
         private Vessel _vessel;
