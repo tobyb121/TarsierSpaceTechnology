@@ -1,4 +1,27 @@
-﻿using System;
+﻿/*
+ * TSTProgressTracker.cs
+ * (C) Copyright 2015, Jamie Leighton
+ * Tarsier Space Technologies
+ * The original code and concept of TarsierSpaceTech rights go to Tobyb121 on the Kerbal Space Program Forums, which was covered by the MIT license.
+ * Original License is here: https://github.com/JPLRepo/TarsierSpaceTechnology/blob/master/LICENSE
+ * As such this code continues to be covered by MIT license.
+ * Kerbal Space Program is Copyright (C) 2013 Squad. See http://kerbalspaceprogram.com/. This
+ * project is in no way associated with nor endorsed by Squad.
+ *
+ *  This file is part of TarsierSpaceTech.
+ *
+ *  TarsierSpaceTech is free software: you can redistribute it and/or modify
+ *  it under the terms of the MIT License 
+ *
+ *  TarsierSpaceTech is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+ *
+ *  You should have received a copy of the MIT License
+ *  along with TarsierSpaceTech.  If not, see <http://opensource.org/licenses/MIT>.
+ *
+ */
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -23,7 +46,7 @@ namespace TarsierSpaceTech
 
         public void Start()
         {
-            Utils.print("Starting Tarsier Progress Tracking");
+            this.Log_Debug("Starting Tarsier Progress Tracking");
             Instance = this;
         }
 
@@ -154,15 +177,15 @@ namespace TarsierSpaceTech
 
         public override void OnLoad(ConfigNode node)
         {
-            Utils.print("Loading Tarsier Progress Tracker");
+            this.Log_Debug("Loading Tarsier Progress Tracker");
             ConfigNode telescopeNode = node.GetNode("TarsierSpaceTelescope");
             ConfigNode chemCamNode = node.GetNode("TarsierChemCam");
 
-            Utils.print("Getting Telescope Celestial Body Status");
+            this.Log_Debug("Getting Telescope Celestial Body Status");
             foreach (CelestialBody b in FlightGlobals.Bodies)
                 TelescopeData[b.name] = telescopeNode != null ? (telescopeNode.GetValue(b.name) == "true") : false;
 
-            Utils.print("Getting Telescope Galaxy Status");
+            this.Log_Debug("Getting Telescope Galaxy Status");
             try {
                 foreach (TSTGalaxy g in TSTGalaxies.Galaxies)
                 {
@@ -173,10 +196,10 @@ namespace TarsierSpaceTech
                         TelescopeData[g.name] = false;
                 }
             } catch (Exception ex) {
-                Utils.print("Getting Telescope Galaxy Failed unexpectedly. Ex: " + ex.Message);
+                this.Log_Debug("Getting Telescope Galaxy Failed unexpectedly. Ex: " + ex.Message);
             }
 
-            Utils.print("Getting ChemCam Celestial Body Status");
+            this.Log_Debug("Getting ChemCam Celestial Body Status");
             if (chemCamNode != null)
             {
                 foreach (CelestialBody b in FlightGlobals.Bodies)
@@ -191,7 +214,7 @@ namespace TarsierSpaceTech
 
         public override void OnSave(ConfigNode node)
         {
-            Utils.print("Saving TST Progress data");
+            this.Log_Debug("Saving TST Progress data");
             ConfigNode telescopeNode = node.AddNode("TarsierSpaceTelescope");
             ConfigNode chemCamNode = node.AddNode("TarsierChemCam");
             foreach (string key in TelescopeData.Keys)

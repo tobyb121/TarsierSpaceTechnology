@@ -1,4 +1,27 @@
-﻿using System;
+﻿/*
+ * TSTGalaxy.cs
+ * (C) Copyright 2015, Jamie Leighton
+ * Tarsier Space Technologies
+ * The original code and concept of TarsierSpaceTech rights go to Tobyb121 on the Kerbal Space Program Forums, which was covered by the MIT license.
+ * Original License is here: https://github.com/JPLRepo/TarsierSpaceTechnology/blob/master/LICENSE
+ * As such this code continues to be covered by MIT license.
+ * Kerbal Space Program is Copyright (C) 2013 Squad. See http://kerbalspaceprogram.com/. This
+ * project is in no way associated with nor endorsed by Squad.
+ *
+ *  This file is part of TarsierSpaceTech.
+ *
+ *  TarsierSpaceTech is free software: you can redistribute it and/or modify
+ *  it under the terms of the MIT License 
+ *
+ *  TarsierSpaceTech is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+ *
+ *  You should have received a copy of the MIT License
+ *  along with TarsierSpaceTech.  If not, see <http://opensource.org/licenses/MIT>.
+ *
+ */
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -34,7 +57,7 @@ namespace TarsierSpaceTech
         {
             if (mesh == null)
             {
-                Utils.print("Generating GalaxyMesh");
+                this.Log_Debug("Generating GalaxyMesh");
                 mesh = new Mesh();
                 mesh.vertices = new Vector3[]{
                     new Vector3(-1,0.75f,0),
@@ -76,17 +99,17 @@ namespace TarsierSpaceTech
             Vector3 pos = ConfigNode.ParseVector3(config.GetValue("location"));
             string textureURL = config.GetValue("textureURL");
             float size = float.Parse(config.GetValue("size"));
-            Utils.print("Creating Galaxy: " + name + " " + pos.ToString() + " " + textureURL);
-            Utils.print("Setting Name");
+            this.Log_Debug("Creating Galaxy: " + name + " " + pos.ToString() + " " + textureURL);
+            this.Log_Debug("Setting Name");
             this.name = name;
             this.theName = theName;
-            Utils.print("Setting Size");
+            this.Log_Debug("Setting Size");
             this.size = 1e3f * size * ScaledSpace.ScaleFactor;
-            Utils.print("Setting Position");
+            this.Log_Debug("Setting Position");
             this.scaledPosition = -130e6f * pos.normalized;
-            Utils.print("Setting Texture");
+            this.Log_Debug("Setting Texture");
             this.setTexture(GameDatabase.Instance.GetTexture(textureURL, false));
-            Utils.print("Finished creating galaxy");
+            this.Log_Debug("Finished creating galaxy");
         }
 
         public void attach(GameObject parent)

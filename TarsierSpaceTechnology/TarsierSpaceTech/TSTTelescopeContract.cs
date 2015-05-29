@@ -1,4 +1,27 @@
-﻿using System;
+﻿/*
+ * TSTTelescopeContract.cs
+ * (C) Copyright 2015, Jamie Leighton
+ * Tarsier Space Technologies
+ * The original code and concept of TarsierSpaceTech rights go to Tobyb121 on the Kerbal Space Program Forums, which was covered by the MIT license.
+ * Original License is here: https://github.com/JPLRepo/TarsierSpaceTechnology/blob/master/LICENSE
+ * As such this code continues to be covered by MIT license.
+ * Kerbal Space Program is Copyright (C) 2013 Squad. See http://kerbalspaceprogram.com/. This
+ * project is in no way associated with nor endorsed by Squad.
+ *
+ *  This file is part of TarsierSpaceTech.
+ *
+ *  TarsierSpaceTech is free software: you can redistribute it and/or modify
+ *  it under the terms of the MIT License 
+ *
+ *  TarsierSpaceTech is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+ *
+ *  You should have received a copy of the MIT License
+ *  along with TarsierSpaceTech.  If not, see <http://opensource.org/licenses/MIT>.
+ *
+ */
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -85,44 +108,44 @@ namespace TarsierSpaceTech
                 else if (m.ContractState == State.Active)
                     active++;
             }
-            Utils.print("Telescope Contracts check offers=" + offers + " active=" + active);
+            this.Log_Debug("Telescope Contracts check offers=" + offers + " active=" + active);
             if (offers >= 1)
                 return false;
             if (active >= 1)
                 return false;            
-            Utils.print("Generating Telescope Contract");
+            this.Log_Debug("Generating Telescope Contract");
 
             agent = Contracts.Agents.AgentList.Instance.GetAgent("Tarsier Space Technology");
             base.SetExpiry();
             base.expiryType = DeadlineType.None;
             base.deadlineType = DeadlineType.None;
             
-            Utils.print("Creating Parameter");
+            this.Log_Debug("Creating Parameter");
             TSTTelescopeContractParam param = new TSTTelescopeContractParam();
             this.AddParameter(param);
             string target_name = TSTProgressTracker.GetNextTelescopeTarget();
-            Utils.print("Target: "+target_name);
+            this.Log_Debug("Target: "+target_name);
             AvailablePart ap2 = PartLoader.getPartInfoByName("tarsierAdvSpaceTelescope");
             if(!ResearchAndDevelopment.PartTechAvailable(ap2) && !ResearchAndDevelopment.PartModelPurchased(ap2) && target_name == "Galaxy1")                
             {
-                Utils.print("Contracts for Planets completed and Galaxy contracts require advanced space telescope");
+                this.Log_Debug("Contracts for Planets completed and Galaxy contracts require advanced space telescope");
                 return false;
             }
-            Utils.print("Checking Celestial Bodies");
+            this.Log_Debug("Checking Celestial Bodies");
             this.target = FlightGlobals.Bodies.Find(b => b.name == target_name);
             if (target == null)
             {
-                Utils.print("Checking Galaxies");
+                this.Log_Debug("Checking Galaxies");
                 this.target = TSTGalaxies.Galaxies.Find(g => g.name == target_name);
             }
-            Utils.print("Using target: " + this.target.ToString());
+            this.Log_Debug("Using target: " + this.target.ToString());
             param.target = target;
-            Utils.print("Creating Science Param");
+            this.Log_Debug("Creating Science Param");
             TSTScienceParam param2 = new TSTScienceParam();
             param2.matchFields.Add("TarsierSpaceTech.SpaceTelescope");
             param2.matchFields.Add("LookingAt" + target.name);
             this.AddParameter(param2);
-            Utils.print("Created Science Param");
+            this.Log_Debug("Created Science Param");
             base.prestige=TSTProgressTracker.getTelescopePrestige(target.name);
             if (TSTProgressTracker.HasTelescopeCompleted(target))
             {
