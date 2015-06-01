@@ -36,7 +36,7 @@ namespace TarsierSpaceTech
         private IButton button1;
         private ApplicationLauncherButton stockToolbarButton = null; // Stock Toolbar Button
         private static int TSTwindowID = new System.Random().Next();
-        private const float FWINDOW_WIDTH = 410;
+        private const float FWINDOW_WIDTH = 430;
         private const float WINDOW_BASE_HEIGHT = 320;
         private Rect FwindowPos = new Rect(40, Screen.height / 2 - 100, FWINDOW_WIDTH, WINDOW_BASE_HEIGHT); // Flight Window position and size
         private GUIStyle sectionTitleStyle, subsystemButtonStyle, statusStyle, warningStyle, PartListStyle, PartListPartStyle;
@@ -55,6 +55,10 @@ namespace TarsierSpaceTech
                 _Visible = value;      //Set the private variable
             }
         }
+
+        private bool RT2Present = false;
+        private bool RT2VesselConnected = false;
+        private double RT2VesselDelay = 0f;
                 
 
         public void Awake()
@@ -63,6 +67,9 @@ namespace TarsierSpaceTech
             FwindowPos.x = TSTMstStgs.Instance.TSTsettings.FwindowPosX;
             FwindowPos.y = TSTMstStgs.Instance.TSTsettings.FwindowPosY;
 
+            RT2Present = AssemblyLoader.loadedAssemblies.Any(a => a.assembly.GetName().Name == "RemoteTech");
+            if (RT2Present)
+                Utilities.Log("TSTMenu", "RT2 present");
 
             if (ToolbarManager.ToolbarAvailable && TSTMstStgs.Instance.TSTsettings.UseAppLauncher == false)
             {
@@ -150,6 +157,20 @@ namespace TarsierSpaceTech
             TSTMstStgs.Instance.TSTsettings.FwindowPosY = FwindowPos.y;            
         }
 
+        public void Update()
+        {
+            if (RT2Present)
+                try
+                {
+                    checkRT2();
+                }
+                catch
+                {
+                    this.Log("Wrong Remote Tech 2 library version - disabled.");
+                    RT2Present = false;
+                }
+        }
+
         //GUI Functions Follow
 
         private void onDraw()
@@ -228,7 +249,7 @@ namespace TarsierSpaceTech
             tstSDD = FlightGlobals.ActiveVessel.FindPartModulesImplementing<TSTScienceHardDrive>().ToList();
 
             GUIContent label = new GUIContent("X", "Close Window");            
-            Rect rect = new Rect(394, 4, 16, 16);
+            Rect rect = new Rect(410, 4, 16, 16);
             if (GUI.Button(rect, label))
             {
                 onAppLaunchToggle();
@@ -238,8 +259,9 @@ namespace TarsierSpaceTech
             GUILayout.BeginVertical();
             //Scrollable Camera list starts here                       
             // Begin the ScrollView                        
-            CamscrollViewVector = GUILayout.BeginScrollView(CamscrollViewVector, GUILayout.Height(100), GUILayout.Width(400));
-            GUILayout.BeginVertical();          
+            CamscrollViewVector = GUILayout.BeginScrollView(CamscrollViewVector, GUILayout.Height(100), GUILayout.Width(420));
+            GUILayout.BeginVertical();
+                      
             if (tstchemcam.Count() == 0 && tstSpaceTel.Count() == 0)
             {                
                 GUILayout.Label("Active Vessel has no TST Cameras installed", statusStyle);                
@@ -266,35 +288,42 @@ namespace TarsierSpaceTech
                         GUILayout.Label("AdvScope", PartListPartStyle, GUILayout.Width(60));
                     }
                     GUILayout.Label(string.Format("{0}x", scope.maxZoom), PartListPartStyle, GUILayout.Width(30));
-                    if (scope.Active)
+                    if (!RT2Present || (RT2Present && RT2VesselConnected))
                     {
-                        if (GUILayout.Button(new GUIContent("Close", "Close Camera"), GUILayout.Width(42f)))
+                        if (scope.Active)
                         {
-                            scope.eventCloseCamera();
-                        }
-                        if (GUILayout.Button(new GUIContent("GUI", "Toggle the Camera GUI on/off"), GUILayout.Width(34f)))
-                        {
-                            if (scope.windowState == TSTSpaceTelescope.WindowSate.Hidden)
+                            if (GUILayout.Button(new GUIContent("Close", "Close Camera"), GUILayout.Width(42f)))
                             {
-                                scope.eventShowGUI();
+                                scope.eventCloseCamera();
                             }
-                            else
+                            if (GUILayout.Button(new GUIContent("GUI", "Toggle the Camera GUI on/off"), GUILayout.Width(34f)))
                             {
-                                scope.hideGUI();
-                            }                            
+                                if (scope.windowState == TSTSpaceTelescope.WindowSate.Hidden)
+                                {
+                                    scope.eventShowGUI();
+                                }
+                                else
+                                {
+                                    scope.hideGUI();
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if (GUILayout.Button(new GUIContent("Open", "Open Camera"), GUILayout.Width(42f)))
+                            {
+                                scope.eventOpenCamera();
+                            }
+                        }
+                        if (scope.GetScienceCount() > 0)
+                        {
+                            if (GUILayout.Button(new GUIContent("View", "View Science"), GUILayout.Width(35f)))
+                                scope.ReviewData();
                         }
                     }
                     else
                     {
-                        if (GUILayout.Button(new GUIContent("Open", "Open Camera"), GUILayout.Width(42f)))
-                        {
-                            scope.eventOpenCamera();
-                        }  
-                    }
-                    if (scope.GetScienceCount() > 0)
-                    {
-                        if (GUILayout.Button(new GUIContent("View", "View Science"), GUILayout.Width(35f)))
-                            scope.ReviewData();
+                        GUILayout.Label("No Connection", PartListPartStyle, GUILayout.Width(76));
                     }
                     GUILayout.EndHorizontal();
                 }
@@ -303,24 +332,31 @@ namespace TarsierSpaceTech
                     GUILayout.BeginHorizontal();
                     GUILayout.Label(chemcam.name, PartListPartStyle, GUILayout.Width(160));
                     GUILayout.Label("RovCam", PartListPartStyle, GUILayout.Width(60));
-                    if (chemcam.Active)
+                    if (!RT2Present || (RT2Present && RT2VesselConnected))
                     {
-                        if (GUILayout.Button(new GUIContent("Close", "Close Camera"), GUILayout.Width(42f)))
+                        if (chemcam.Active)
                         {
-                            chemcam.eventCloseCamera();
+                            if (GUILayout.Button(new GUIContent("Close", "Close Camera"), GUILayout.Width(42f)))
+                            {
+                                chemcam.eventCloseCamera();
+                            }
+                        }
+                        else
+                        {
+                            if (GUILayout.Button(new GUIContent("Open", "Open Camera"), GUILayout.Width(42f)))
+                            {
+                                chemcam.eventOpenCamera();
+                            }
+                        }
+                        if (chemcam.GetScienceCount() > 0)
+                        {
+                            if (GUILayout.Button(new GUIContent("View", "View Science"), GUILayout.Width(35f)))
+                                chemcam.ReviewData();
                         }
                     }
                     else
                     {
-                        if (GUILayout.Button(new GUIContent("Open", "Open Camera"), GUILayout.Width(42f)))
-                        {
-                            chemcam.eventOpenCamera();
-                        }
-                    }
-                    if (chemcam.GetScienceCount() > 0)
-                    {
-                        if (GUILayout.Button(new GUIContent("View", "View Science"), GUILayout.Width(35f)))
-                            chemcam.ReviewData();
+                        GUILayout.Label("No Connection", PartListPartStyle, GUILayout.Width(76));
                     }
                     GUILayout.EndHorizontal();
                     
@@ -333,7 +369,7 @@ namespace TarsierSpaceTech
             
             //Scrollable SDD list starts here                       
             // Begin the ScrollView                        
-            SDDscrollViewVector = GUILayout.BeginScrollView(SDDscrollViewVector, GUILayout.Height(215), GUILayout.Width(400));
+            SDDscrollViewVector = GUILayout.BeginScrollView(SDDscrollViewVector, GUILayout.Height(215), GUILayout.Width(420));
             GUILayout.BeginVertical();
             if (tstSDD.Count() == 0)
             {
@@ -357,19 +393,21 @@ namespace TarsierSpaceTech
                     GUILayout.Label(string.Format("{0}%", drive.PercentageFull), PartListPartStyle, GUILayout.Width(40));
                     GUILayout.BeginHorizontal();
                     GUILayout.Label(string.Format("{0}", drive.scienceData.Count()), PartListPartStyle, GUILayout.Width(10));
-                    
-                    if (drive.PercentageFull >= 100f)
+                    if (!RT2Present || (RT2Present && RT2VesselConnected))
                     {
-                        GUI.enabled = false;
+                        if (drive.PercentageFull >= 100f)
+                        {
+                            GUI.enabled = false;
+                        }
+                        if (GUILayout.Button(new GUIContent("Fill", "FillDrive with Science"), GUILayout.Width(35f), GUILayout.Height(28f)))
+                            drive.fillDrive();
+                        GUI.enabled = true;
+                        if (drive.scienceData.Count() > 0)
+                        {
+                            if (GUILayout.Button(new GUIContent("View", "View Science"), GUILayout.Width(35f), GUILayout.Height(28f)))
+                                drive.ReviewData();
+                        }
                     }
-                    if (GUILayout.Button(new GUIContent("Fill", "FillDrive with Science"), GUILayout.Width(35f), GUILayout.Height(25f)))
-                        drive.fillDrive(); 
-                    GUI.enabled = true; 
-                    if (drive.scienceData.Count() > 0)
-                    {
-                        if (GUILayout.Button(new GUIContent("View", "View Science"), GUILayout.Width(35f), GUILayout.Height(25f)))
-                            drive.ReviewData();
-                    } 
                     GUILayout.EndHorizontal();
                     //placeholder - put button to show science content of drive in another window
                     GUILayout.EndHorizontal();
@@ -388,6 +426,13 @@ namespace TarsierSpaceTech
             }
         }
 
+        private void checkRT2()
+        {
+            RT2VesselConnected = RemoteTech.API.API.HasAnyConnection(FlightGlobals.ActiveVessel.id);
+            RT2VesselDelay = RemoteTech.API.API.GetShortestSignalDelay(FlightGlobals.ActiveVessel.id);
+            this.Log_Debug("RT2VesselConnected = " + RT2VesselConnected);
+            this.Log_Debug("RT2VesselDelay = " + RT2VesselDelay);
+        }
 
     }
 }
