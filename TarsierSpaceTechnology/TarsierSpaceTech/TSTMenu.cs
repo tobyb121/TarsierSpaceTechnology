@@ -427,8 +427,8 @@ namespace TarsierSpaceTech
         }
 
         private void checkRT2()
-        {
-            RT2VesselConnected = RemoteTech.API.API.HasAnyConnection(FlightGlobals.ActiveVessel.id);
+        {            
+            RT2VesselConnected = (RemoteTech.API.API.HasLocalControl(FlightGlobals.ActiveVessel.id) || RemoteTech.API.API.HasAnyConnection(FlightGlobals.ActiveVessel.id));
             RT2VesselDelay = RemoteTech.API.API.GetShortestSignalDelay(FlightGlobals.ActiveVessel.id);
             this.Log_Debug("RT2VesselConnected = " + RT2VesselConnected);
             this.Log_Debug("RT2VesselDelay = " + RT2VesselDelay);
