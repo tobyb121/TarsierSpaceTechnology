@@ -56,11 +56,22 @@ namespace TarsierSpaceTech
             baseTransform = new GameObject();
             baseTransform.transform.localPosition = Vector3.zero;
             baseTransform.transform.localRotation = Quaternion.identity;
+            
             if (ScaledSun.Instance != null)
+            {
                 baseTransform.transform.parent = ScaledSun.Instance.transform;
+                Debug.Log("TSTGalaxies BaseTransform set to the ScaledSun.Instance");
+            }                
             else
+            {
                 baseTransform.SetActive(false);
-
+                Debug.Log("TSTGalaxies BaseTransform setactive = false, ScaledSun does not exist");
+            }
+            if (TSTInstalledMods.IsKopInstalled)
+            {
+                baseTransform.transform.parent = FlightGlobals.Bodies[1].transform;
+                Debug.Log("TSTGalaxies - Detected Kopernicus - BaseTransform set to Home Planet");
+            }            
             UrlDir.UrlConfig[] galaxyCfgs = GameDatabase.Instance.GetConfigs("GALAXY");
             foreach (UrlDir.UrlConfig cfg in galaxyCfgs){
                 GameObject go=new GameObject(name,typeof(MeshFilter),typeof(MeshRenderer),typeof(TSTGalaxy));
@@ -69,6 +80,8 @@ namespace TarsierSpaceTech
                 galaxy.Load(cfg.config);
                 Debug.Log("TSTGalaxies Adding Galaxy " + galaxy.name);
                 Galaxies.Add(galaxy);
+                Utilities.PrintTransform(go.transform, " " + go.name + " Transform ");
+                Utilities.DumpObjectProperties(go.renderer.material);
             }
         }
     }

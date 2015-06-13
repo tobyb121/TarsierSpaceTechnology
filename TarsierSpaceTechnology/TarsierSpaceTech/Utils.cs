@@ -25,7 +25,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using UnityEngine;
+
 
 namespace TarsierSpaceTech
 {
@@ -33,11 +35,21 @@ namespace TarsierSpaceTech
     public static class Utilities
     {
        
+        public static int randomSeed = new System.Random().Next();
+        private static int _nextrandomInt = randomSeed;
+
+        public static int getnextrandomInt()
+        {
+            _nextrandomInt ++;
+            return _nextrandomInt;
+        }
+        
         public static Transform FindChildRecursive(Transform parent, string name)
         {
             return parent.gameObject.GetComponentsInChildren<Transform>().FirstOrDefault(t => t.name == name);
         }
 
+        
         public static double GetAvailableResource(Part part, String resourceName)
         {
             var resources = new List<PartResource>();
@@ -57,7 +69,7 @@ namespace TarsierSpaceTech
                 if (cam.name == camera)
                     return cam;
             }
-                
+            Log_Debug("Unable to find Camera by the name of " + camera);    
             return null;
         }
 
@@ -188,6 +200,27 @@ namespace TarsierSpaceTech
             return defaultValue;
         }
 
+        public static void PrintTransform(Transform t, string title = "")
+        {
+            Log_Debug("------" + title + "------");
+            Log_Debug("Position: " + t.localPosition);
+            Log_Debug("Rotation: " + t.localRotation);
+            Log_Debug("Scale: " + t.localScale);
+            Log_Debug("------------------");
+        }
+
+        public static void DumpObjectProperties(object o, string title = "---------")
+        {
+            // Iterate through all of the properties
+            Log_Debug("--------- " + title + " ------------");
+            foreach (PropertyInfo property in o.GetType().GetProperties())
+            {
+                if (property.CanRead)
+                    Log_Debug(property.Name + " = " + property.GetValue(o, null));
+            }
+            Log_Debug("--------------------------------------");
+        }
+
         // Logging Functions
         // Name of the Assembly that is running this MonoBehaviour
         internal static String _AssemblyName
@@ -227,6 +260,13 @@ namespace TarsierSpaceTech
             TSTSettings TSTsettings = TSTMstStgs.Instance.TSTsettings;
             if (TSTsettings.debugging)
                 Debug.Log("[TST] " + context + "[" + Time.time.ToString("0.00") + "]: " + message);
+        }
+
+        public static void Log_Debug(string message)
+        {
+            TSTSettings TSTsettings = TSTMstStgs.Instance.TSTsettings;
+            if (TSTsettings.debugging)
+                Debug.Log("[TST] " + "[" + Time.time.ToString("0.00") + "]: " + message);
         }
     }
 }

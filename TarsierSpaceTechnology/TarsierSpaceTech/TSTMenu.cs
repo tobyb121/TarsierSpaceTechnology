@@ -47,6 +47,12 @@ namespace TarsierSpaceTech
         //GuiVisibility
         private bool _Visible = false;
 
+        //TST Parts
+        private Vessel actVessel = FlightGlobals.ActiveVessel;
+        private List<TSTChemCam> tstchemcam = new List<TSTChemCam>();
+        private List<TSTSpaceTelescope> tstSpaceTel = new List<TSTSpaceTelescope>();
+        private List<TSTScienceHardDrive> tstSDD = new List<TSTScienceHardDrive>();
+
         public Boolean GuiVisible
         {
             get { return _Visible; }
@@ -160,6 +166,7 @@ namespace TarsierSpaceTech
         public void Update()
         {
             if (RT2Present)
+            {
                 try
                 {
                     checkRT2();
@@ -169,36 +176,71 @@ namespace TarsierSpaceTech
                     this.Log("Wrong Remote Tech 2 library version - disabled.");
                     RT2Present = false;
                 }
+            }
+
+            if (FlightGlobals.ActiveVessel != null)  // Check if in flight
+            {
+                //chk if current active vessel Has TST parts attached            
+                tstchemcam = FlightGlobals.ActiveVessel.FindPartModulesImplementing<TSTChemCam>().ToList();
+                tstSpaceTel = FlightGlobals.ActiveVessel.FindPartModulesImplementing<TSTSpaceTelescope>().ToList();
+                tstSDD = FlightGlobals.ActiveVessel.FindPartModulesImplementing<TSTScienceHardDrive>().ToList();
+
+                if (tstchemcam.Count() == 0 && tstSpaceTel.Count() == 0 && tstSDD.Count() == 0) // No TST parts on-board disable buttons
+                {
+                    if (ToolbarManager.ToolbarAvailable && TSTMstStgs.Instance.TSTsettings.UseAppLauncher == false)
+                    {
+                        button1.Visible = false;
+                    }
+                    else
+                    {
+                        this.stockToolbarButton.VisibleInScenes = ApplicationLauncher.AppScenes.SPH | ApplicationLauncher.AppScenes.VAB | ApplicationLauncher.AppScenes.MAPVIEW;
+                    }
+                    GuiVisible = false;
+                }
+                else //TST parts are on-board enable buttons
+                {
+                    if (ToolbarManager.ToolbarAvailable && TSTMstStgs.Instance.TSTsettings.UseAppLauncher == false)
+                    {
+                        button1.Visible = true;
+                    }
+                    else
+                    {
+                        this.stockToolbarButton.VisibleInScenes = ApplicationLauncher.AppScenes.SPH | ApplicationLauncher.AppScenes.VAB | ApplicationLauncher.AppScenes.MAPVIEW | ApplicationLauncher.AppScenes.FLIGHT;
+                    }
+                }
+            }
+               
         }
 
         //GUI Functions Follow
 
         private void onDraw()
-        {
-            if (!GuiVisible) return;
-
-            
-                if (FlightGlobals.fetch != null && FlightGlobals.ActiveVessel != null)  // Check if in flight
-                {
-                    if (FlightGlobals.ActiveVessel.isEVA) // EVA kerbal, do nothing
-                    {
-                        
-                        return;
-                    }
-                    
-                }                
-                else   // Not in flight, in editor or F2 pressed unset the mode and return
-                {
-                    
+        {                          
+            if (FlightGlobals.fetch != null && FlightGlobals.ActiveVessel != null)  // Check if in flight
+            {
+                if (FlightGlobals.ActiveVessel.isEVA) // EVA kerbal, do nothing
+                {                    
                     return;
                 }
-                if (Utilities.isPauseMenuOpen())
-                {
-                    return;
-                }               
-                GUI.skin = HighLogic.Skin;
-                if (!Utilities.WindowVisibile(FwindowPos)) Utilities.MakeWindowVisible(FwindowPos);
-                FwindowPos = GUILayout.Window(TSTwindowID, FwindowPos, windowF, "Tarsier Space Technology", GUILayout.MinHeight(20));            
+                    
+            }                
+            else   // Not in flight, in editor or F2 pressed return
+            {                  
+                return;
+            }
+
+            if (!GuiVisible) return;
+
+
+            if (Utilities.isPauseMenuOpen())
+            {
+                return;
+            }
+            
+   
+            GUI.skin = HighLogic.Skin;
+            if (!Utilities.WindowVisibile(FwindowPos)) Utilities.MakeWindowVisible(FwindowPos);
+            FwindowPos = GUILayout.Window(TSTwindowID, FwindowPos, windowF, "Tarsier Space Technology", GUILayout.MinHeight(20));            
         }
 
         private void windowF(int id)
@@ -237,17 +279,8 @@ namespace TarsierSpaceTech
             PartListPartStyle.alignment = TextAnchor.LowerLeft;
             PartListPartStyle.stretchWidth = false;
             PartListPartStyle.normal.textColor = Color.white;
-
-
-            Vessel actVessel = FlightGlobals.ActiveVessel;
-            List<TSTChemCam> tstchemcam = new List<TSTChemCam>();
-            List<TSTSpaceTelescope> tstSpaceTel = new List<TSTSpaceTelescope>();
-            List<TSTScienceHardDrive> tstSDD = new List<TSTScienceHardDrive>();
-            //chk if current active vessel Has TST parts attached            
-            tstchemcam = FlightGlobals.ActiveVessel.FindPartModulesImplementing<TSTChemCam>().ToList();
-            tstSpaceTel = FlightGlobals.ActiveVessel.FindPartModulesImplementing<TSTSpaceTelescope>().ToList();
-            tstSDD = FlightGlobals.ActiveVessel.FindPartModulesImplementing<TSTScienceHardDrive>().ToList();
-
+            
+            
             GUIContent label = new GUIContent("X", "Close Window");            
             Rect rect = new Rect(410, 4, 16, 16);
             if (GUI.Button(rect, label))
@@ -408,8 +441,7 @@ namespace TarsierSpaceTech
                                 drive.ReviewData();
                         }
                     }
-                    GUILayout.EndHorizontal();
-                    //placeholder - put button to show science content of drive in another window
+                    GUILayout.EndHorizontal();                    
                     GUILayout.EndHorizontal();
                 }
             }      

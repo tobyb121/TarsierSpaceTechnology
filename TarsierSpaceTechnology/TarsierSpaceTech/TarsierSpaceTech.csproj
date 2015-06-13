@@ -79,6 +79,7 @@
     </Compile>
     <Compile Include="ToolBarManager.cs" />
     <Compile Include="TSTDOE.cs" />
+    <Compile Include="TSTInstalledMods.cs" />
     <Compile Include="TSTMenu.cs" />
     <Compile Include="TSTScienceParam.cs" />
     <Compile Include="TSTChemCamContract.cs" />

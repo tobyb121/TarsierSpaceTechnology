@@ -34,6 +34,7 @@ namespace TarsierSpaceTech
 	{
 		private bool _inEditor = false;
 
+        private static int CHMCwindowID = 77777898;
 		private int GUI_WIDTH_SMALL = 256;
 		private int GUI_WIDTH_LARGE = 512;
 
@@ -49,6 +50,7 @@ namespace TarsierSpaceTech
 
 		private Rect _windowRect=new Rect();
         public WindowSate windowState = WindowSate.Small;
+        private bool _saveToFile = false;	
 
 		private int frameLimit = 5;
 		private int f = 0;
@@ -111,6 +113,7 @@ namespace TarsierSpaceTech
 			viewfinder.LoadImage(Properties.Resources.viewfinder);
 
 			PlanetNames = (from CelestialBody b in FlightGlobals.Bodies select b.name).ToList();
+            CHMCwindowID = Utilities.getnextrandomInt();
 			
 			Utilities.Log_Debug("TSTChm","Adding Input Callback");            
 			_vessel = vessel;
@@ -163,7 +166,8 @@ namespace TarsierSpaceTech
 			GUILayout.Box(_camera.Texture2D);
 			GUI.DrawTexture(GUILayoutUtility.GetLastRect(), viewfinder);
             GUILayout.BeginHorizontal();
-			if (GUILayout.Button("Fire")) StartCoroutine(fireCamera());
+            _saveToFile = GUILayout.Toggle(_saveToFile, "Save To File");
+            if (GUILayout.Button("Fire")) StartCoroutine(fireCamera(_saveToFile));
             if (GUILayout.Button(windowState == WindowSate.Small ? "Large" : "Small"))
             {
                 windowState = windowState == WindowSate.Small ? WindowSate.Large : WindowSate.Small;
@@ -177,9 +181,9 @@ namespace TarsierSpaceTech
 
 		public void OnGUI()
 		{
-			if (!_inEditor && _camera.Enabled && vessel.isActiveVessel && FlightUIModeController.Instance.Mode != FlightUIMode.ORBITAL)
+            if (!_inEditor && _camera.Enabled && vessel.isActiveVessel && FlightUIModeController.Instance.Mode != FlightUIMode.ORBITAL && !Utilities.isPauseMenuOpen())
 			{
-				_windowRect = GUILayout.Window(2989, _windowRect, drawWindow, "ChemCam - Use I,J,K,L to move camera", GUILayout.Width(GUI_WIDTH_SMALL));
+                _windowRect = GUILayout.Window(CHMCwindowID, _windowRect, drawWindow, "ChemCam - Use I,J,K,L to move camera", GUILayout.Width(GUI_WIDTH_SMALL));
 			}
 		}
 
@@ -315,7 +319,7 @@ namespace TarsierSpaceTech
 			updateAvailableEvents();
 		}
 
-		private IEnumerator fireCamera()
+        private IEnumerator fireCamera(bool saveToFile)
 		{
 			_lazerObj.enabled = true;
 			yield return new WaitForSeconds(0.75f);
@@ -336,12 +340,24 @@ namespace TarsierSpaceTech
 					if (t != null)
 					{
 						CelestialBody body=FlightGlobals.Bodies.Find(c=>c.name==t.name);
-						doScience(body);
-						yield break;
+						doScience(body);						
 					}
+                    else
+                    {
+                        ScreenMessages.PostScreenMessage("No Terrain in Range to analyse", 3f, ScreenMessageStyle.UPPER_CENTER);
+                    }
 				}
 			}
-			ScreenMessages.PostScreenMessage("No Terrain in Range",3f,ScreenMessageStyle.UPPER_CENTER);
+            if (saveToFile)
+            {
+                Utilities.Log_Debug("TSTChm", "Saving to File");
+                int i = 0;
+                while ((KSP.IO.File.Exists<TSTChemCam>("ChemCam_" + DateTime.Now.ToString("d-m-y") + "_" + i.ToString() + ".png", null)) ||
+                    (KSP.IO.File.Exists<TSTChemCam>("ChemCam_" + DateTime.Now.ToString("d-m-y") + "_" + i.ToString() + "Large.png", null)))
+                    i++;
+                _camera.saveToFile("ChemCam_" + DateTime.Now.ToString("d-m-y") + "_" + i.ToString(), "ChemCam");
+                ScreenMessages.PostScreenMessage("Picture saved", 3f, ScreenMessageStyle.UPPER_CENTER);
+            }			
 		}
 
 		public void doScience(CelestialBody planet)

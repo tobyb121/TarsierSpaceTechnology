@@ -35,12 +35,9 @@ namespace TarsierSpaceTech
         private Orbit _galaxy_orbit = null;
         private OrbitDriver _galaxy_orbitdriver = null;
         private VesselTargetModes _galaxy_targetmodes = VesselTargetModes.Direction;
-
         private static Mesh mesh = null;
-
-        private Material mat = new Material(Shader.Find("Unlit/Transparent"));
+        private Material mat = new Material(Shader.Find("Unlit/Transparent"));        
         public string theName;
-
         private ConfigNode config;
 
         private float _size = 1e3f;
@@ -78,12 +75,13 @@ namespace TarsierSpaceTech
                     };
                mesh.RecalculateNormals();
                 
-            }
-            gameObject.GetComponent<MeshFilter>().mesh = mesh;
+            }                              
+            gameObject.GetComponent<MeshFilter>().mesh = mesh;                          
             renderer.material = mat;
             gameObject.layer = 10;
             renderer.castShadows = false;
             renderer.receiveShadows = false;
+            renderer.enabled = true;
         }
         
         public void Update()
@@ -102,13 +100,13 @@ namespace TarsierSpaceTech
             this.Log_Debug("Creating Galaxy: " + name + " " + pos.ToString() + " " + textureURL);
             this.Log_Debug("Setting Name");
             this.name = name;
-            this.theName = theName;
-            this.Log_Debug("Setting Size");
-            this.size = 1e3f * size * ScaledSpace.ScaleFactor;
-            this.Log_Debug("Setting Position");
+            this.theName = theName;            
+            this.size = 1e3f * size * ScaledSpace.ScaleFactor;                       
             this.scaledPosition = -130e6f * pos.normalized;
-            this.Log_Debug("Setting Texture");
+            this.Log_Debug("Setting Scaled Position=" + this.scaledPosition);
+            this.Log_Debug("Position=" + this.position);            
             this.setTexture(GameDatabase.Instance.GetTexture(textureURL, false));
+            this.Log_Debug("Tex=" + this.mat.mainTexture.name);
             this.Log_Debug("Finished creating galaxy");
         }
 
