@@ -33,23 +33,21 @@ namespace TarsierSpaceTech
 {
 	public class TSTSpaceTelescope : PartModule, IScienceDataContainer
 	{
-		//private const int GUI_WIDTH_SMALL = 320; //256
-		//private const int GUI_WIDTH_LARGE = 600;
-        private int GUI_WIDTH_SMALL = 320; //256
-        private int GUI_WIDTH_LARGE = 600;
+		private int GUI_WIDTH_SMALL = 320; 
+        private int GUI_WIDTH_LARGE = 600;  
         
-        private static int CAMwindowID = 555555;
-        private static int GALwindowID = 555556;
-        private static int BODwindowID = 555557;
+        private static int CAMwindowID = 5955555;
+        private static int GALwindowID = 5955556;
+        private static int BODwindowID = 5955557;        
 
 		private bool _inEditor = false;
 		private Animation _animation;
 		private Transform _baseTransform;
         private Transform _cameraTransform;
 		private Transform _lookTransform;
-		private TSTCameraModule _camera;
+		private TSTCameraModule _camera;              
 
-		private bool _showTarget = false;		
+        private bool _showTarget = false;		
 		private bool _saveToFile = false;		
 		private List<ScienceData> _scienceData = new List<ScienceData>();
 
@@ -63,6 +61,9 @@ namespace TarsierSpaceTech
 		int selectedTargetIndex = -1;
         private Vector2 GalscrollViewVector = Vector2.zero;
         private Vector2 BodscrollViewVector = Vector2.zero;
+        public float PIDKp = 12f;
+        public float PIDKi = 6f;
+        public float PIDKd = 0.5f;
 
 		[KSPField(guiActive = false, guiName = "maxZoom", isPersistant = true)]
 		public int maxZoom = 5;
@@ -124,16 +125,28 @@ namespace TarsierSpaceTech
             Utilities.PrintTransform(_baseTransform, "_basetransform");            
             Utilities.PrintTransform(_cameraTransform, "_cameratransform");            
             Utilities.PrintTransform(_lookTransform, "_looktransform");
+            this.Log_Debug("part.CoMOffset=" + part.CoMOffset);
 			zeroRotation = _cameraTransform.localRotation;
-			_camera = _cameraTransform.gameObject.AddComponent<TSTCameraModule>();
+            this.Log_Debug("zeroRotation=" + zeroRotation);
+            _camera = _cameraTransform.gameObject.AddComponent<TSTCameraModule>();
 			_animation = _baseTransform.animation;
             
-			Events["eventOpenCamera"].active = true;
-			Events["eventCloseCamera"].active = false;
-			Events["eventShowGUI"].active = false;
+            if (!Active) //camera is not active on startup
+            {
+                Events["eventOpenCamera"].active = true;
+                Events["eventCloseCamera"].active = false;
+                Events["eventShowGUI"].active = false;
+            }
+			else //Camera is active on startup
+            {
+                Events["eventOpenCamera"].active = false;
+                Events["eventCloseCamera"].active = true;
+                Events["eventShowGUI"].active = true;
+            }			
 			Events["eventControlFromHere"].active = false;
 			Events["eventReviewScience"].active = false;
-			for (int i = 0; i < targets_raw.Count; i++)
+            
+            for (int i = 0; i < targets_raw.Count; i++)
 			{
 				Texture2D tex = new Texture2D(40, 40);
 				tex.LoadImage(targets_raw[i]);
@@ -147,22 +160,31 @@ namespace TarsierSpaceTech
 			Utilities.Log_Debug("TSTTel","Got ExpIDs");
             CAMwindowID = Utilities.getnextrandomInt();
             GALwindowID = Utilities.getnextrandomInt();
-            BODwindowID = Utilities.getnextrandomInt();
-            Utilities.Log_Debug("TSTTel","CAMwindowID=" + CAMwindowID);
-            Utilities.Log_Debug("TSTTel","GALwindowID=" + GALwindowID);
-            Utilities.Log_Debug("TSTTel","BODwindowID=" + BODwindowID);            
-			Utilities.Log_Debug("TSTTel","On end start");			
-			
-			Utilities.Log_Debug("TSTTel","Adding Input Callback");            
+            BODwindowID = Utilities.getnextrandomInt();                        
+			Utilities.Log_Debug("TSTTel","On end start");
+            StartCoroutine(setSASParams());
+            Utilities.Log_Debug("TSTTel","Adding Input Callback");            
 			_vessel = vessel;
 			_vessel.OnAutopilotUpdate += new FlightInputCallback(onFlightInput);				
 			GameEvents.onVesselChange.Add(new EventData<Vessel>.OnEvent(refreshFlightInputHandler));
 			GameEvents.onVesselDestroy.Add(new EventData<Vessel>.OnEvent(removeFlightInputHandler));
 			GameEvents.OnVesselRecoveryRequested.Add(new EventData<Vessel>.OnEvent(removeFlightInputHandler));
-			Utilities.Log_Debug("TSTTel","Added Input Callback");           			
-		}
+			Utilities.Log_Debug("TSTTel","Added Input Callback");
+            if (Active)
+                StartCoroutine(openCamera());
+        }
+            
+        IEnumerator setSASParams()
+        {
+            while (FlightGlobals.ActiveVessel.Autopilot.RSAS.pidPitch == null)
+                yield return null;
+            this.Log_Debug("Setting PIDs");
+            FlightGlobals.ActiveVessel.Autopilot.RSAS.pidPitch.ReinitializePIDsOnly(PIDKp, PIDKi, PIDKd);
+            FlightGlobals.ActiveVessel.Autopilot.RSAS.pidRoll.ReinitializePIDsOnly(PIDKp, PIDKi, PIDKd);
+            FlightGlobals.ActiveVessel.Autopilot.RSAS.pidYaw.ReinitializePIDsOnly(PIDKp, PIDKi, PIDKd);
+        }
 
-		public void removeFlightInputHandler(Vessel target)
+        public void removeFlightInputHandler(Vessel target)
 		{
 			Utilities.Log_Debug("TSTTel","Removing Input Callback vessel: " + target.name);
 			if (this.vessel == target)
@@ -170,8 +192,9 @@ namespace TarsierSpaceTech
 				_vessel.OnAutopilotUpdate -= (onFlightInput);
 				GameEvents.onVesselChange.Remove(this.refreshFlightInputHandler);
 				GameEvents.onVesselDestroy.Remove(this.removeFlightInputHandler);
-				GameEvents.OnVesselRecoveryRequested.Remove(this.removeFlightInputHandler);                
-				Utilities.Log_Debug("TSTTel","Input Callbacks removed this vessel");
+				GameEvents.OnVesselRecoveryRequested.Remove(this.removeFlightInputHandler);
+                //StopCoroutine(setSASParams());
+                Utilities.Log_Debug("TSTTel","Input Callbacks removed this vessel");
 			}            			
 		}
 
@@ -208,9 +231,8 @@ namespace TarsierSpaceTech
 		private void onFlightInput(FlightCtrlState ctrl)
 		{
 			if (_camera.Enabled && servoControl)
-			{
-			   
-				if (ctrl.X > 0)
+			{                
+                if (ctrl.X > 0)
 				{
 					_cameraTransform.Rotate(Vector3.up, -0.005f * _camera.fov);
 				}
@@ -235,7 +257,7 @@ namespace TarsierSpaceTech
 				}
 			}
 		}
-
+                
 		private ITargetable _lastTarget;
 		public override void OnUpdate()
 		{
@@ -246,9 +268,11 @@ namespace TarsierSpaceTech
 				selectedTargetIndex = -1;
 				_lastTarget = vessel.targetObject;
 			}
-			if (!_inEditor && _camera.Enabled && windowState != WindowSate.Hidden && vessel.isActiveVessel)
-			{
-				_camera.draw();
+
+            if (!_inEditor && _camera.Enabled && windowState != WindowSate.Hidden && vessel.isActiveVessel)
+            {                
+                //if (_camera.Enabled && f++ % frameLimit == 0)                                   
+                //_camera.draw();                
 			}
 		}
 
@@ -278,6 +302,7 @@ namespace TarsierSpaceTech
 				{
 					cameraTransform = _cameraTransform;
 					targetTransform = FlightGlobals.fetch.vesselTargetTransform;
+                    this.Log_Debug("showtarget cameratransform=" + cameraTransform.position + ",targettransform=" + targetTransform.position);
 				}
 				else if (targettingMode == TargettingMode.Galaxy && galaxyTarget != null)
 				{
@@ -461,7 +486,7 @@ namespace TarsierSpaceTech
 			Events["eventCloseCamera"].active = true;
 			Events["eventControlFromHere"].active = true;
 			Events["toggleServos"].active = true;
-			_camera.Enabled = true;
+			_camera.Enabled = true;            
 			Active = true;
 			windowState = WindowSate.Small;
 			_camera.changeSize(GUI_WIDTH_SMALL, GUI_WIDTH_SMALL );
@@ -475,7 +500,7 @@ namespace TarsierSpaceTech
 			Events["eventCloseCamera"].active = false;
 			Events["eventControlFromHere"].active = false;
 			Events["toggleServos"].active = false;
-			_camera.Enabled = false;
+			_camera.Enabled = false;           
 			Active = false;
 			StartCoroutine(closeCamera());
 			if (vessel.ReferenceTransform == _lookTransform)

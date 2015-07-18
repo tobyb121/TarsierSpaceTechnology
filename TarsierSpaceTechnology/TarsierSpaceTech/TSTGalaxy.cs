@@ -94,7 +94,7 @@ namespace TarsierSpaceTech
             this.config = config;
             string name = config.GetValue("name");
             string theName = config.GetValue("theName");
-            Vector3 pos = ConfigNode.ParseVector3(config.GetValue("location"));
+            Vector3 pos = ConfigNode.ParseVector3(config.GetValue("location"));            
             string textureURL = config.GetValue("textureURL");
             float size = float.Parse(config.GetValue("size"));
             this.Log_Debug("Creating Galaxy: " + name + " " + pos.ToString() + " " + textureURL);

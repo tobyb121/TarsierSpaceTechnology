@@ -70,8 +70,6 @@
     <None Include="TARGETS\target-10.bin" />
     <None Include="TARGETS\target-11.bin" />
     <None Include="TARGETS\target-12.bin" />
-    <None Include="TarsierSpaceLab.cs" />
-    <None Include="TarsierSpaceLabExperiment.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -79,6 +77,7 @@
     </Compile>
     <Compile Include="ToolBarManager.cs" />
     <Compile Include="TSTDOE.cs" />
+    <Compile Include="TSTGyroReactionWheel.cs" />
     <Compile Include="TSTInstalledMods.cs" />
     <Compile Include="TSTMenu.cs" />
     <Compile Include="TSTScienceParam.cs" />
@@ -112,6 +111,7 @@ xcopy "$(TargetPath)" "$(SolutionDir)..\GameData\$(ProjectName)\" /Y
 
 xcopy "$(ProjectDir)$(OutDir)TarsierSpaceTech.pdb" "$(SolutionDir)..\GameData\$(ProjectName)\" /Y
 
+cd "C:\Program Files (x86)\Unity\Editor\Data\MonoBleedingEdge\"
 "C:\Program Files (x86)\Unity\Editor\Data\MonoBleedingEdge\cli.bat"  "C:\Program Files (x86)\Unity\Editor\Data\MonoBleedingEdge\lib\mono\4.0\pdb2mdb.exe" $(TargetFileName)
 xcopy "$(ProjectDir)$(OutDir)$(TargetFileName).mdb" "$(SolutionDir)..\GameData\$(ProjectName)\" /Y
 
@@ -126,7 +126,7 @@ if exist "$(SolutionDir)..\$(ProjectName).zip" del "$(SolutionDir)..\$(ProjectNa
 c:\7za\7za a -tzip "$(SolutionDir)..\$(ProjectName).zip" "$(SolutionDir)..\GameData" "$(SolutionDir)..\LICENSE"
 )
 
-c:\7za\7za d -r "$(SolutionDir)..\$(ProjectName).zip" "*.ddsified" "*.pdb" "*.mdb"
+c:\7za\7za d -r "$(SolutionDir)..\$(ProjectName).zip" "*.ddsified" "*.pdb" "*.mdb" 
 xcopy /E /Y "$(SolutionDir)..\GameData" "%25KSP_DIR%25\GameData"</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

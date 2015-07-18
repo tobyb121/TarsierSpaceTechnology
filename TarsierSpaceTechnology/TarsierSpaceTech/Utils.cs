@@ -62,6 +62,15 @@ namespace TarsierSpaceTech
             return total;
         }
 
+        public static bool dumpCameras()
+        {
+            foreach (Camera cam in Camera.allCameras)
+            {
+                Log_Debug("Camera=" + cam.name + ",depth=" + cam.depth + ",cullingMask=" + cam.cullingMask + ",nearClipPane=" + cam.nearClipPlane + ",farClipPane=" + cam.farClipPlane + ",fieldofView=" + cam.fieldOfView);
+            }
+            return true;
+        }
+
         public static Camera findCameraByName(string camera)
         {
             foreach (Camera cam in Camera.allCameras)
@@ -69,7 +78,6 @@ namespace TarsierSpaceTech
                 if (cam.name == camera)
                     return cam;
             }
-            Log_Debug("Unable to find Camera by the name of " + camera);    
             return null;
         }
 

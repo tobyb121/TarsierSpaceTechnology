@@ -128,7 +128,9 @@ namespace TarsierSpaceTech
 			Events["eventCloseCamera"].active = false;
 			Actions["actionCloseCamera"].active = false;
 			updateAvailableEvents();
-		}
+            if (Active)
+                StartCoroutine(openCamera());
+        }
 
 		public override void OnUpdate()
 		{

@@ -32,12 +32,12 @@ namespace TarsierSpaceTech
     class TSTCameraModule : MonoBehaviour
     {
         private int textureWidth = 256; 
-        private int textureHeight = 256; 
-        // Standard Cameras
+        private int textureHeight = 256;
+        // Standard Cameras        
         public CameraHelper _skyBoxCam;
         public CameraHelper _farCam;
         public CameraHelper _nearCam;
-        // FullScreen Cameras
+        // FullScreen Cameras        
         public CameraHelper _skyBoxCamFS;
         public CameraHelper _farCamFS;
         public CameraHelper _nearCamFS;        
@@ -89,15 +89,7 @@ namespace TarsierSpaceTech
                 _farCam.enabled = value;
                 _nearCam.enabled = value;                
                 skyboxRenderers = (from Renderer r in (FindObjectsOfType(typeof(Renderer)) as IEnumerable<Renderer>) where (r.name == "XP" || r.name == "XN" || r.name == "YP" || r.name == "YN" || r.name == "ZP" || r.name == "ZN") select r).ToArray<Renderer>();
-                scaledSpaceFaders = FindObjectsOfType(typeof(ScaledSpaceFader)) as ScaledSpaceFader[];
-                foreach (Renderer r in skyboxRenderers)
-                {
-                    Utilities.DumpObjectProperties(skyboxRenderers, "SkyboxRenderers");                    
-                }
-                foreach (ScaledSpaceFader s in scaledSpaceFaders)
-                {
-                    Utilities.DumpObjectProperties(scaledSpaceFaders, "ScaledSpaceFaders" + s.celestialBody.name);                    
-                }                               
+                scaledSpaceFaders = FindObjectsOfType(typeof(ScaledSpaceFader)) as ScaledSpaceFader[];                                            
             }
         }
 
@@ -110,33 +102,69 @@ namespace TarsierSpaceTech
 
         public void Start()
         {
-            this.Log_Debug("Setting up cameras");            
-            _skyBoxCam = new CameraHelper(gameObject, Utilities.findCameraByName("Camera ScaledSpace"), _renderTexture, 16, false);
-            _farCam = new CameraHelper(gameObject, Utilities.findCameraByName("Camera 01"), _renderTexture, 17, true);
-            _nearCam = new CameraHelper(gameObject, Utilities.findCameraByName("Camera 00"), _renderTexture, 18, true);            
-            _skyBoxCamFS = new CameraHelper(gameObject, Utilities.findCameraByName("Camera ScaledSpace"), _renderTextureFS, 19, false);
-            _farCamFS = new CameraHelper(gameObject, Utilities.findCameraByName("Camera 01"), _renderTextureFS, 20, true);
-            _nearCamFS = new CameraHelper(gameObject, Utilities.findCameraByName("Camera 00"), _renderTextureFS, 21, true);
-            setupRenderTexture();
+            this.Log_Debug("Setting up cameras");
+            bool cams = Utilities.dumpCameras();            
+            _skyBoxCam = new CameraHelper(gameObject, Utilities.findCameraByName("Camera ScaledSpace"), _renderTexture, 17, false);
+            _farCam = new CameraHelper(gameObject, Utilities.findCameraByName("Camera 01"), _renderTexture, 18, true);
+            _nearCam = new CameraHelper(gameObject, Utilities.findCameraByName("Camera 00"), _renderTexture, 19, true);            
+            _skyBoxCamFS = new CameraHelper(gameObject, Utilities.findCameraByName("Camera ScaledSpace"), _renderTextureFS, 21, false);
+            _farCamFS = new CameraHelper(gameObject, Utilities.findCameraByName("Camera 01"), _renderTextureFS, 22, true);
+            _nearCamFS = new CameraHelper(gameObject, Utilities.findCameraByName("Camera 00"), _renderTextureFS, 23, true);
+            setupRenderTexture();            
             _skyBoxCam.reset();
             _farCam.reset();
-            _nearCam.reset();
+            _nearCam.reset();            
             _skyBoxCamFS.reset();
             _farCamFS.reset();
             _nearCamFS.reset();
-            this.Log_Debug("_skyBoxCam CullingMask =" + _skyBoxCam.camera.cullingMask + ",camera.farClipPlane" + _skyBoxCam.camera.farClipPlane);
+            this.Log_Debug("_skyBoxCam CullingMask =" + _skyBoxCam.camera.cullingMask + ",camera.nearClipPlane" + _skyBoxCam.camera.nearClipPlane + ",camera.farClipPlane" + _skyBoxCam.camera.farClipPlane);
             this.Log_Debug("_farCam CullingMask =" + _farCam.camera.cullingMask + ",camera.farClipPlane" + _farCam.camera.farClipPlane);
             this.Log_Debug("_nearCam CullingMask =" + _nearCam.camera.cullingMask + ",camera.farClipPlane" + _nearCam.camera.farClipPlane);
             this.Log_Debug("Camera setup complete");    
             
         }
+        /*
+        internal void Update()
+        {
+            if (_enabled)
+            {
+                //_skyBoxCam.reset();
+               // _skyBoxCamFS.reset();
+                //this.Log_Debug("TSTCAmeraModule Update run");
+                //_farCam.reset();
+                //_farCamFS.reset();
+                //_nearCam.reset();
+                //_nearCamFS.reset();
+                draw();
+            }
+        }
 
-        public void Update()
+        internal void FixedUpdate()
+        {
+            if (_enabled)
+            {
+                _skyBoxCam.reset();
+                //_skyBoxCamFS.reset();
+                //this.Log_Debug("TSTCAmeraModule Update run");
+                _farCam.reset();
+                //_farCamFS.reset();
+                _nearCam.reset();
+                //_nearCamFS.reset();
+                //draw();
+            }
+        }
+        */
+        internal void LateUpdate()
         {
             if (_enabled)
             {
                 _skyBoxCam.reset();
                 _skyBoxCamFS.reset();
+                //this.Log_Debug("TSTCAmeraModule Update run");
+                _farCam.reset();
+                _farCamFS.reset();
+                _nearCam.reset();
+                _nearCamFS.reset();
                 draw();
             }
         }
@@ -154,7 +182,7 @@ namespace TarsierSpaceTech
             _nearCamFS.fov = fov;    
         }
 
-        public void changeSize(int width, int height)
+        internal void changeSize(int width, int height)
         {
             textureWidth = width;
             textureHeight = height;
@@ -183,23 +211,24 @@ namespace TarsierSpaceTech
             this.Log_Debug("Finish Setting Up Render Texture");
         }
 
-        public Texture2D draw()
+        internal Texture2D draw()
         {
             RenderTexture activeRT = RenderTexture.active;
             RenderTexture.active = _renderTexture;
-
+            
+            this.Log_Debug("about to draw: vessel.position " + FlightGlobals.ActiveVessel.GetTransform().position + ",vessel.worldpos3d " + FlightGlobals.ActiveVessel.GetWorldPos3D());            
+            this.Log_Debug("skyBoxCam.position " + _skyBoxCam.position + ",farcamposition=" + _farCam.position + ",nearcamposition=" + _nearCam.position);
             //set camera clearflags to the skybox and clear/render the skybox only
-            _skyBoxCam.camera.clearFlags = CameraClearFlags.Skybox;
+            _skyBoxCam.camera.clearFlags = CameraClearFlags.Skybox;            
             _skyBoxCam.camera.Render();
             //turn off the skybox renderers - XP, XN, YP, YN, ZP, ZN which are used to draw the KSP skybox. We don't want to see them in the camera
             foreach (Renderer r in skyboxRenderers)
                 r.enabled = false;
             // KSP/Scaled Space/Planet Fader turn on the renderers for the planet faders
             foreach (ScaledSpaceFader s in scaledSpaceFaders) 
-                s.r.enabled = true;
+                s.r.enabled = true;            
             _skyBoxCam.camera.clearFlags = CameraClearFlags.Depth; //clear only the depth buffer
-            //_skyBoxCam.camera.farClipPlane = 3e15f; //set clipping plane distance
-            _skyBoxCam.camera.farClipPlane = 3e25f; //set clipping plane distance
+            _skyBoxCam.camera.farClipPlane = 3e15f; //set clipping plane distance            
             _skyBoxCam.camera.Render(); // render the skyboxcam
             foreach (Renderer r in skyboxRenderers) // turn the skybox renderers back on
                 r.enabled = true;
@@ -210,12 +239,14 @@ namespace TarsierSpaceTech
             RenderTexture.active = activeRT;
             return _texture2D;
         }
-
-        public Texture2D drawFS() // Same as Draw() but for fullscreencameras
+                
+        internal Texture2D drawFS() // Same as Draw() but for fullscreencameras
         {
             RenderTexture activeRT = RenderTexture.active;
             RenderTexture.active = _renderTextureFS;
-
+            _skyBoxCamFS.reset();              
+            _farCamFS.reset();            
+            _nearCamFS.reset();
             _skyBoxCamFS.camera.clearFlags = CameraClearFlags.Skybox;
             _skyBoxCamFS.camera.Render();
             foreach (Renderer r in skyboxRenderers)
@@ -234,7 +265,7 @@ namespace TarsierSpaceTech
             RenderTexture.active = activeRT;
             return _texture2DFullSze;
         }
-
+             
         public void saveToFile(string fileName, string devtype) // Save Image to filesystem
         {
             string lgefileName = fileName + "Large.png";
@@ -317,14 +348,23 @@ namespace TarsierSpaceTech
             }
         }
 
+        
         public bool enabled
         {
             get { return _camera.enabled; }
             set { _camera.enabled = value; }
         }
 
+        public Vector3d position
+        {
+            get { return _go.transform.position; }
+            set { _go.transform.position = position;  }
+        }
+              
+
         public void reset()
         {
+            this.Log_Debug("Resetting camera " + _camera.name);
             _camera.CopyFrom(_copyFrom);
             _camera.targetTexture = _renderTarget;
             if (_attachToParent)
@@ -332,15 +372,17 @@ namespace TarsierSpaceTech
                 _go.transform.parent = _parent.transform;
                 _go.transform.localPosition = Vector3.zero;
                 _go.transform.localEulerAngles = Vector3.zero;
+                this.Log_Debug("Attached to parent, pos=" + _go.transform.parent.transform.position.ToString("############.#################"));
             }
             else
             {
                 _go.transform.rotation = _parent.transform.rotation;
+                this.Log_Debug("NOT Attached to parent pos=" + _go.transform.position + ",rotation=" + _go.transform.rotation);
             }
             _camera.rect = new Rect(0, 0, 1, 1);
             _camera.depth = _depth;
             _camera.fieldOfView = _fov;
-            _camera.enabled = enabled;
+            _camera.enabled = enabled;            
         }
     }
 }

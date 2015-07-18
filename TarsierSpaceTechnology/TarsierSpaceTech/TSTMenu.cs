@@ -36,22 +36,28 @@ namespace TarsierSpaceTech
         private IButton button1;
         private ApplicationLauncherButton stockToolbarButton = null; // Stock Toolbar Button
         private static int TSTwindowID = new System.Random().Next();
+        private static int FTTwindowID = 0;
         private const float FWINDOW_WIDTH = 430;
         private const float WINDOW_BASE_HEIGHT = 320;
         private Rect FwindowPos = new Rect(40, Screen.height / 2 - 100, FWINDOW_WIDTH, WINDOW_BASE_HEIGHT); // Flight Window position and size
+        private Rect FTwindowPos = new Rect(60 + FWINDOW_WIDTH, Screen.height / 2 - 100, FWINDOW_WIDTH, WINDOW_BASE_HEIGHT); // Flight Window position and size
         private GUIStyle sectionTitleStyle, subsystemButtonStyle, statusStyle, warningStyle, PartListStyle, PartListPartStyle;
-        private GUIStyle scrollStyle;
+        private GUIStyle scrollStyle, resizeStyle;
         private Vector2 CamscrollViewVector = Vector2.zero;
         private Vector2 SDDscrollViewVector = Vector2.zero;
-                
+        private bool mouseDown = false;
+
         //GuiVisibility
         private bool _Visible = false;
+        private bool _FTVisible = false;
 
         //TST Parts
         private Vessel actVessel = FlightGlobals.ActiveVessel;
         private List<TSTChemCam> tstchemcam = new List<TSTChemCam>();
         private List<TSTSpaceTelescope> tstSpaceTel = new List<TSTSpaceTelescope>();
         private List<TSTScienceHardDrive> tstSDD = new List<TSTScienceHardDrive>();
+        private List<TSTGyroReactionWheel> tstGyroReactionWheel = new List<TSTGyroReactionWheel>();        
+        private int FTTelIndex = 0;
 
         public Boolean GuiVisible
         {
@@ -72,7 +78,7 @@ namespace TarsierSpaceTech
             
             FwindowPos.x = TSTMstStgs.Instance.TSTsettings.FwindowPosX;
             FwindowPos.y = TSTMstStgs.Instance.TSTsettings.FwindowPosY;
-
+            FTTwindowID = TSTwindowID + 1;
             RT2Present = AssemblyLoader.loadedAssemblies.Any(a => a.assembly.GetName().Name == "RemoteTech");
             if (RT2Present)
                 Utilities.Log("TSTMenu", "RT2 present");
@@ -184,6 +190,7 @@ namespace TarsierSpaceTech
                 tstchemcam = FlightGlobals.ActiveVessel.FindPartModulesImplementing<TSTChemCam>().ToList();
                 tstSpaceTel = FlightGlobals.ActiveVessel.FindPartModulesImplementing<TSTSpaceTelescope>().ToList();
                 tstSDD = FlightGlobals.ActiveVessel.FindPartModulesImplementing<TSTScienceHardDrive>().ToList();
+                tstGyroReactionWheel = FlightGlobals.ActiveVessel.FindPartModulesImplementing<TSTGyroReactionWheel>().ToList();
 
                 if (tstchemcam.Count() == 0 && tstSpaceTel.Count() == 0 && tstSDD.Count() == 0) // No TST parts on-board disable buttons
                 {
@@ -196,7 +203,7 @@ namespace TarsierSpaceTech
                         this.stockToolbarButton.VisibleInScenes = ApplicationLauncher.AppScenes.SPH | ApplicationLauncher.AppScenes.VAB | ApplicationLauncher.AppScenes.MAPVIEW;
                     }
                     GuiVisible = false;
-                }
+                }  
                 else //TST parts are on-board enable buttons
                 {
                     if (ToolbarManager.ToolbarAvailable && TSTMstStgs.Instance.TSTsettings.UseAppLauncher == false)
@@ -240,7 +247,10 @@ namespace TarsierSpaceTech
    
             GUI.skin = HighLogic.Skin;
             if (!Utilities.WindowVisibile(FwindowPos)) Utilities.MakeWindowVisible(FwindowPos);
-            FwindowPos = GUILayout.Window(TSTwindowID, FwindowPos, windowF, "Tarsier Space Technology", GUILayout.MinHeight(20));            
+            FwindowPos = GUILayout.Window(TSTwindowID, FwindowPos, windowF, "Tarsier Space Technology", GUILayout.MinHeight(20), GUILayout.ExpandWidth(true),
+                            GUILayout.ExpandHeight(true));
+            if (_FTVisible)
+                FTwindowPos = GUILayout.Window(FTTwindowID, FTwindowPos, windowFT, "Fine Tune Gyros & SAS", GUILayout.MinHeight(20));     
         }
 
         private void windowF(int id)
@@ -279,10 +289,13 @@ namespace TarsierSpaceTech
             PartListPartStyle.alignment = TextAnchor.LowerLeft;
             PartListPartStyle.stretchWidth = false;
             PartListPartStyle.normal.textColor = Color.white;
-            
-            
+
+            resizeStyle = new GUIStyle(GUI.skin.button);
+            resizeStyle.alignment = TextAnchor.MiddleCenter;
+            resizeStyle.padding = new RectOffset(1, 1, 1, 1);
+
             GUIContent label = new GUIContent("X", "Close Window");            
-            Rect rect = new Rect(410, 4, 16, 16);
+            Rect rect = new Rect(FwindowPos.width - 17, 4, 16, 16);
             if (GUI.Button(rect, label))
             {
                 onAppLaunchToggle();
@@ -292,7 +305,7 @@ namespace TarsierSpaceTech
             GUILayout.BeginVertical();
             //Scrollable Camera list starts here                       
             // Begin the ScrollView                        
-            CamscrollViewVector = GUILayout.BeginScrollView(CamscrollViewVector, GUILayout.Height(100), GUILayout.Width(420));
+            CamscrollViewVector = GUILayout.BeginScrollView(CamscrollViewVector, GUILayout.Height(100));
             GUILayout.BeginVertical();
                       
             if (tstchemcam.Count() == 0 && tstSpaceTel.Count() == 0)
@@ -306,8 +319,9 @@ namespace TarsierSpaceTech
                 GUILayout.Label("Name", PartListStyle, GUILayout.Width(160));
                 GUILayout.Label("Type", PartListStyle, GUILayout.Width(60));
                 GUILayout.Label("Zoom", PartListStyle, GUILayout.Width(40));
-                GUILayout.EndHorizontal();   
+                GUILayout.EndHorizontal();
 
+                int ind = 0;
                 foreach (TSTSpaceTelescope scope in tstSpaceTel)
                 {
                     GUILayout.BeginHorizontal();
@@ -339,7 +353,7 @@ namespace TarsierSpaceTech
                                 {
                                     scope.hideGUI();
                                 }
-                            }
+                            }                            
                         }
                         else
                         {
@@ -353,12 +367,19 @@ namespace TarsierSpaceTech
                             if (GUILayout.Button(new GUIContent("View", "View Science"), GUILayout.Width(35f)))
                                 scope.ReviewData();
                         }
+                        if (GUILayout.Button(new GUIContent("F/T", "Fine Tune Gyros"), GUILayout.Width(34f)))
+                        {
+                            FTTelIndex = ind;
+                            _FTVisible = !_FTVisible;
+                        }
                     }
                     else
                     {
                         GUILayout.Label("No Connection", PartListPartStyle, GUILayout.Width(76));
                     }
                     GUILayout.EndHorizontal();
+                    
+                    ind++;
                 }
                 foreach (TSTChemCam chemcam in tstchemcam)
                 {
@@ -402,7 +423,7 @@ namespace TarsierSpaceTech
             
             //Scrollable SDD list starts here                       
             // Begin the ScrollView                        
-            SDDscrollViewVector = GUILayout.BeginScrollView(SDDscrollViewVector, GUILayout.Height(215), GUILayout.Width(420));
+            SDDscrollViewVector = GUILayout.BeginScrollView(SDDscrollViewVector);
             GUILayout.BeginVertical();
             if (tstSDD.Count() == 0)
             {
@@ -451,11 +472,102 @@ namespace TarsierSpaceTech
             
             GUILayout.EndVertical();
             //Scrollable SDD list ends here
+            GUILayout.Space(14);
+            GUIContent resizeContent = new GUIContent("R", "Resize Window");
+            Rect resizeRect = new Rect(FwindowPos.width - 17, FwindowPos.height - 17, 16, 16);
+            GUI.Label(resizeRect, resizeContent, resizeStyle);
+            HandleResizeEvents(resizeRect);
             
-            if (!Input.GetMouseButtonDown(1))
+            GUI.DragWindow();
+        }
+
+        private void HandleResizeEvents(Rect resizeRect)
+        {
+            var theEvent = Event.current;
+            if (theEvent != null)
             {
-                GUI.DragWindow(new Rect(0, 0, Screen.width, 30));
+                if (!mouseDown)
+                {
+                    if (theEvent.type == EventType.MouseDown && theEvent.button == 0 && resizeRect.Contains(theEvent.mousePosition))
+                    {
+                        mouseDown = true;
+                        theEvent.Use();
+                    }
+                }
+                else if (theEvent.type != EventType.Layout)
+                {
+                    if (Input.GetMouseButton(0))
+                    {
+                        // Flip the mouse Y so that 0 is at the top
+                        float mouseY = Screen.height - Input.mousePosition.y;
+
+                        FwindowPos.width = Mathf.Clamp(Input.mousePosition.x - FwindowPos.x + (resizeRect.width / 2), 50, Screen.width - FwindowPos.x);
+                        FwindowPos.height = Mathf.Clamp(mouseY - FwindowPos.y + (resizeRect.height / 2), 50, Screen.height - FwindowPos.y);                        
+
+                    }
+                    else
+                    {
+                        mouseDown = false;
+                    }
+                }
             }
+        }
+
+        private void windowFT(int id)
+        {
+            //Init styles
+            sectionTitleStyle = new GUIStyle(GUI.skin.label);
+            sectionTitleStyle.alignment = TextAnchor.MiddleCenter;
+            sectionTitleStyle.stretchWidth = true;
+            sectionTitleStyle.fontStyle = FontStyle.Bold;
+
+            statusStyle = new GUIStyle(GUI.skin.label);
+            statusStyle.alignment = TextAnchor.MiddleLeft;
+            statusStyle.stretchWidth = true;
+            statusStyle.normal.textColor = Color.white;
+                        
+            GUIContent label = new GUIContent("X", "Close Window");
+            Rect rect = new Rect(410, 4, 16, 16);
+            if (GUI.Button(rect, label))
+            {
+                _FTVisible = false;
+                return;
+            }
+
+            GUILayout.BeginVertical();
+            GUILayout.Label("Gyroscopic Reaction Wheels:");
+            float GyroSensitivity = tstGyroReactionWheel[FTTelIndex].sensitivity;
+            GUILayout.Label("Sensitivity=" + GyroSensitivity.ToString("##00.00"), statusStyle, GUILayout.Width(130));
+            GyroSensitivity = GUILayout.HorizontalSlider(GyroSensitivity, 0.001f, 1f, GUILayout.ExpandWidth(true));
+            tstGyroReactionWheel[FTTelIndex].sensitivity = GyroSensitivity;
+
+            float powerscale = tstGyroReactionWheel[FTTelIndex].powerscale;
+            GUILayout.Label("PowerScale=" + powerscale.ToString("##00.00"), statusStyle, GUILayout.Width(130));
+            powerscale = GUILayout.HorizontalSlider(powerscale, 0f, 2f, GUILayout.ExpandWidth(true));
+            tstGyroReactionWheel[FTTelIndex].powerscale = powerscale;
+
+            float pidkp = tstSpaceTel[FTTelIndex].PIDKp;
+            float pidki = tstSpaceTel[FTTelIndex].PIDKi; 
+            float pidkd = tstSpaceTel[FTTelIndex].PIDKd;
+            GUILayout.Label("RSAS PIDS:"); 
+            GUILayout.BeginHorizontal();      
+            GUILayout.Label("KP=" + pidkp.ToString("##00.000"),statusStyle, GUILayout.Width(100));
+            pidkp = GUILayout.HorizontalSlider(pidkp, 0.001f, 12f, GUILayout.ExpandWidth(true));
+            GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("KI=" + pidki.ToString("##00.000"), statusStyle, GUILayout.Width(100));
+            pidki = GUILayout.HorizontalSlider(pidki, 0.001f, 12f, GUILayout.ExpandWidth(true));
+            GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("KD=" + pidkd.ToString("##00.000"), statusStyle, GUILayout.Width(100));
+            pidkd = GUILayout.HorizontalSlider(pidkd, 0.001f, 12f, GUILayout.ExpandWidth(true));
+            GUILayout.EndHorizontal();
+            tstSpaceTel[FTTelIndex].PIDKp = pidkp;
+            tstSpaceTel[FTTelIndex].PIDKi = pidki;
+            tstSpaceTel[FTTelIndex].PIDKd = pidkd;            
+            GUILayout.EndVertical();
+            
+            GUI.DragWindow();
         }
 
         private void checkRT2()
