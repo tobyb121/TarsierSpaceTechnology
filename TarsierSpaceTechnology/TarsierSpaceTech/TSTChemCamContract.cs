@@ -102,13 +102,49 @@ namespace TarsierSpaceTech
 
         protected override bool Generate()
         {
+            TSTChemCamContract[] TSTChemCamContracts = ContractSystem.Instance.GetCurrentContracts<TSTChemCamContract>();
+            int offers = 0;
+            int active = 0;
+            for (int i = 0; i < TSTChemCamContracts.Length; i++)
+            {
+                TSTChemCamContract m = TSTChemCamContracts[i];
+                if (m.ContractState == State.Offered)
+                    offers++;
+                else if (m.ContractState == State.Active)
+                    active++;
+            }
+            this.Log_Debug("ChemCam Contracts check offers=" + offers + " active=" + active);
+            if (offers >= TSTMstStgs.Instance.TSTsettings.maxChemCamContracts)
+                return false;
+            if (active >= TSTMstStgs.Instance.TSTsettings.maxChemCamContracts)
+                return false;
             this.Log_Debug("Generating ChemCam Contract");
             agent = Contracts.Agents.AgentList.Instance.GetAgent("Tarsier Space Technology");
             expiryType = DeadlineType.None;
-            deadlineType = DeadlineType.None;            
+            deadlineType = DeadlineType.None;
+            //IEnumerable<CelestialBody> availableBodies = FlightGlobals.Bodies.Where(b => b.name != "Sun" && b.name != "Jool");  
             System.Random r = new System.Random(MissionSeed);
-            IEnumerable<CelestialBody> availableBodies=FlightGlobals.Bodies.Where(b=>b.name!="Sun" && b.name!="Jool");
-            target = availableBodies.ElementAt(r.Next(availableBodies.Count() - 1));
+            if (TSTMstStgs.Instance.TSTsettings.photoOnlyChemCamContracts)  //If we only want Bodies that have already been PhotoGraphed by a Telescope
+            {
+                TSTTelescopeContract[] TSTTelescopeContractsCompleted = ContractSystem.Instance.GetCompletedContracts<TSTTelescopeContract>();
+                List<CelestialBody> availTelescopeBodies = new List<CelestialBody>();
+                for (int i = 0; i < TSTTelescopeContractsCompleted.Length; i++)
+                {
+                    if (TSTTelescopeContractsCompleted[i].target.type == typeof(CelestialBody))  //We only want Bodies, not Galaxies                    
+                    {
+                        CelestialBody contractBody = (CelestialBody)TSTTelescopeContractsCompleted[i].target.BaseObject;
+                        availTelescopeBodies.Add(contractBody);
+                    }
+                }                
+                IEnumerable<CelestialBody> availableBodies = availTelescopeBodies.ToArray().Where(b => !TSTMstStgs.Instance.TSTgasplanets.TarsierPlanetOrder.Contains(b.name));  //Exclude the GasPlanets
+                target = availableBodies.ElementAt(r.Next(availableBodies.Count() - 1));
+            }
+            else  //We can use any Bodies
+            {                
+                IEnumerable<CelestialBody> availableBodies = FlightGlobals.Bodies.Where(b => !TSTMstStgs.Instance.TSTgasplanets.TarsierPlanetOrder.Contains(b.name)); //Exclude the GasPlanets
+                target = availableBodies.ElementAt(r.Next(availableBodies.Count() - 1));
+            }
+            
             this.Log_Debug("Target: " + target.name);
             this.Log_Debug("Creating Science Param");
             TSTScienceParam param2 = new TSTScienceParam();
@@ -121,9 +157,9 @@ namespace TarsierSpaceTech
                 param2.matchFields.Add(biome);
             }
             AddParameter(param2);
-            ContractPrestige p = TSTProgressTracker.getChemCamPrestige(target);
-            if (p != base.prestige)
-                return false;
+            ContractPrestige p = TSTProgressTracker.getChemCamPrestige(target); //Get the target prestige level            
+            if (p != base.prestige)  //If the prestige is not the required level don't generate.
+                return false;                
             SetFunds(300, 400,target);
             SetReputation(35,target);
             SetScience(30,target);

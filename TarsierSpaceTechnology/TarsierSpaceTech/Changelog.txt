@@ -1,0 +1,68 @@
+﻿V5.5 Amended support for Distant Object Enhancement mod and Remote Tech mod so that TST no longer is bound to a specific version of these mods.
+	 From now on TST should work with any version of DOE and RT. Reminder: DOE support for flares should now work. RemoteTech : TST parts and menu only works if you have
+	 local control or active connect for a vessel.   
+	 Added Science Defs for Real Solar System and Outer Planets Mods. Science defs and contracts as well as all of TST should now fully support RSS and OPM. NB: To use the science defs
+	 for RSS and OPM you MUST have Module Manager mod installed.   
+	 ChemCam contracts will now only offer/allow up to x active or offerred contracts (before was unlimited). x by default is 3. You can change this in the Config.cfg file field "maxChemCamContracts".   
+	 ChemCam contracts will now only be offered for bodies you have already photographed using a Telescope by default. You can change this in the Config.cfg file field "photoOnlyChemCamContracts".     	    
+	 Externalised lists of bodies and galaxies now in the config.cfg settings file, these lists determine the order (and if) a Telescope/ChemCam contract will be offerred.   
+	 The TSTGasPlanets node in the config file is a list of gas planets that are excluded from all ChemCam contracts, Can't land on a gas planet can we!   
+	 The TSTStockPlanetOrder node is the valid and order of bodies and galaxies contracts will be offerred for Telescope contracts. For ChemCam contracts a random body is selected from this list based on the prestige level 
+	 you have already completed a ChemCam contract for (As per previous comment about prestige levels for ChemCam contracts).   
+	 The TSTRSSPlanetOrder node is the list used if you have Real Solar System mod installed (ignored if it is not installed), operates the same as the TSTStockPlanetOrder list described above.   
+	 The TSTOPMPlanetOrder node is the list used if you have Outer Planets mod installed (ignored if it is not installed), operates the same as the TSTStockPlanetOrder list described above.    
+V5.4.1 Support for KSP 1.0.4. Attempting the impossible to improve the camera wobble in a 32bit Game engine where floating point errors are inevitable and a losing
+	 battle with what is called 'spatial jitter'.  
+	 Have added Gyroscopic ReactionWheels to the Space Telescope parts.  
+	 Have added a Button in the TST menu labeled "F/T" that appears to each space telescope.   
+	 Pressing this button will bring up a fine tuning window that allows you to:  
+	 Fine tune the Gyroscopic ReactionWheels "Sensitivity" (default=1) and "Powerscale" (default=0.10 torque) using sliders.  
+	 Have added fine tuning of the SAS PID controller "KP (default=12), KI (default=6), KD (default=0.5)" values through three sliders on the same window.  
+	 If you don't know how a PID controller works or these values you can start reading up here.  
+	 https://en.wikipedia.org/wiki/PID_controller  
+V5.4 Support for KSP 1.0.3. Also, KSP 1.0.3 stock fixes for camera and orbit wobbles seems to have improved the camera wobbles (but still not perfect).  
+V5.3 Fixed GUI issue with some mods like Critical Temperature Gauges.  
+	 ToolBar and Stock AppLauncher buttons/icons and the GUI will now only  appear if you have TST parts attached to the active vessel.  
+	 Now compatible with Kopernicus MOD and it's config mods.  
+	 Saved Camera pictures now saved in two sizes (the camera window size,  AND Full Screen sized).  
+	 Can also now save pictures from the ChemCam part  (previously only telescopes could save pictures).  
+	 Fixed misc screen messages in relation to collecting science and taking  pictures.  
+V5.2 Added check for local control when using Remote Tech (as well as antenna control from V5.1).
+V5.1 Remote Tech support for new GUI window. Now if no connection you cannot  open/close cameras, view science or move science to SDDs. 
+	 Re-sized the new GUI window to make it a bit bigger.
+	 This version will not break save games from version 5.0.
+V5.0 Added Menu (GUI) that can be opened/closed via the stock AppLauncher or Toolbar by Blizzy.
+	 Menu shows telescopes, chemcams and SDDs on vessel. Allows you to  open/close cameras, Camera GUI, fill SDDs and view science directly from  the GUI.
+	 Added Menu items to camera screen to view Celestial Bodies (just like  the Galaxy list) so you can set camera target from the list.
+	 Added Action Group support for open/close cameras and fill SDDs. 
+	 Added Distant Object Enhancement mod support. 
+	 Added a Config file with the following Settings:-
+	 FwindowPosX,Y - X and Y position for the new GUI window.
+	 CwindowPosX,Y - X and Y position for the Telescopes/ChemCam Camera GUI window.
+	 GalwindowPosX,Y - X and Y position for the Galaxy list window.
+	 BodwindowPosX,Y - X and Y position for the Celestial Bodies list window.
+	 ChemwinSml, Lge - ChemCam Window Size in pixels for both small and large  window. (can now toggle small and large windows for the ChemCam just  like the Telescope camera GUI).
+	 TelewinSml, Lge - Same as the ChemCam Window size but this is for the telescope camera GUI.
+	 UseAppLauncher = true / false - if True uses the in-game Application  Launcher buttons for the new Menu GUI. If set to false, will use Toolbar  by Blizzy (optional separate mod install).
+	 debugging = False / True - Turns on/off Log Spam for debugging purposes.s
+v4.7 Added KAS and KIS support for the small HDD(SDD) - Requires Module  Manager to be installed.
+   Can now STORE science data into SDDs via EVA. Reminder Warning: Storing  and removing science data from SDDs lose some science value each time  (data corruption feature).
+   Drive Capacity for SDDs upped to 120mits (about 4 pictures) and 480mits  (about 16 pictures). 
+   Re-balance max temperatures of parts. 
+   The Small Telescope now only returns 80% of max science value for  pictures of planetoids and 50% of max science value for pictures of  galaxies. 
+   The Large Telescope returns Full science value. 
+   Added Science descriptions for the Galaxies. 
+   Added lab boost to Science gathered - science can now be boosted in the  Mobile Lab. 
+   Added KSP-AVC support. 
+   Converted all PNGs to DDS files now supported in KSP 1.0.x.
+v4.6: Compat. with KSP V1.0.0. 
+Rebalanced all parts costs and to new Tech Tree. 
+nerfed Small telescope range.
+ Fixes for contract spamming and you now need the Large telescope Tech for the Galaxy contracts. 
+v4.5d: Fixed for 0.90 Compatibility
+v4.5c: Fixed recovery of science data from TST parts 
+v4.5b: Fixed build script that messed up 
+4.5a release v4.5a: Fix for null reference error on first load 
+v4.5: Galaxies added for the telescope, allows you to search for and collect science for distant galaxies and nebulae 
+v4.4: Fixes issues where ChemCam and Telescope input callbacks were not transferred to the new vessel when undocked. 
+v4.0: Introduces the contracts system, custom contracts for the ChemCam and Telescopes

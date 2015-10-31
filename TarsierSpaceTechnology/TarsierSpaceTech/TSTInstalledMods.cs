@@ -31,15 +31,7 @@ namespace TarsierSpaceTech
 {
     class TSTInstalledMods
     {
-            private static Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
-
-            internal static bool IsSMInstalled
-            {
-                get
-                {
-                    return IsModInstalled("ShipManifest");
-                }
-            }
+            private static Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();                   
 
             internal static bool IsRTInstalled
             {
@@ -47,23 +39,7 @@ namespace TarsierSpaceTech
                 {
                     return IsModInstalled("RemoteTech");
                 }
-            }
-
-            internal static bool IsSnacksInstalled
-            {
-                get
-                {
-                    return IsModInstalled("Snacks");
-                }
-            }
-
-            internal static bool IsTACLSInstalled
-            {
-                get
-                {
-                    return IsModInstalled("TacLifeSupport");
-                }
-            }
+            }            
 
             internal static bool IsKopInstalled
             {
@@ -73,7 +49,31 @@ namespace TarsierSpaceTech
                 }
             }
 
-            internal static bool IsModInstalled(string assemblyName)
+            internal static bool IsRSSInstalled
+            {
+                get
+                {                   
+                    return IsModInstalled("RealSolarSystem");
+                }
+            }
+
+        internal static bool IsOPMInstalled
+        {
+            get
+            {
+                CelestialBody sarnus = FlightGlobals.Bodies.FirstOrDefault(a => a.name == "Sarnus");
+                if (sarnus != null)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }                
+            }
+        }
+
+        internal static bool IsModInstalled(string assemblyName)
             {
                 Assembly assembly = (from a in assemblies
                                      where a.FullName.Contains(assemblyName)
