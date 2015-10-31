@@ -81,7 +81,10 @@ namespace TarsierSpaceTech
             FTTwindowID = TSTwindowID + 1;
             RT2Present = AssemblyLoader.loadedAssemblies.Any(a => a.assembly.GetName().Name == "RemoteTech");
             if (RT2Present)
+            {
                 Utilities.Log("TSTMenu", "RT2 present");
+                RTWrapper.InitTRWrapper();
+            }                
 
             if (ToolbarManager.ToolbarAvailable && TSTMstStgs.Instance.TSTsettings.UseAppLauncher == false)
             {
@@ -571,9 +574,12 @@ namespace TarsierSpaceTech
         }
 
         private void checkRT2()
-        {            
-            RT2VesselConnected = (RemoteTech.API.API.HasLocalControl(FlightGlobals.ActiveVessel.id) || RemoteTech.API.API.HasAnyConnection(FlightGlobals.ActiveVessel.id));
-            RT2VesselDelay = RemoteTech.API.API.GetShortestSignalDelay(FlightGlobals.ActiveVessel.id);
+        {
+            if (RTWrapper.APIReady)
+            {
+                RT2VesselConnected = (RTWrapper.RTactualAPI.HasLocalControl(FlightGlobals.ActiveVessel.id) || RTWrapper.RTactualAPI.HasLocalControl(FlightGlobals.ActiveVessel.id));
+                RT2VesselDelay = RTWrapper.RTactualAPI.GetShortestSignalDelay(FlightGlobals.ActiveVessel.id);
+            }
             this.Log_Debug("RT2VesselConnected = " + RT2VesselConnected);
             this.Log_Debug("RT2VesselDelay = " + RT2VesselDelay);
         }

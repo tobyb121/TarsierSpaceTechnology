@@ -36,6 +36,9 @@ namespace TarsierSpaceTech
     {
         private static TSTProgressTracker Instance;
 
+        private static bool isRSSactive = false;
+        private static bool isOPMactive = false;
+
         public static bool isActive
         {
             get
@@ -48,6 +51,8 @@ namespace TarsierSpaceTech
         {
             this.Log_Debug("Starting Tarsier Progress Tracking");
             Instance = this;
+            isRSSactive = TSTInstalledMods.IsRSSInstalled;
+            isOPMactive = TSTInstalledMods.IsOPMInstalled;
         }
 
         //int i = 0;
@@ -108,11 +113,29 @@ namespace TarsierSpaceTech
         }
 
         public static string GetNextTelescopeTarget()
-        {
-            string target = TarsierPlanetOrder.FirstOrDefault(s=>!Instance.TelescopeData[s]);
-
-            if (target == default(string))
-                target = TarsierPlanetOrder[UnityEngine.Random.Range((int)0, TarsierPlanetOrder.Length)];
+        {            
+            string target = default(string);
+            if (isRSSactive) //If Real Solar System is installed
+            {
+                target = TSTMstStgs.Instance.TSTrssplanets.RSSPlanetOrder.FirstOrDefault(s => !Instance.TelescopeData[s]);
+                if (target == default(string))
+                    target = TSTMstStgs.Instance.TSTrssplanets.RSSPlanetOrder[UnityEngine.Random.Range((int)0, TSTMstStgs.Instance.TSTrssplanets.RSSPlanetOrder.Length)];
+            }
+            else
+            {
+                if (isOPMactive) // If Outer Planets Mod is installed
+                {
+                    target = TSTMstStgs.Instance.TSTopmplanets.OPMPlanetOrder.FirstOrDefault(s => !Instance.TelescopeData[s]);
+                    if (target == default(string))
+                        target = TSTMstStgs.Instance.TSTopmplanets.OPMPlanetOrder[UnityEngine.Random.Range((int)0, TSTMstStgs.Instance.TSTopmplanets.OPMPlanetOrder.Length)];
+                }
+                else  //Default Stock
+                {
+                    target = TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder.FirstOrDefault(s => !Instance.TelescopeData[s]);
+                    if (target == default(string))
+                        target = TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder[UnityEngine.Random.Range((int)0, TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder.Length)];
+                }
+            }            
 
             return target;
         }
@@ -121,41 +144,36 @@ namespace TarsierSpaceTech
         {
             return isActive ? Instance.TelescopeData[body.name] : true;
         }
-
-        private static string[] TarsierPlanetOrder = new string[] {
-            "Sun",
-            "Kerbin",
-            "Mun",
-            "Minmus",
-            "Duna",
-            "Eve",
-            "Moho",
-            "Jool",
-            "Dres",
-            "Eeloo",
-            "Ike",
-            "Laythe",
-            "Gilly",
-            "Tylo",
-            "Vall",
-            "Bop",
-            "Pol",
-            "Galaxy1",
-            "Galaxy2",
-            "Galaxy3",
-            "Galaxy4",
-            "Galaxy5",
-            "Galaxy6",
-            "Galaxy7",
-            "Galaxy8",
-        };
-
+                
         public static Contracts.Contract.ContractPrestige getTelescopePrestige(string bodyName)
         {
-            int i=Array.IndexOf(TarsierPlanetOrder, bodyName);
-            if (i < 4)
+            int i = 0;
+            int significant = 4;
+            int exceptional = 7;
+
+            if (isRSSactive) //If Real Solar System is installed
+            {
+                i = Array.IndexOf(TSTMstStgs.Instance.TSTrssplanets.RSSPlanetOrder, bodyName);
+                significant = 3;
+                exceptional = 7;
+            }
+            else
+            {
+                if (isOPMactive) // If Outer Planets Mod is installed
+                {
+                    i = Array.IndexOf(TSTMstStgs.Instance.TSTopmplanets.OPMPlanetOrder, bodyName);
+                    significant = 7;
+                    exceptional = 17;
+                }
+                else  //Default Stock
+                {
+                    i = Array.IndexOf(TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder, bodyName);
+                }
+            }            
+            if (i < significant)
+
                 return Contracts.Contract.ContractPrestige.Trivial;
-            else if (i < 7)
+            else if (i < exceptional)
                 return Contracts.Contract.ContractPrestige.Significant;
             else
                 return Contracts.Contract.ContractPrestige.Exceptional;
@@ -163,10 +181,34 @@ namespace TarsierSpaceTech
 
         public static Contracts.Contract.ContractPrestige getChemCamPrestige(CelestialBody body)
         {
-            int i = Array.IndexOf(TarsierPlanetOrder, body.name);
-            if (i < 4)
+
+            int i = 0;
+            int significant = 4;
+            int exceptional = 7;
+
+            if (isRSSactive) //If Real Solar System is installed
+            {
+                i = Array.IndexOf(TSTMstStgs.Instance.TSTrssplanets.RSSPlanetOrder, body.name);
+                significant = 3;
+                exceptional = 7;
+            }
+            else
+            {
+                if (isOPMactive) // If Outer Planets Mod is installed
+                {
+                    i = Array.IndexOf(TSTMstStgs.Instance.TSTopmplanets.OPMPlanetOrder, body.name);
+                    significant = 7;
+                    exceptional = 17;
+                }
+                else  //Default Stock
+                {
+                    i = Array.IndexOf(TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder, body.name);
+                }
+            }
+
+            if (i < significant)
                 return Contracts.Contract.ContractPrestige.Trivial;
-            else if (i < 7)
+            else if (i < exceptional)
                 return Contracts.Contract.ContractPrestige.Significant;
             else
                 return Contracts.Contract.ContractPrestige.Exceptional;

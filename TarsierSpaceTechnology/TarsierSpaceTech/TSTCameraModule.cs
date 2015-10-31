@@ -123,47 +123,17 @@ namespace TarsierSpaceTech
             this.Log_Debug("Camera setup complete");    
             
         }
-        /*
-        internal void Update()
-        {
-            if (_enabled)
-            {
-                //_skyBoxCam.reset();
-               // _skyBoxCamFS.reset();
-                //this.Log_Debug("TSTCAmeraModule Update run");
-                //_farCam.reset();
-                //_farCamFS.reset();
-                //_nearCam.reset();
-                //_nearCamFS.reset();
-                draw();
-            }
-        }
-
-        internal void FixedUpdate()
-        {
-            if (_enabled)
-            {
-                _skyBoxCam.reset();
-                //_skyBoxCamFS.reset();
-                //this.Log_Debug("TSTCAmeraModule Update run");
-                _farCam.reset();
-                //_farCamFS.reset();
-                _nearCam.reset();
-                //_nearCamFS.reset();
-                //draw();
-            }
-        }
-        */
+        
         internal void LateUpdate()
         {
             if (_enabled)
             {
                 _skyBoxCam.reset();
-                _skyBoxCamFS.reset();
-                //this.Log_Debug("TSTCAmeraModule Update run");
                 _farCam.reset();
-                _farCamFS.reset();
                 _nearCam.reset();
+
+                _skyBoxCamFS.reset();                               
+                _farCamFS.reset();                
                 _nearCamFS.reset();
                 draw();
             }
@@ -364,7 +334,7 @@ namespace TarsierSpaceTech
 
         public void reset()
         {
-            this.Log_Debug("Resetting camera " + _camera.name);
+            //this.Log_Debug("Resetting camera " + _camera.name);
             _camera.CopyFrom(_copyFrom);
             _camera.targetTexture = _renderTarget;
             if (_attachToParent)
@@ -372,12 +342,12 @@ namespace TarsierSpaceTech
                 _go.transform.parent = _parent.transform;
                 _go.transform.localPosition = Vector3.zero;
                 _go.transform.localEulerAngles = Vector3.zero;
-                this.Log_Debug("Attached to parent, pos=" + _go.transform.parent.transform.position.ToString("############.#################"));
+                //this.Log_Debug("Attached to parent, pos=" + _go.transform.parent.transform.position.ToString("############.#################"));
             }
             else
             {
                 _go.transform.rotation = _parent.transform.rotation;
-                this.Log_Debug("NOT Attached to parent pos=" + _go.transform.position + ",rotation=" + _go.transform.rotation);
+                //this.Log_Debug("NOT Attached to parent pos=" + _go.transform.position + ",rotation=" + _go.transform.rotation);
             }
             _camera.rect = new Rect(0, 0, 1, 1);
             _camera.depth = _depth;

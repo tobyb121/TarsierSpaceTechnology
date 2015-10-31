@@ -30,6 +30,9 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup>
+    <RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="Assembly-CSharp, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -38,12 +41,6 @@
     <Reference Include="Assembly-CSharp-firstpass, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\Assembly-CSharp-firstpass.dll</HintPath>
-    </Reference>
-    <Reference Include="DistantObject">
-      <HintPath>.\DistantObject.dll</HintPath>
-    </Reference>
-    <Reference Include="RemoteTech">
-      <HintPath>.\RemoteTech.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -75,6 +72,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="RTWrapper.cs" />
     <Compile Include="ToolBarManager.cs" />
     <Compile Include="TSTDOE.cs" />
     <Compile Include="TSTGyroReactionWheel.cs" />
@@ -103,19 +101,22 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="Changelog.txt" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>set /p KSP_DIR=&lt;"$(ProjectDir)ksp_dir.txt"
 
 xcopy "$(TargetPath)" "$(SolutionDir)..\GameData\$(ProjectName)\" /Y
 
-xcopy "$(ProjectDir)$(OutDir)TarsierSpaceTech.pdb" "$(SolutionDir)..\GameData\$(ProjectName)\" /Y
+xcopy "$(TargetDir)$(ProjectName).pdb" "$(SolutionDir)..\GameData\$(ProjectName)\" /Y
 
-cd "C:\Program Files (x86)\Unity\Editor\Data\MonoBleedingEdge\"
-"C:\Program Files (x86)\Unity\Editor\Data\MonoBleedingEdge\cli.bat"  "C:\Program Files (x86)\Unity\Editor\Data\MonoBleedingEdge\lib\mono\4.0\pdb2mdb.exe" $(TargetFileName)
-xcopy "$(ProjectDir)$(OutDir)$(TargetFileName).mdb" "$(SolutionDir)..\GameData\$(ProjectName)\" /Y
+cd "$(TargetDir)"
+"C:\Program Files (x86)\mono\bin\mono.exe" "C:\Program Files (x86)\mono\lib\mono\4.5\pdb2mdb.exe" "$(TargetFileName)"
+xcopy "$(TargetDir)$(ProjectName).dll.mdb" "$(SolutionDir)..\GameData\$(ProjectName)\" /Y
 
-where /q 7za
+where /q "C:\7za\:7za.exe"
 if %25ERRORLEVEL%25 == 1 (
    echo Cannot find 7-zip to package build
 ) else (
@@ -123,11 +124,10 @@ if %25ERRORLEVEL%25 == 1 (
   ) 
 if exist "$(SolutionDir)..\$(ProjectName).zip" del "$(SolutionDir)..\$(ProjectName).zip"
    
-c:\7za\7za a -tzip "$(SolutionDir)..\$(ProjectName).zip" "$(SolutionDir)..\GameData" "$(SolutionDir)..\LICENSE"
-)
-
-c:\7za\7za d -r "$(SolutionDir)..\$(ProjectName).zip" "*.ddsified" "*.pdb" "*.mdb" 
-xcopy /E /Y "$(SolutionDir)..\GameData" "%25KSP_DIR%25\GameData"</PostBuildEvent>
+c:\7za\7za a -tzip -r  "$(SolutionDir)..\$(ProjectName).zip" "$(SolutionDir)..\GameData"
+c:\7za\7za d -r  -x!REPOSoftTech.png -x!ToolbarIcon.png -x!TSTIconOff.png -x!TSTIconOn.png "$(SolutionDir)..\$(ProjectName).zip" "*.ddsified" "*.pdb" "*.mdb" "*.png"
+xcopy /E /Y "$(SolutionDir)..\GameData" "%25KSP_DIR%25\GameData"
+</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
