@@ -249,14 +249,6 @@ namespace TarsierSpaceTech
             }
         }
 
-        public void ReturnData(ScienceData data)
-        {
-            if (data == null)
-            {
-                return;
-            }
-            scienceData.Add(data);
-        }
 
         public bool IsRerunnable()
         {
