@@ -796,14 +796,7 @@ namespace TarsierSpaceTech
             eventReviewScience();
         }
 
-        public void ReturnData(ScienceData data)
-        {
-            if (data == null)
-            {
-                return;
-            }
-            _scienceData.Add(data);
-        }
+
         public bool IsRerunnable()
         {
             Utilities.Log_Debug("TSTTel", "Is rerunnable");
