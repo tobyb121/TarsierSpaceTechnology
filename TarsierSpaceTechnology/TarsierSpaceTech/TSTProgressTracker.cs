@@ -113,10 +113,12 @@ namespace TarsierSpaceTech
         }
 
         public static string GetNextTelescopeTarget()
-        {            
+        {
+            Utilities.Log_Debug("Starting GetNextTelescopeTarget");
             string target = default(string);
             if (isRSSactive) //If Real Solar System is installed
             {
+                Utilities.Log_Debug("RSS active");
                 target = TSTMstStgs.Instance.TSTrssplanets.RSSPlanetOrder.FirstOrDefault(s => !Instance.TelescopeData[s]);
                 if (target == default(string))
                     target = TSTMstStgs.Instance.TSTrssplanets.RSSPlanetOrder[UnityEngine.Random.Range((int)0, TSTMstStgs.Instance.TSTrssplanets.RSSPlanetOrder.Length)];
@@ -125,18 +127,20 @@ namespace TarsierSpaceTech
             {
                 if (isOPMactive) // If Outer Planets Mod is installed
                 {
+                    Utilities.Log_Debug("OPM active");
                     target = TSTMstStgs.Instance.TSTopmplanets.OPMPlanetOrder.FirstOrDefault(s => !Instance.TelescopeData[s]);
                     if (target == default(string))
                         target = TSTMstStgs.Instance.TSTopmplanets.OPMPlanetOrder[UnityEngine.Random.Range((int)0, TSTMstStgs.Instance.TSTopmplanets.OPMPlanetOrder.Length)];
                 }
                 else  //Default Stock
                 {
+                    Utilities.Log_Debug("Stock planets active");
                     target = TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder.FirstOrDefault(s => !Instance.TelescopeData[s]);
                     if (target == default(string))
                         target = TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder[UnityEngine.Random.Range((int)0, TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder.Length)];
                 }
-            }            
-
+            }
+            Utilities.Log_Debug("target " + target);
             return target;
         }
 

@@ -118,7 +118,7 @@ namespace TarsierSpaceTech
                 return false;
             if (active >= TSTMstStgs.Instance.TSTsettings.maxChemCamContracts)
                 return false;
-            this.Log_Debug("Generating ChemCam Contract");
+            this.Log_Debug("Generating ChemCam Contract " + MissionSeed);
             agent = Contracts.Agents.AgentList.Instance.GetAgent("Tarsier Space Technology");
             expiryType = DeadlineType.None;
             deadlineType = DeadlineType.None;
@@ -137,11 +137,15 @@ namespace TarsierSpaceTech
                     }
                 }                
                 IEnumerable<CelestialBody> availableBodies = availTelescopeBodies.ToArray().Where(b => !TSTMstStgs.Instance.TSTgasplanets.TarsierPlanetOrder.Contains(b.name));  //Exclude the GasPlanets
+                if (availableBodies.Count() == 0)
+                    return false;
                 target = availableBodies.ElementAt(r.Next(availableBodies.Count() - 1));
             }
             else  //We can use any Bodies
             {                
                 IEnumerable<CelestialBody> availableBodies = FlightGlobals.Bodies.Where(b => !TSTMstStgs.Instance.TSTgasplanets.TarsierPlanetOrder.Contains(b.name)); //Exclude the GasPlanets
+                if (availableBodies.Count() == 0)
+                    return false;
                 target = availableBodies.ElementAt(r.Next(availableBodies.Count() - 1));
             }
             
@@ -163,7 +167,7 @@ namespace TarsierSpaceTech
             SetFunds(300, 400,target);
             SetReputation(35,target);
             SetScience(30,target);
-            if (new System.Random(MissionSeed).Next(10) > 3)
+            if (new System.Random(MissionSeed).Next(10) > 3) 
             {
                 this.Log_Debug("Random Seed False, not generating contract");
                 return false;

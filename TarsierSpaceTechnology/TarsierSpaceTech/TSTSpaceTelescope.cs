@@ -629,7 +629,7 @@ namespace TarsierSpaceTech
 			{
 				if (part.name == "tarsierSpaceTelescope")
 				{
-					ScienceData data = new ScienceData((experiment.baseValue / 2) * subject.dataScale, xmitDataScalar, labBoostScalar, subject.id, subject.title);
+					ScienceData data = new ScienceData((experiment.baseValue / 2) * subject.dataScale, xmitDataScalar, labBoostScalar, subject.id, subject.title, false, part.flightID);
 					Utilities.Log_Debug("TSTTel","Got data");
 					data.title = "Tarsier Space Telescope: Orbiting " + vessel.mainBody.theName + " looking at " + galaxy.theName;
 					_scienceData.Add(data);
@@ -638,7 +638,7 @@ namespace TarsierSpaceTech
 				}
 				else
 				{
-					ScienceData data = new ScienceData(experiment.baseValue * subject.dataScale, xmitDataScalar, labBoostScalar, subject.id, subject.title);
+					ScienceData data = new ScienceData(experiment.baseValue * subject.dataScale, xmitDataScalar, labBoostScalar, subject.id, subject.title, false, part.flightID);
 					Utilities.Log_Debug("TSTTel","Got data");
 					data.title = "Tarsier Space Telescope: Orbiting " + vessel.mainBody.theName + " looking at " + galaxy.theName;
 					_scienceData.Add(data);
@@ -661,7 +661,7 @@ namespace TarsierSpaceTech
 			{
 				if (part.name == "tarsierSpaceTelescope")
 				{
-					ScienceData data = new ScienceData((experiment.baseValue * 0.8f) * subject.dataScale, xmitDataScalar, labBoostScalar, subject.id, subject.title);
+					ScienceData data = new ScienceData((experiment.baseValue * 0.8f) * subject.dataScale, xmitDataScalar, labBoostScalar, subject.id, subject.title, false, part.flightID);
 					Utilities.Log_Debug("TSTTel","Got data");
 					data.title = "Tarsier Space Telescope: Oriting " + vessel.mainBody.theName + " looking at " + planet.theName;
 					_scienceData.Add(data);
@@ -670,7 +670,7 @@ namespace TarsierSpaceTech
 				}
 				else
 				{
-					ScienceData data = new ScienceData(experiment.baseValue * subject.dataScale, xmitDataScalar, labBoostScalar, subject.id, subject.title);
+					ScienceData data = new ScienceData(experiment.baseValue * subject.dataScale, xmitDataScalar, labBoostScalar, subject.id, subject.title, false, part.flightID);
 					Utilities.Log_Debug("TSTTel","Got data");
 					data.title = "Tarsier Space Telescope: Oriting " + vessel.mainBody.theName + " looking at " + planet.theName;
 					_scienceData.Add(data);
@@ -796,7 +796,14 @@ namespace TarsierSpaceTech
             eventReviewScience();
         }
 
-
+        public void ReturnData(ScienceData data)
+        {
+            if (data == null)
+            {
+                return;
+            }
+            _scienceData.Add(data);
+        }
         public bool IsRerunnable()
         {
             Utilities.Log_Debug("TSTTel", "Is rerunnable");

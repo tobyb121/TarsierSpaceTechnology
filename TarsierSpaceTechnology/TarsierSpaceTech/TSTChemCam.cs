@@ -376,7 +376,7 @@ namespace TarsierSpaceTech
 			Utilities.Log_Debug("TSTChm","Got subject");
 			if (experiment.IsAvailableWhile(ScienceUtil.GetExperimentSituation(vessel), planet))
 			{
-				ScienceData data = new ScienceData(experiment.baseValue * subject.dataScale, xmitDataScalar, labBoostScalar, subject.id, subject.title);
+				ScienceData data = new ScienceData(experiment.baseValue * subject.dataScale, xmitDataScalar, labBoostScalar, subject.id, subject.title, false, part.flightID);
 				Utilities.Log_Debug("TSTChm","Got data");
 				_scienceData.Add(data);
 				Utilities.Log_Debug("TSTChm","Added Data");
@@ -489,6 +489,14 @@ namespace TarsierSpaceTech
 			eventReviewScience();
 		}
 
+        public void ReturnData(ScienceData data)
+        {
+            if (data == null)
+            {
+                return;
+            }
+            _scienceData.Add(data);
+        }
 
 		public bool IsRerunnable()
 		{
