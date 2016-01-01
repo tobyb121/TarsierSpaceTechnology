@@ -1,4 +1,7 @@
-﻿V5.5 Amended support for Distant Object Enhancement mod and Remote Tech mod so that TST no longer is bound to a specific version of these mods.
+﻿V5.7 Completing TST telescope picture contracts will no longer register in a career game as having Reached that body. This was interfering with KSP generating the default
+     flyby and explore contracts for the bodies.
+V5.6 Updated for KSP 1.0.5 including adding support for new Science transmission failure feature to put science back into telescopes and drives when transmissions fail.
+V5.5 Amended support for Distant Object Enhancement mod and Remote Tech mod so that TST no longer is bound to a specific version of these mods.
 	 From now on TST should work with any version of DOE and RT. Reminder: DOE support for flares should now work. RemoteTech : TST parts and menu only works if you have
 	 local control or active connect for a vessel.   
 	 Added Science Defs for Real Solar System and Outer Planets Mods. Science defs and contracts as well as all of TST should now fully support RSS and OPM. NB: To use the science defs

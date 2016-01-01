@@ -93,7 +93,7 @@ namespace TarsierSpaceTech
         {
             TSTProgressTracker.setTelescopeContractComplete(target);
         }
-
+                
         protected override bool Generate()
         {
             TSTTelescopeContract[] TSTTelescopeContracts = ContractSystem.Instance.GetCurrentContracts<TSTTelescopeContract>();
@@ -160,6 +160,42 @@ namespace TarsierSpaceTech
                 base.SetReputation(20, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
             }
             return true;
+        }
+
+        //The next two methods are courtesy of xEvilReeperx. They effectively bork KSP ProgressTracking from registering progress of reached and science for
+        //any body we take a picture of. This is so KSP will still generate the flyby/visit/discovery type contracts for each body.
+        private void FakeCallback(float f, ScienceSubject s, ProtoVessel p, bool b)
+        {
+            GameEvents.OnScienceRecieved.Remove(FakeCallback);
+        }
+
+        protected override void AwardCompletion()
+        {
+            base.AwardCompletion();
+
+            var bodyName = GetParameter<TSTTelescopeContractParam>().target.name;
+            var targetBody = FlightGlobals.Bodies.FirstOrDefault(cb => bodyName == cb.name);
+
+            if (targetBody == null)
+            {
+                Debug.LogWarning("Couldn't find CelestialBody with name " + bodyName + " that " + typeof(TSTTelescopeContractParam).Name + " specifies");
+                return;
+            }
+
+            var subtree = ProgressTracking.Instance.GetBodyTree(targetBody);
+
+            if (subtree.science.Subtree.Count > 0)
+            {
+                Debug.LogWarning("Multiple science subtree nodes for " + bodyName + " -- investigate");
+                return;
+            }
+            
+            subtree.science.OnStow(); // removes it from onScienceReceived
+            GameEvents.OnScienceRecieved.Add(FakeCallback); 
+            // we need a fake callback because the one that triggered this method call was removed by 
+            // TSTScienceParam.OnUnregister. GameEvent callbacks are stored in a list and called in reverse order
+            // so the subtree.science callback we're about to add would otherwise be the next called
+            subtree.science.OnDeploy(); // adds to end of onScienceReceived
         }
     }
 }

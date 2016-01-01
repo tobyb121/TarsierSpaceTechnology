@@ -658,8 +658,8 @@ namespace TarsierSpaceTech
 			subject.title = "Space Telescope picture of "+planet.theName;
 			Utilities.Log_Debug("TSTTel","Got subject");
 			if (experiment.IsAvailableWhile(getExperimentSituation(), vessel.mainBody))
-			{
-				if (part.name == "tarsierSpaceTelescope")
+			{                
+                if (part.name == "tarsierSpaceTelescope")
 				{
 					ScienceData data = new ScienceData((experiment.baseValue * 0.8f) * subject.dataScale, xmitDataScalar, labBoostScalar, subject.id, subject.title, false, part.flightID);
 					Utilities.Log_Debug("TSTTel","Got data");
@@ -676,8 +676,8 @@ namespace TarsierSpaceTech
 					_scienceData.Add(data);
 					Utilities.Log_Debug("TSTTel","Added Data Amt=" + data.dataAmount + " TransmitValue=" + data.transmitValue + " LabBoost=" + data.labBoost + " LabValue=" + data.labValue);
 					ScreenMessages.PostScreenMessage("Collected Science for " + planet.theName, 3f, ScreenMessageStyle.UPPER_CENTER);
-				}
-			}
+				}                
+            }
 		}
 
 		private ExperimentSituations getExperimentSituation()
@@ -748,10 +748,9 @@ namespace TarsierSpaceTech
 			
 			List<IScienceDataTransmitter> transmitters = vessel.FindPartModulesImplementing<IScienceDataTransmitter>();
 			if (transmitters.Count > 0 && _scienceData.Contains(data))
-			{
-				transmitters.First().TransmitData(new List<ScienceData> { data });
-
-				_scienceData.Remove(data);
+			{                                
+                transmitters.First().TransmitData(new List<ScienceData> { data });                
+                _scienceData.Remove(data);
 			}
 		}
 
