@@ -248,8 +248,16 @@ namespace TarsierSpaceTech
                 ExperimentsResultDialog.DisplayResult(page);
             }
         }
-
-
+        
+        public void ReturnData(ScienceData data)
+        {
+            if (data == null)
+            {
+                return;
+            }
+            scienceData.Add(data);
+        }
+        
         public bool IsRerunnable()
         {
             return false;

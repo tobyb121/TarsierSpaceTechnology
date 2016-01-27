@@ -93,7 +93,8 @@ namespace TarsierSpaceTech
         {
             TSTProgressTracker.setTelescopeContractComplete(target);
         }
-                
+               
+        //The next two methods are courtesy of Xevilreeperx
         protected override bool Generate()
         {
             TSTTelescopeContract[] TSTTelescopeContracts = ContractSystem.Instance.GetCurrentContracts<TSTTelescopeContract>();
@@ -112,21 +113,26 @@ namespace TarsierSpaceTech
             if (offers >= 1)
                 return false;
             if (active >= 1)
-                return false;            
+                return false;
             this.Log_Debug("Generating Telescope Contract");
 
             agent = Contracts.Agents.AgentList.Instance.GetAgent("Tarsier Space Technology");
             base.SetExpiry();
             base.expiryType = DeadlineType.None;
             base.deadlineType = DeadlineType.None;
-            
+
             this.Log_Debug("Creating Parameter");
             TSTTelescopeContractParam param = new TSTTelescopeContractParam();
             this.AddParameter(param);
             string target_name = TSTProgressTracker.GetNextTelescopeTarget();
-            this.Log_Debug("Target: "+target_name);
+            if (target_name == default(string))
+            {
+                this.Log_Debug("target body is default (not set), cannot generate");
+                return false;
+            }
+            this.Log_Debug("Target: " + target_name);
             AvailablePart ap2 = PartLoader.getPartInfoByName("tarsierAdvSpaceTelescope");
-            if(!ResearchAndDevelopment.PartTechAvailable(ap2) && !ResearchAndDevelopment.PartModelPurchased(ap2) && target_name == "Galaxy1")                
+            if (!ResearchAndDevelopment.PartTechAvailable(ap2) && !ResearchAndDevelopment.PartModelPurchased(ap2) && target_name == "Galaxy1")
             {
                 this.Log_Debug("Contracts for Planets completed and Galaxy contracts require advanced space telescope");
                 return false;
@@ -146,10 +152,10 @@ namespace TarsierSpaceTech
             param2.matchFields.Add("LookingAt" + target.name);
             this.AddParameter(param2);
             this.Log_Debug("Created Science Param");
-            base.prestige=TSTProgressTracker.getTelescopePrestige(target.name);
+            base.prestige = TSTProgressTracker.getTelescopePrestige(target.name);
             if (TSTProgressTracker.HasTelescopeCompleted(target))
             {
-                base.SetFunds(10, 15, target.type==typeof(TSTGalaxy)?null:(CelestialBody)target.BaseObject);
+                base.SetFunds(10, 15, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
                 base.SetReputation(5, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
                 base.SetReputation(5, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
             }
@@ -162,8 +168,6 @@ namespace TarsierSpaceTech
             return true;
         }
 
-        //The next two methods are courtesy of xEvilReeperx. They effectively bork KSP ProgressTracking from registering progress of reached and science for
-        //any body we take a picture of. This is so KSP will still generate the flyby/visit/discovery type contracts for each body.
         private void FakeCallback(float f, ScienceSubject s, ProtoVessel p, bool b)
         {
             GameEvents.OnScienceRecieved.Remove(FakeCallback);
@@ -189,9 +193,9 @@ namespace TarsierSpaceTech
                 Debug.LogWarning("Multiple science subtree nodes for " + bodyName + " -- investigate");
                 return;
             }
-            
+
             subtree.science.OnStow(); // removes it from onScienceReceived
-            GameEvents.OnScienceRecieved.Add(FakeCallback); 
+            GameEvents.OnScienceRecieved.Add(FakeCallback);
             // we need a fake callback because the one that triggered this method call was removed by 
             // TSTScienceParam.OnUnregister. GameEvent callbacks are stored in a list and called in reverse order
             // so the subtree.science callback we're about to add would otherwise be the next called

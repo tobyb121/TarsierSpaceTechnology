@@ -11,37 +11,43 @@
  *  This file is part of TarsierSpaceTech.
  *
  *  TarsierSpaceTech is free software: you can redistribute it and/or modify
- *  it under the terms of the MIT License 
+ *  it under the terms of the MIT License
  *
  *  TarsierSpaceTech is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
  *  You should have received a copy of the MIT License
  *  along with TarsierSpaceTech.  If not, see <http://opensource.org/licenses/MIT>.
  *
  */
+
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.IO;
 using UnityEngine;
 
 namespace TarsierSpaceTech
 {
     [KSPAddon(KSPAddon.Startup.EveryScene, false)]
-    class TSTMstStgs : MonoBehaviour
+    internal class TSTMstStgs : MonoBehaviour
     {
         public static TSTMstStgs Instance { get; private set; }
+
         //private readonly string FilePath;
         private ConfigNode globalNode = new ConfigNode();
+
         public TSTSettings TSTsettings { get; private set; }
         public TSTGasPlanets TSTgasplanets { get; private set; }
         public TSTStockPlanets TSTstockplanets { get; private set; }
         public TSTRSSPlanets TSTrssplanets { get; private set; }
         public TSTOPMPlanets TSTopmplanets { get; private set; }
         private readonly string globalConfigFilename;
-
+        internal bool isRBactive = false;
+        internal bool isRBloaded = false;
+        internal bool loadRBthisscene = false;
+        internal Dictionary<CelestialBody, bool> TrackedBodies = new Dictionary<CelestialBody, bool>();
+        internal Dictionary<CelestialBody, int> ResearchState = new Dictionary<CelestialBody, int>();
 
         public TSTMstStgs()
         {
@@ -67,8 +73,94 @@ namespace TarsierSpaceTech
                 TSTstockplanets.Load(globalNode);
                 TSTrssplanets.Load(globalNode);
                 TSTopmplanets.Load(globalNode);
+            }           
+            Utilities.Log("TSTMstStgs", "OnLoad: \n " + globalNode);
+        }
+
+        public void Start()
+        {
+            isRBactive = TSTInstalledMods.IsResearchBodiesInstalled;
+            if (HighLogic.LoadedScene == GameScenes.SPACECENTER || HighLogic.LoadedScene == GameScenes.TRACKSTATION || HighLogic.LoadedScene == GameScenes.FLIGHT)
+            {
+                loadRBthisscene = true;
             }
-            Utilities.Log("TSTMstStgs", "OnLoad: \n " + globalNode);            
+        }
+
+        public void Update()
+        {
+            if (Time.timeSinceLevelLoad < 4.0f || !isRBactive || !loadRBthisscene || isRBloaded) // Check not loading level, or ResearchBodies is not active, or don't need to load RB this scene or it's already loaded.
+            {
+                return;
+            }
+            isRBactive = TSTInstalledMods.IsResearchBodiesInstalled;
+            if (isRBactive)
+            {
+                RBWrapper.InitRBDBWrapper();
+                RBWrapper.InitRBSCWrapper();
+                RBWrapper.InitRBFLWrapper();
+                if (RBWrapper.APISCReady)
+                {
+
+                    TrackedBodies = RBWrapper.RBSCactualAPI.TrackedBodies;
+                    ResearchState = RBWrapper.RBSCactualAPI.ResearchState;
+
+                    Dictionary<string, string> dbdiscoverymsgs = RBWrapper.RBDBactualAPI.DiscoveryMessage;
+
+                    if (File.Exists("saves/" + HighLogic.SaveFolder + "/researchbodies.cfg"))
+                    {
+                        ConfigNode mainnode = ConfigNode.Load("saves/" + HighLogic.SaveFolder + "/researchbodies.cfg");
+                        foreach (CelestialBody cb in TSTGalaxies.CBGalaxies)
+                        {
+                            bool fileContainsGalaxy = false;
+                            foreach (ConfigNode node in mainnode.GetNode("RESEARCHBODIES").nodes)
+                            {
+                                if (cb.bodyName.Contains(node.GetValue("body")))
+                                {
+                                    bool ignore = false;
+                                    bool.TryParse(node.GetValue("ignore"), out ignore);
+                                    if (ignore)
+                                    {
+                                        TrackedBodies[cb] = true;
+                                        ResearchState[cb] = 100;
+                                    }
+                                    else
+                                    {
+                                        TrackedBodies[cb] = bool.Parse(node.GetValue("isResearched"));
+                                        if (node.HasValue("researchState"))
+                                        {
+                                            ResearchState[cb] = int.Parse(node.GetValue("researchState"));
+                                        }
+                                        else
+                                        {
+                                            ConfigNode cbNode = null;
+                                            foreach (ConfigNode cbSettingNode in mainnode.GetNode("RESEARCHBODIES").nodes)
+                                            {
+                                                if (cbSettingNode.GetValue("body") == cb.GetName())
+                                                    cbNode = cbSettingNode;
+                                            }
+                                            cbNode.AddValue("researchState", "0");
+                                            mainnode.Save("saves/" + HighLogic.SaveFolder + "/researchbodies.cfg");
+                                            ResearchState[cb] = 0;
+                                        }
+                                    }
+                                    fileContainsGalaxy = true;
+                                }
+                            }
+                            if (!fileContainsGalaxy)
+                            {
+                                ConfigNode newNodeForCB = mainnode.GetNode("RESEARCHBODIES").AddNode("BODY");
+                                newNodeForCB.AddValue("body", cb.GetName());
+                                newNodeForCB.AddValue("isResearched", "false");
+                                newNodeForCB.AddValue("researchState", "0");
+                                newNodeForCB.AddValue("ignore", "false");
+                                TrackedBodies[cb] = false; ResearchState[cb] = 0;
+                                mainnode.Save("saves/" + HighLogic.SaveFolder + "/researchbodies.cfg");
+                            }
+                        }
+                        isRBloaded = true;
+                    }
+                }
+            }
         }
 
         public void OnDestroy()
@@ -78,10 +170,9 @@ namespace TarsierSpaceTech
             TSTstockplanets.Save(globalNode);
             TSTrssplanets.Save(globalNode);
             TSTopmplanets.Save(globalNode);
-            globalNode.Save(globalConfigFilename);            
+            globalNode.Save(globalConfigFilename);
             this.Log_Debug("TSTMstStgs OnSave: \n " + globalNode);
         }
-
 
         #region Assembly/Class Information
 
@@ -169,7 +260,7 @@ namespace TarsierSpaceTech
                 UseAppLauncher = Utilities.GetNodeValue(TSTsettingsNode, "UseAppLauncher", UseAppLauncher);
                 debugging = Utilities.GetNodeValue(TSTsettingsNode, "debugging", debugging);
                 maxChemCamContracts = Utilities.GetNodeValue(TSTsettingsNode, "maxChemCamContracts", maxChemCamContracts);
-                photoOnlyChemCamContracts = Utilities.GetNodeValue(TSTsettingsNode, "photoOnlyChemCamContracts", photoOnlyChemCamContracts); 
+                photoOnlyChemCamContracts = Utilities.GetNodeValue(TSTsettingsNode, "photoOnlyChemCamContracts", photoOnlyChemCamContracts);
                 this.Log_Debug("TSTSettings load complete");
             }
         }
@@ -210,8 +301,8 @@ namespace TarsierSpaceTech
     {
         private const string configNodeName = "TSTGasPlanets";
 
-        public string[] TarsierPlanetOrder{ get; set; }
-                
+        public string[] TarsierPlanetOrder { get; set; }
+
         public TSTGasPlanets()
         {
             //TarsierPlanetOrder = new string[] { };
@@ -248,7 +339,7 @@ namespace TarsierSpaceTech
             {
                 TSTGasPlanetsNode = node.AddNode(configNodeName);
             }
-            string tmpPlanetOrder = string.Join(",", TarsierPlanetOrder); 
+            string tmpPlanetOrder = string.Join(",", TarsierPlanetOrder);
             TSTGasPlanetsNode.AddValue("planets", tmpPlanetOrder);
             this.Log_Debug("TSTGasPlanets save complete");
         }
@@ -398,4 +489,3 @@ namespace TarsierSpaceTech
         }
     }
 }
-

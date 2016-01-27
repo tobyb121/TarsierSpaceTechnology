@@ -39,6 +39,7 @@ namespace TarsierSpaceTech
         private Material mat = new Material(Shader.Find("Unlit/Transparent"));        
         public string theName;
         private ConfigNode config;
+        private string textureURL;
 
         private float _size = 1e3f;
         public float size
@@ -95,7 +96,7 @@ namespace TarsierSpaceTech
             string name = config.GetValue("name");
             string theName = config.GetValue("theName");
             Vector3 pos = ConfigNode.ParseVector3(config.GetValue("location"));            
-            string textureURL = config.GetValue("textureURL");
+            textureURL = config.GetValue("textureURL");
             float size = float.Parse(config.GetValue("size"));
             this.Log_Debug("Creating Galaxy: " + name + " " + pos.ToString() + " " + textureURL);
             this.Log_Debug("Setting Name");

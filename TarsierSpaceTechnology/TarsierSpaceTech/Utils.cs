@@ -128,7 +128,7 @@ namespace TarsierSpaceTech
                 return false;
             }
         }
-
+               
         // Get Config Node Values out of a config node Methods
 
         public static bool GetNodeValue(ConfigNode confignode, string fieldname, bool defaultValue)

@@ -79,7 +79,7 @@ namespace TarsierSpaceTech
             //reset the internal objects
             _RTWrapped = false;
             actualRTAPI = null;
-            LogFormatted("Attempting to Grab Remote Tech Types...");
+            LogFormatted_DebugOnly("Attempting to Grab Remote Tech Types...");
 
             //find the base type
             RTAPIType = AssemblyLoader.loadedAssemblies
@@ -95,25 +95,25 @@ namespace TarsierSpaceTech
             LogFormatted("Remote Tech Version:{0}", RTAPIType.Assembly.GetName().Version.ToString());
 
             //now grab the running instance
-            LogFormatted("Got Assembly Types, grabbing Instances");
+            LogFormatted_DebugOnly("Got Assembly Types, grabbing Instances");
             try
             {
                 actualRTAPI = RTAPIType.GetMember("HasLocalControl", BindingFlags.Public | BindingFlags.Static);
             }
             catch (Exception)
             {
-                LogFormatted("No Remote Tech isInitialised found");
+                LogFormatted("No RemoteTech isInitialised found");
                 //throw;
             }
 
             if (actualRTAPI == null)
             {
-                LogFormatted("Failed grabbing Instance");
+                LogFormatted("Failed grabbing RemoteTech Instance");
                 return false;
             }
 
             //If we get this far we can set up the local object and its methods/functions
-            LogFormatted("Got Instance, Creating Wrapper Objects");
+            LogFormatted_DebugOnly("Got Instance, Creating Wrapper Objects");
             RTactualAPI = new RTAPI(actualRTAPI);
 
             _RTWrapped = true;
@@ -135,15 +135,15 @@ namespace TarsierSpaceTech
 
                 //WORK OUT THE STUFF WE NEED TO HOOK FOR PEOPLE HERE
                 //Methods
-                LogFormatted("Getting HasLocalControl Method");
+                LogFormatted_DebugOnly("Getting HasLocalControl Method");
                 HasLocalControlMethod = RTAPIType.GetMethod("HasLocalControl", BindingFlags.Public | BindingFlags.Static);
                 LogFormatted_DebugOnly("Success: " + (HasLocalControlMethod != null).ToString());
 
-                LogFormatted("Getting HasAnyConnection Method");
+                LogFormatted_DebugOnly("Getting HasAnyConnection Method");
                 HasAnyConnectionMethod = RTAPIType.GetMethod("HasAnyConnection", BindingFlags.Public | BindingFlags.Static);
                 LogFormatted_DebugOnly("Success: " + (HasAnyConnectionMethod != null).ToString());
 
-                LogFormatted("Getting GetShortestSignalDelay Method");
+                LogFormatted_DebugOnly("Getting GetShortestSignalDelay Method");
                 GetShortestSignalDelayMethod = RTAPIType.GetMethod("GetShortestSignalDelay", BindingFlags.Public | BindingFlags.Static);
                 LogFormatted_DebugOnly("Success: " + (GetShortestSignalDelayMethod != null).ToString());
             }
@@ -224,14 +224,15 @@ namespace TarsierSpaceTech
         #region Logging Stuff
 
         /// <summary>
-        /// Some Structured logging to the debug file - ONLY RUNS WHEN DLL COMPILED IN DEBUG MODE
+        /// Some Structured logging to the debug file - ONLY RUNS WHEN TST Debug mode is on
         /// </summary>
         /// <param name="Message">Text to be printed - can be formatted as per String.format</param>
-        /// <param name="strParams">Objects to feed into a String.format</param>
-        [System.Diagnostics.Conditional("DEBUG")]
+        /// <param name="strParams">Objects to feed into a String.format</param>        
         internal static void LogFormatted_DebugOnly(String Message, params Object[] strParams)
         {
-            LogFormatted(Message, strParams);
+            TSTSettings TSTsettings = TSTMstStgs.Instance.TSTsettings;
+            if (TSTsettings.debugging)
+                LogFormatted(Message, strParams);
         }
 
         /// <summary>

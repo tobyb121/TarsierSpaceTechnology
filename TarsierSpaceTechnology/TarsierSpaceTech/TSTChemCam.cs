@@ -498,7 +498,7 @@ namespace TarsierSpaceTech
             _scienceData.Add(data);
         }
 
-		public bool IsRerunnable()
+        public bool IsRerunnable()
 		{
 			Utilities.Log_Debug("TSTChm","Is rerunnable");
 			return true;

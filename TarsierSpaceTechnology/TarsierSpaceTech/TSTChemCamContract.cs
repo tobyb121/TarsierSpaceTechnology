@@ -11,27 +11,25 @@
  *  This file is part of TarsierSpaceTech.
  *
  *  TarsierSpaceTech is free software: you can redistribute it and/or modify
- *  it under the terms of the MIT License 
+ *  it under the terms of the MIT License
  *
  *  TarsierSpaceTech is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
  *  You should have received a copy of the MIT License
  *  along with TarsierSpaceTech.  If not, see <http://opensource.org/licenses/MIT>.
  *
  */
+
+using Contracts;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-
-using UnityEngine;
-using Contracts;
 
 namespace TarsierSpaceTech
 {
-    class TSTChemCamContract : Contracts.Contract
+    internal class TSTChemCamContract : Contracts.Contract
     {
         public override bool CanBeCancelled()
         {
@@ -45,7 +43,7 @@ namespace TarsierSpaceTech
 
         protected override string GetHashString()
         {
-            return "TST_chemcam_"+target.name+biome;
+            return "TST_chemcam_" + target.name + biome;
         }
 
         protected override string GetDescription()
@@ -55,7 +53,7 @@ namespace TarsierSpaceTech
 
         protected override string GetTitle()
         {
-            return "Analyse the surface composition of "+target.theName;
+            return "Analyse the surface composition of " + target.theName;
         }
 
         protected override string MessageCompleted()
@@ -73,9 +71,9 @@ namespace TarsierSpaceTech
         {
             if (biome != "")
             {
-                return "Use the ChemCam to analyse the surface composition of the "+biome+" on " + target.theName;
+                return "Use the ChemCam to analyse the surface composition of the " + biome + " on " + target.theName;
             }
-            return "Use the ChemCam to analyse the surface of "+target.theName;
+            return "Use the ChemCam to analyse the surface of " + target.theName;
         }
 
         protected override void OnCompleted()
@@ -83,9 +81,9 @@ namespace TarsierSpaceTech
             TSTProgressTracker.setChemCamContractComplete(target);
         }
 
-        CelestialBody target;
+        private CelestialBody target;
 
-        string biome="";
+        private string biome = "";
 
         protected override void OnSave(ConfigNode node)
         {
@@ -118,11 +116,11 @@ namespace TarsierSpaceTech
                 return false;
             if (active >= TSTMstStgs.Instance.TSTsettings.maxChemCamContracts)
                 return false;
-            this.Log_Debug("Generating ChemCam Contract " + MissionSeed);
+            this.Log_Debug("Generating ChemCam Contract");
             agent = Contracts.Agents.AgentList.Instance.GetAgent("Tarsier Space Technology");
             expiryType = DeadlineType.None;
             deadlineType = DeadlineType.None;
-            //IEnumerable<CelestialBody> availableBodies = FlightGlobals.Bodies.Where(b => b.name != "Sun" && b.name != "Jool");  
+            //IEnumerable<CelestialBody> availableBodies = FlightGlobals.Bodies.Where(b => b.name != "Sun" && b.name != "Jool");
             System.Random r = new System.Random(MissionSeed);
             if (TSTMstStgs.Instance.TSTsettings.photoOnlyChemCamContracts)  //If we only want Bodies that have already been PhotoGraphed by a Telescope
             {
@@ -130,49 +128,85 @@ namespace TarsierSpaceTech
                 List<CelestialBody> availTelescopeBodies = new List<CelestialBody>();
                 for (int i = 0; i < TSTTelescopeContractsCompleted.Length; i++)
                 {
-                    if (TSTTelescopeContractsCompleted[i].target.type == typeof(CelestialBody))  //We only want Bodies, not Galaxies                    
+                    if (TSTTelescopeContractsCompleted[i].target.type == typeof(CelestialBody))  //We only want Bodies, not Galaxies
                     {
                         CelestialBody contractBody = (CelestialBody)TSTTelescopeContractsCompleted[i].target.BaseObject;
                         availTelescopeBodies.Add(contractBody);
                     }
-                }                
+                }
                 IEnumerable<CelestialBody> availableBodies = availTelescopeBodies.ToArray().Where(b => !TSTMstStgs.Instance.TSTgasplanets.TarsierPlanetOrder.Contains(b.name));  //Exclude the GasPlanets
                 if (availableBodies.Count() == 0)
+                {
+                    this.Log_Debug("There are no Bodies that have been photographed, cannot generate ChemCam Contract at this time");
                     return false;
+                }
                 target = availableBodies.ElementAt(r.Next(availableBodies.Count() - 1));
             }
             else  //We can use any Bodies
-            {                
+            {
                 IEnumerable<CelestialBody> availableBodies = FlightGlobals.Bodies.Where(b => !TSTMstStgs.Instance.TSTgasplanets.TarsierPlanetOrder.Contains(b.name)); //Exclude the GasPlanets
                 if (availableBodies.Count() == 0)
+                {
+                    this.Log_Debug("There are no Bodies that have been photographed, cannot generate ChemCam Contract at this time");
                     return false;
+                }
                 target = availableBodies.ElementAt(r.Next(availableBodies.Count() - 1));
             }
-            
+            // if ResearchBodies is installed we need to check if the target body has been found. If it has not, then we set the target to default so a contract is not generated at this time.
+            if (TSTMstStgs.Instance.isRBactive)
+            {
+                try
+                {
+                    if (RBWrapper.APISCReady)
+                    {                        
+                        List<KeyValuePair<CelestialBody, bool>> trackbodyentry = TSTMstStgs.Instance.TrackedBodies.Where(e => e.Key == target).ToList();
+                        if (trackbodyentry.Count() != 1)
+                        {
+                            this.Log("ChemCam Contract cannot find target in ResearchBodies TrackedBodies " + target.name);
+                            return false;
+                        }
+                        if (trackbodyentry[0].Value == false)
+                        {
+                            this.Log("ChemCam Contract target in ResearchBodies TrackedBodies is still not tracked " + target.name);
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        this.Log("ResearchBodies is not Ready, cannot test ChemCam target for contract generation at this time");
+                        return false;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Utilities.Log("TST", "Checking ResearchBodies status for target " + target.name + " Failed unexpectedly. Ex: " + ex.Message);
+                }
+            }
+
             this.Log_Debug("Target: " + target.name);
             this.Log_Debug("Creating Science Param");
             TSTScienceParam param2 = new TSTScienceParam();
             param2.matchFields.Add("TarsierSpaceTech.ChemCam");
             param2.matchFields.Add(target.name);
-            List<string> biomes=ResearchAndDevelopment.GetBiomeTags(target);
+            List<string> biomes = ResearchAndDevelopment.GetBiomeTags(target);
             if (biomes.Count() > 1)
             {
                 biome = biomes[r.Next(biomes.Count - 1)];
                 param2.matchFields.Add(biome);
             }
             AddParameter(param2);
-            ContractPrestige p = TSTProgressTracker.getChemCamPrestige(target); //Get the target prestige level            
+            ContractPrestige p = TSTProgressTracker.getChemCamPrestige(target); //Get the target prestige level
             if (p != base.prestige)  //If the prestige is not the required level don't generate.
-                return false;                
-            SetFunds(300, 400,target);
-            SetReputation(35,target);
-            SetScience(30,target);
-            if (new System.Random(MissionSeed).Next(10) > 3) 
+                return false;
+            SetFunds(300, 400, target);
+            SetReputation(35, target);
+            SetScience(30, target);
+            if (new System.Random(MissionSeed).Next(10) > 3)
             {
                 this.Log_Debug("Random Seed False, not generating contract");
                 return false;
             }
-            this.Log_Debug("Random Seed True, generating contract");    
+            this.Log_Debug("Random Seed True, generating contract");
             return true;
         }
     }
