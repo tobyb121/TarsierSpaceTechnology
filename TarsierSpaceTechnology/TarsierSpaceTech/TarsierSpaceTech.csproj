@@ -72,6 +72,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="RBWrapper.cs" />
     <Compile Include="RTWrapper.cs" />
     <Compile Include="ToolBarManager.cs" />
     <Compile Include="TSTDOE.cs" />

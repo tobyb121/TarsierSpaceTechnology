@@ -33,11 +33,13 @@ namespace TarsierSpaceTech
     {
         private int textureWidth = 256; 
         private int textureHeight = 256;
-        // Standard Cameras        
+        // Standard Cameras  
+        public CameraHelper _galaxyCam;
         public CameraHelper _skyBoxCam;
         public CameraHelper _farCam;
         public CameraHelper _nearCam;
-        // FullScreen Cameras        
+        // FullScreen Cameras  
+        public CameraHelper _galaxyCamFS;
         public CameraHelper _skyBoxCamFS;
         public CameraHelper _farCamFS;
         public CameraHelper _nearCamFS;        
@@ -71,10 +73,12 @@ namespace TarsierSpaceTech
                 _nearCam.fov = value;
                 _farCam.fov = value;
                 _skyBoxCam.fov = value;
+                _galaxyCam.fov = value;
 
                 _nearCamFS.fov = value;
                 _farCamFS.fov = value;
-                _skyBoxCamFS.fov = value; 
+                _skyBoxCamFS.fov = value;
+                _galaxyCamFS.fov = value;
             }
         }
 
@@ -85,6 +89,7 @@ namespace TarsierSpaceTech
             set
             {
                 _enabled = value;
+                //_galaxyCam.enabled = value;
                 _skyBoxCam.enabled = value;
                 _farCam.enabled = value;
                 _nearCam.enabled = value;                
@@ -103,17 +108,21 @@ namespace TarsierSpaceTech
         public void Start()
         {
             this.Log_Debug("Setting up cameras");
-            bool cams = Utilities.dumpCameras();            
-            _skyBoxCam = new CameraHelper(gameObject, Utilities.findCameraByName("Camera ScaledSpace"), _renderTexture, 17, false);
-            _farCam = new CameraHelper(gameObject, Utilities.findCameraByName("Camera 01"), _renderTexture, 18, true);
-            _nearCam = new CameraHelper(gameObject, Utilities.findCameraByName("Camera 00"), _renderTexture, 19, true);            
-            _skyBoxCamFS = new CameraHelper(gameObject, Utilities.findCameraByName("Camera ScaledSpace"), _renderTextureFS, 21, false);
-            _farCamFS = new CameraHelper(gameObject, Utilities.findCameraByName("Camera 01"), _renderTextureFS, 22, true);
-            _nearCamFS = new CameraHelper(gameObject, Utilities.findCameraByName("Camera 00"), _renderTextureFS, 23, true);
-            setupRenderTexture();            
+            bool cams = Utilities.dumpCameras();
+            _galaxyCam = new CameraHelper(gameObject, Utilities.findCameraByName("GalaxyCamera"), _renderTexture, 17, false);
+            _skyBoxCam = new CameraHelper(gameObject, Utilities.findCameraByName("Camera ScaledSpace"), _renderTexture, 18, false);
+            _farCam = new CameraHelper(gameObject, Utilities.findCameraByName("Camera 01"), _renderTexture, 19, true);
+            _nearCam = new CameraHelper(gameObject, Utilities.findCameraByName("Camera 00"), _renderTexture, 20, true);
+            _galaxyCamFS = new CameraHelper(gameObject, Utilities.findCameraByName("GalaxyCamera"), _renderTextureFS, 21, false);
+            _skyBoxCamFS = new CameraHelper(gameObject, Utilities.findCameraByName("Camera ScaledSpace"), _renderTextureFS, 22, false);
+            _farCamFS = new CameraHelper(gameObject, Utilities.findCameraByName("Camera 01"), _renderTextureFS, 23, true);
+            _nearCamFS = new CameraHelper(gameObject, Utilities.findCameraByName("Camera 00"), _renderTextureFS, 24, true);
+            setupRenderTexture();
+            _galaxyCam.reset();
             _skyBoxCam.reset();
             _farCam.reset();
-            _nearCam.reset();            
+            _nearCam.reset();
+            _galaxyCamFS.reset();
             _skyBoxCamFS.reset();
             _farCamFS.reset();
             _nearCamFS.reset();
@@ -126,12 +135,14 @@ namespace TarsierSpaceTech
         
         internal void LateUpdate()
         {
-            if (_enabled)
+            if (_enabled) 
             {
+                _galaxyCam.reset();
                 _skyBoxCam.reset();
                 _farCam.reset();
                 _nearCam.reset();
 
+                _galaxyCamFS.reset();
                 _skyBoxCamFS.reset();                               
                 _farCamFS.reset();                
                 _nearCamFS.reset();
@@ -143,10 +154,12 @@ namespace TarsierSpaceTech
         {
             float z = Mathf.Pow(10, -_zoomLevel);
             float fov = Mathf.Rad2Deg * Mathf.Atan(z * Mathf.Tan(Mathf.Deg2Rad * CameraHelper.DEFAULT_FOV));
+            _galaxyCam.fov = fov;
             _skyBoxCam.fov = fov;
             _farCam.fov = fov;
             _nearCam.fov = fov;
 
+            _galaxyCamFS.fov = fov;
             _skyBoxCamFS.fov = fov;
             _farCamFS.fov = fov;
             _nearCamFS.fov = fov;    
@@ -172,9 +185,11 @@ namespace TarsierSpaceTech
             _renderTextureFS.Create();
             _texture2D = new Texture2D(textureWidth, textureHeight, TextureFormat.RGB24, false, false);
             _texture2DFullSze = new Texture2D(Screen.width, Screen.height, TextureFormat.RGB24, false, false);
+            _galaxyCam.renderTarget = _renderTexture;
             _skyBoxCam.renderTarget = _renderTexture;
             _farCam.renderTarget = _renderTexture;
             _nearCam.renderTarget = _renderTexture;
+            _galaxyCamFS.renderTarget = _renderTextureFS;
             _skyBoxCamFS.renderTarget = _renderTextureFS;
             _farCamFS.renderTarget = _renderTextureFS;
             _nearCamFS.renderTarget = _renderTextureFS;
@@ -189,6 +204,8 @@ namespace TarsierSpaceTech
             this.Log_Debug("about to draw: vessel.position " + FlightGlobals.ActiveVessel.GetTransform().position + ",vessel.worldpos3d " + FlightGlobals.ActiveVessel.GetWorldPos3D());            
             this.Log_Debug("skyBoxCam.position " + _skyBoxCam.position + ",farcamposition=" + _farCam.position + ",nearcamposition=" + _nearCam.position);
             //set camera clearflags to the skybox and clear/render the skybox only
+            _galaxyCam.camera.clearFlags = CameraClearFlags.Skybox;
+            _galaxyCam.camera.Render();
             _skyBoxCam.camera.clearFlags = CameraClearFlags.Skybox;            
             _skyBoxCam.camera.Render();
             //turn off the skybox renderers - XP, XN, YP, YN, ZP, ZN which are used to draw the KSP skybox. We don't want to see them in the camera
@@ -214,9 +231,12 @@ namespace TarsierSpaceTech
         {
             RenderTexture activeRT = RenderTexture.active;
             RenderTexture.active = _renderTextureFS;
+            _galaxyCamFS.reset();
             _skyBoxCamFS.reset();              
             _farCamFS.reset();            
             _nearCamFS.reset();
+            _galaxyCamFS.camera.clearFlags = CameraClearFlags.Skybox;
+            _galaxyCamFS.camera.Render();
             _skyBoxCamFS.camera.clearFlags = CameraClearFlags.Skybox;
             _skyBoxCamFS.camera.Render();
             foreach (Renderer r in skyboxRenderers)
@@ -274,14 +294,18 @@ namespace TarsierSpaceTech
         public CameraHelper(GameObject parent, Camera copyFrom, RenderTexture renderTarget, float depth, bool attachToParent)
         {
             _copyFrom = copyFrom;
-            _parent = parent;
-            _go = new GameObject();
-            _camera = _go.AddComponent<Camera>();
-            _camera.enabled = false;
-            _depth = depth;
-            _attachToParent = attachToParent;
             _renderTarget = renderTarget;
-            _camera.targetTexture = _renderTarget;            
+            
+            //if (_camera.name != "GalaxyCamera")
+            //{
+                _parent = parent;
+                _go = new GameObject();
+                _camera = _go.AddComponent<Camera>();
+                _depth = depth;
+                _attachToParent = attachToParent;
+            //}  
+            _camera.enabled = false;
+            _camera.targetTexture = _renderTarget;
         }
 
         public const float DEFAULT_FOV = 60f;
@@ -336,23 +360,28 @@ namespace TarsierSpaceTech
         {
             //this.Log_Debug("Resetting camera " + _camera.name);
             _camera.CopyFrom(_copyFrom);
+            
+            //if (_camera.name != "GalaxyCamera")
+            //{
+                if (_attachToParent)
+                {
+                    _go.transform.parent = _parent.transform;
+                    _go.transform.localPosition = Vector3.zero;
+                    _go.transform.localEulerAngles = Vector3.zero;
+                    //this.Log_Debug("Attached to parent, pos=" + _go.transform.parent.transform.position.ToString("############.#################"));
+                }
+                else
+                {
+                    _go.transform.rotation = _parent.transform.rotation;
+                    //this.Log_Debug("NOT Attached to parent pos=" + _go.transform.position + ",rotation=" + _go.transform.rotation);
+                }
+                _camera.rect = new Rect(0, 0, 1, 1);
+                _camera.depth = _depth;
+                _camera.fieldOfView = _fov;
             _camera.targetTexture = _renderTarget;
-            if (_attachToParent)
-            {
-                _go.transform.parent = _parent.transform;
-                _go.transform.localPosition = Vector3.zero;
-                _go.transform.localEulerAngles = Vector3.zero;
-                //this.Log_Debug("Attached to parent, pos=" + _go.transform.parent.transform.position.ToString("############.#################"));
-            }
-            else
-            {
-                _go.transform.rotation = _parent.transform.rotation;
-                //this.Log_Debug("NOT Attached to parent pos=" + _go.transform.position + ",rotation=" + _go.transform.rotation);
-            }
-            _camera.rect = new Rect(0, 0, 1, 1);
-            _camera.depth = _depth;
-            _camera.fieldOfView = _fov;
-            _camera.enabled = enabled;            
+            _camera.enabled = enabled;
+            //}          
+
         }
     }
 }

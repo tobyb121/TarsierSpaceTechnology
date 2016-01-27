@@ -57,6 +57,14 @@ namespace TarsierSpaceTech
                 }
             }
 
+        internal static bool IsResearchBodiesInstalled
+        {
+            get
+            {
+                return IsModInstalled("ResearchBodies");
+            }
+        }
+
         internal static bool IsOPMInstalled
         {
             get

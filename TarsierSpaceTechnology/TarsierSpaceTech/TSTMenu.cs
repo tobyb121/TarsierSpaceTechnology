@@ -70,7 +70,7 @@ namespace TarsierSpaceTech
 
         private bool RT2Present = false;
         private bool RT2VesselConnected = false;
-        private double RT2VesselDelay = 0f;
+        private double RT2VesselDelay = 0f;        
                 
 
         public void Awake()
@@ -84,8 +84,7 @@ namespace TarsierSpaceTech
             {
                 Utilities.Log("TSTMenu", "RT2 present");
                 RTWrapper.InitTRWrapper();
-            }                
-
+            }                                 
             if (ToolbarManager.ToolbarAvailable && TSTMstStgs.Instance.TSTsettings.UseAppLauncher == false)
             {
                 button1 = ToolbarManager.Instance.add("TarsierSpaceTech", "button1");
@@ -248,7 +247,7 @@ namespace TarsierSpaceTech
             }
             
    
-            GUI.skin = HighLogic.Skin;
+            GUI.skin = HighLogic.Skin;            
             if (!Utilities.WindowVisibile(FwindowPos)) Utilities.MakeWindowVisible(FwindowPos);
             FwindowPos = GUILayout.Window(TSTwindowID, FwindowPos, windowF, "Tarsier Space Technology", GUILayout.MinHeight(20), GUILayout.ExpandWidth(true),
                             GUILayout.ExpandHeight(true));

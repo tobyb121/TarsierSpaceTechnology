@@ -31,7 +31,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Reflection;
 using UnityEngine;
 
@@ -108,6 +107,7 @@ namespace TarsierSpaceTech
                 try
                 {
                     //SetDOEFOV(ExternalControl, ActiveOptics);
+                    
                     if (DOEWrapper.APIReady)
                     {
                         DOEWrapper.DOEapi.SetExternalFOVControl(ExternalControl);
@@ -131,7 +131,7 @@ namespace TarsierSpaceTech
     /// <summary>
     /// The Wrapper class to access DOE
     /// </summary>
-    public class DOEWrapper
+    public class DOEWrapper 
     {
         protected static System.Type DOEType;
         protected static System.Type DOEFlareDrawType;
@@ -182,7 +182,7 @@ namespace TarsierSpaceTech
             _DOEWrapped = false;
             actualDOEFlareDraw = null;
             DOEapi = null;
-            LogFormatted("Attempting to Grab DOE Types...");
+            LogFormatted_DebugOnly("Attempting to Grab DOE Types...");
 
             //find the base type
             DOEType = AssemblyLoader.loadedAssemblies
@@ -192,6 +192,7 @@ namespace TarsierSpaceTech
 
             if (DOEType == null)
             {
+                LogFormatted("Failed grabbing DOE FlareDraw Instance");
                 return false;
             }
 
@@ -209,7 +210,7 @@ namespace TarsierSpaceTech
             }
 
             //now grab the running instance
-            LogFormatted("Got Assembly Types, grabbing Instances");
+            LogFormatted_DebugOnly("Got Assembly Types, grabbing Instances");
             
             try
             {
@@ -222,12 +223,12 @@ namespace TarsierSpaceTech
             }
             if (actualDOEFlareDraw == null)
             {
-                LogFormatted("Failed grabbing Instance");
+                LogFormatted("Failed grabbing DOE Instance");
                 return false;
             }
 
             //If we get this far we can set up the local object and its methods/functions
-            LogFormatted("Got Instance, Creating Wrapper Objects");
+            LogFormatted_DebugOnly("Got Instance, Creating Wrapper Objects");
             DOEapi = new DOEAPI(actualDOEFlareDraw);
 
             _DOEWrapped = true;
@@ -252,7 +253,7 @@ namespace TarsierSpaceTech
 
                 //WORK OUT THE STUFF WE NEED TO HOOK FOR PEOPLE HERE
                 //Methods
-                LogFormatted("Getting Methods");
+                LogFormatted_DebugOnly("Getting Methods");
                 SetExternalFOVControlMethod = DOEFlareDrawType.GetMethod("SetExternalFOVControl", BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance);
                 SetFOVMethod = DOEFlareDrawType.GetMethod("SetFOV", BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance);
                 LogFormatted_DebugOnly("Success: " + (SetExternalFOVControlMethod != null).ToString());
@@ -314,14 +315,15 @@ namespace TarsierSpaceTech
         #region Logging Stuff
 
         /// <summary>
-        /// Some Structured logging to the debug file - ONLY RUNS WHEN DLL COMPILED IN DEBUG MODE
+        /// Some Structured logging to the debug file - ONLY RUNS WHEN TST debug mode is on
         /// </summary>
         /// <param name="Message">Text to be printed - can be formatted as per String.format</param>
-        /// <param name="strParams">Objects to feed into a String.format</param>
-        [System.Diagnostics.Conditional("DEBUG")]
+        /// <param name="strParams">Objects to feed into a String.format</param>        
         internal static void LogFormatted_DebugOnly(String Message, params System.Object[] strParams)
         {
-            LogFormatted(Message, strParams);
+            TSTSettings TSTsettings = TSTMstStgs.Instance.TSTsettings;
+            if (TSTsettings.debugging)
+                LogFormatted(Message, strParams);
         }
 
         /// <summary>

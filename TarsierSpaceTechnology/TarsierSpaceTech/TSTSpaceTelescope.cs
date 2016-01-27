@@ -25,9 +25,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using UnityEngine;
-using UnityEngineInternal;
+using System.IO;
 
 namespace TarsierSpaceTech
 {
@@ -38,12 +37,16 @@ namespace TarsierSpaceTech
         
         private static int CAMwindowID = 5955555;
         private static int GALwindowID = 5955556;
-        private static int BODwindowID = 5955557;        
+        private static int BODwindowID = 5955557;              
 
 		private bool _inEditor = false;
 		private Animation _animation;
 		private Transform _baseTransform;
         private Transform _cameraTransform;
+        public Transform cameraTransform
+        {
+            get { return _cameraTransform; }
+        }
 		private Transform _lookTransform;
 		internal TSTCameraModule _camera; 
                   
@@ -55,10 +58,10 @@ namespace TarsierSpaceTech
 		private Rect windowPos = new Rect(128, 128, 0, 0);
 		public WindowSate windowState = WindowSate.Small;
 		private Rect targetGalWindowPos = new Rect(512, 128, 0, 0);
-		private Rect targetBodWindowPos = new Rect(512, 128, 0, 0);
+		private Rect targetBodWindowPos = new Rect(512, 128, 0, 0);        
 		private bool showGalTargetsWindow = false;
 		private bool showBodTargetsWindow = false;
-		private bool filterContractTargets = false;
+		private bool filterContractTargets = false;        
 		int selectedTargetIndex = -1;
         private Vector2 GalscrollViewVector = Vector2.zero;
         private Vector2 BodscrollViewVector = Vector2.zero;
@@ -108,6 +111,10 @@ namespace TarsierSpaceTech
 		public TargettingMode targettingMode = TargettingMode.Galaxy;
 		private TSTGalaxy galaxyTarget;
 		private CelestialBody bodyTarget;
+        private bool isRBactive = false;
+        private Dictionary<CelestialBody, bool> TrackedBodies = new Dictionary<CelestialBody, bool>();
+        private Dictionary<CelestialBody, int> ResearchState=  new Dictionary<CelestialBody, int>();
+        private RBWrapper.ModuleTrackBodies RBmoduleTrackBodies;
 		
 
 		public override void OnStart(StartState state)
@@ -161,8 +168,8 @@ namespace TarsierSpaceTech
 			Utilities.Log_Debug("TSTTel","Got ExpIDs");
             CAMwindowID = Utilities.getnextrandomInt();
             GALwindowID = Utilities.getnextrandomInt();
-            BODwindowID = Utilities.getnextrandomInt();                        
-			Utilities.Log_Debug("TSTTel","On end start");
+            BODwindowID = Utilities.getnextrandomInt();            
+            Utilities.Log_Debug("TSTTel","On end start");
             StartCoroutine(setSASParams());
             Utilities.Log_Debug("TSTTel","Adding Input Callback");            
 			_vessel = vessel;
@@ -173,6 +180,78 @@ namespace TarsierSpaceTech
 			Utilities.Log_Debug("TSTTel","Added Input Callback");
             if (Active)
                 StartCoroutine(openCamera());
+            //If ResearchBodies is installed, initialise the PartModulewrapper and get the TrackedBodies dictionary item.
+            isRBactive = TSTInstalledMods.IsResearchBodiesInstalled;
+            if (isRBactive)
+            {
+                RBWrapper.InitRBDBWrapper();
+                RBWrapper.InitRBFLWrapper();
+                if (RBWrapper.APIFLReady)
+                {                    
+                    foreach (PartModule module in this.part.Modules)
+                    {
+                        if (module.moduleName == "ModuleTrackBodies")
+                        {
+                            RBmoduleTrackBodies = new RBWrapper.ModuleTrackBodies(module);
+                            TrackedBodies = RBmoduleTrackBodies.TrackedBodies;
+                            ResearchState = RBmoduleTrackBodies.ResearchState;
+
+                            if (File.Exists("saves/" + HighLogic.SaveFolder + "/researchbodies.cfg"))
+                            {
+                                ConfigNode mainnode = ConfigNode.Load("saves/" + HighLogic.SaveFolder + "/researchbodies.cfg");
+                                foreach (CelestialBody cb in TSTGalaxies.CBGalaxies)
+                                {
+                                    bool fileContainsGalaxy = false;
+                                    foreach (ConfigNode node in mainnode.GetNode("RESEARCHBODIES").nodes)
+                                    {
+                                        if (cb.bodyName.Contains(node.GetValue("body")))
+                                        {
+                                            if (bool.Parse(node.GetValue("ignore")))
+                                            {
+                                                TrackedBodies[cb] = true;
+                                                ResearchState[cb] = 100;
+                                            }
+                                            else
+                                            {
+                                                TrackedBodies[cb] = bool.Parse(node.GetValue("isResearched"));
+                                                if (node.HasValue("researchState"))
+                                                {
+                                                    ResearchState[cb] = int.Parse(node.GetValue("researchState"));
+                                                }
+                                                else
+                                                {
+                                                    ConfigNode cbNode = null;
+                                                    foreach (ConfigNode cbSettingNode in mainnode.GetNode("RESEARCHBODIES").nodes)
+                                                    {
+                                                        if (cbSettingNode.GetValue("body") == cb.GetName())
+                                                            cbNode = cbSettingNode;
+                                                    }
+                                                    cbNode.AddValue("researchState", "0");
+                                                    mainnode.Save("saves/" + HighLogic.SaveFolder + "/researchbodies.cfg");
+                                                    ResearchState[cb] = 0;
+                                                }
+                                            }
+                                            fileContainsGalaxy = true;
+                                        }
+                                    }
+                                    if (!fileContainsGalaxy)
+                                    {
+                                        ConfigNode newNodeForCB = mainnode.GetNode("RESEARCHBODIES").AddNode("BODY");
+                                        newNodeForCB.AddValue("body", cb.GetName());
+                                        newNodeForCB.AddValue("isResearched", "false");
+                                        newNodeForCB.AddValue("researchState", "0");
+                                        newNodeForCB.AddValue("ignore", "false");
+                                        TrackedBodies[cb] = false; ResearchState[cb] = 0;
+                                        mainnode.Save("saves/" + HighLogic.SaveFolder + "/researchbodies.cfg");
+                                    }
+                                }                                
+                            }
+
+                            break;
+                        }
+                    }
+                }                               
+            }
         }
             
         IEnumerator setSASParams()
@@ -360,16 +439,26 @@ namespace TarsierSpaceTech
             GUILayout.BeginVertical();
             BodscrollViewVector = GUILayout.BeginScrollView(BodscrollViewVector, GUILayout.Height(300), GUILayout.Width(GUI_WIDTH_SMALL));
             
-			filterContractTargets = GUILayout.Toggle(filterContractTargets, "Show only contract targets");
-			//Utilities.Log_Debug("TSTTel",String.Format(" - TargettingWindow - TSTBodies.Count = {0}", FlightGlobals.Bodies.Count));			
-			
-			int newTarget = FlightGlobals.Bodies.
-				FindIndex(
-					g => (TSTProgressTracker.HasTelescopeCompleted(g) ||
-						  (Contracts.ContractSystem.Instance &&
-						  Contracts.ContractSystem.Instance.GetCurrentActiveContracts<TSTTelescopeContract>().Any(t => t.target.name == g.name)
-						  )
-						 ) ? GUILayout.Button(g.theName) : (filterContractTargets ? false : GUILayout.Button(g.theName)));
+			filterContractTargets = GUILayout.Toggle(filterContractTargets, "Show only contract targets");           
+            //Utilities.Log_Debug("TSTTel",String.Format(" - TargettingWindow - TSTBodies.Count = {0}", FlightGlobals.Bodies.Count));			
+            int newTarget = 0;
+            if (isRBactive && RBWrapper.APIDBReady && RBWrapper.APIFLReady && RBmoduleTrackBodies.enabled)
+            {
+                bool filterRBTargets = isRBactive;
+                newTarget = FlightGlobals.Bodies.
+                            FindIndex(
+                                   g => (TSTProgressTracker.HasTelescopeCompleted(g) ||
+                                            (Contracts.ContractSystem.Instance && Contracts.ContractSystem.Instance.GetCurrentActiveContracts<TSTTelescopeContract>().Any(t => t.target.name == g.name))
+                                            ) ? GUILayout.Button(g.theName) : (filterContractTargets ? false : (RBmoduleTrackBodies.TrackedBodies[g] ? GUILayout.Button(g.theName) : false)));
+            }
+            else
+            {
+                newTarget = FlightGlobals.Bodies.
+                            FindIndex(
+                                g => (TSTProgressTracker.HasTelescopeCompleted(g) ||
+                                         (Contracts.ContractSystem.Instance && Contracts.ContractSystem.Instance.GetCurrentActiveContracts<TSTTelescopeContract>().Any(t => t.target.name == g.name))
+                                     ) ? GUILayout.Button(g.theName) : (filterContractTargets ? false : GUILayout.Button(g.theName)));
+            }			
 
 			//Utilities.Log_Debug("TSTTel",String.Format(" - TargettingWindow - newTarget = {0}", newTarget));
 
@@ -407,19 +496,30 @@ namespace TarsierSpaceTech
             GUILayout.BeginVertical();
             GalscrollViewVector = GUILayout.BeginScrollView(GalscrollViewVector, GUILayout.Height(300), GUILayout.Width(GUI_WIDTH_SMALL));
             filterContractTargets = GUILayout.Toggle(filterContractTargets, "Show only contract targets");
-			//Utilities.Log_Debug("TSTTel",String.Format(" - TargettingWindow - TSTGalaxies.Galaxies.Count = {0}", TSTGalaxies.Galaxies.Count));			
-			
-			int newTarget = TSTGalaxies.Galaxies.
-				FindIndex(
-					g => (TSTProgressTracker.HasTelescopeCompleted(g) ||
-						  (Contracts.ContractSystem.Instance &&
-						  Contracts.ContractSystem.Instance.GetCurrentActiveContracts<TSTTelescopeContract>().Any(t => t.target.name == g.name)
-						  )
-						 ) ? GUILayout.Button(g.theName) : (filterContractTargets ? false : GUILayout.Button(g.theName)));
+            //Utilities.Log_Debug("TSTTel",String.Format(" - TargettingWindow - TSTGalaxies.Galaxies.Count = {0}", TSTGalaxies.Galaxies.Count));			
 
-			//Utilities.Log_Debug("TSTTel",String.Format(" - TargettingWindow - newTarget = {0}", newTarget));
+            int newTarget = 0;
+            if (isRBactive && RBWrapper.APIDBReady && RBWrapper.APIFLReady && RBmoduleTrackBodies.enabled)
+            {
+                bool filterRBTargets = isRBactive;
+                newTarget = TSTGalaxies.Galaxies.
+                            FindIndex(
+                                   g => (TSTProgressTracker.HasTelescopeCompleted(g) ||
+                                            (Contracts.ContractSystem.Instance && Contracts.ContractSystem.Instance.GetCurrentActiveContracts<TSTTelescopeContract>().Any(t => t.target.name == g.name))
+                                            ) ? GUILayout.Button(g.theName) : (filterContractTargets ? false : (RBmoduleTrackBodies.TrackedBodies[TSTGalaxies.CBGalaxies.Find(x => x.theName == g.theName)] ? GUILayout.Button(g.theName) : false)));
+            }
+            else
+            {
+                newTarget = TSTGalaxies.Galaxies.
+                            FindIndex(
+                                g => (TSTProgressTracker.HasTelescopeCompleted(g) ||
+                                         (Contracts.ContractSystem.Instance && Contracts.ContractSystem.Instance.GetCurrentActiveContracts<TSTTelescopeContract>().Any(t => t.target.name == g.name))
+                                     ) ? GUILayout.Button(g.theName) : (filterContractTargets ? false : GUILayout.Button(g.theName)));
+            }
 
-			if (newTarget != -1 && newTarget != selectedTargetIndex)
+            //Utilities.Log_Debug("TSTTel",String.Format(" - TargettingWindow - newTarget = {0}", newTarget));
+
+            if (newTarget != -1 && newTarget != selectedTargetIndex)
 			{
 				vessel.targetObject = null;
 				FlightGlobals.fetch.SetVesselTarget(null);
@@ -437,8 +537,9 @@ namespace TarsierSpaceTech
 			GUILayout.EndVertical();
             GUI.DragWindow();		
 		}
+                
 
-		public void OnGUI()
+        public void OnGUI()
 		{
             if (!_inEditor && FlightUIModeController.Instance.Mode != FlightUIMode.ORBITAL && _camera.Enabled && windowState != WindowSate.Hidden 
                 && vessel.isActiveVessel && !Utilities.isPauseMenuOpen())
@@ -447,7 +548,8 @@ namespace TarsierSpaceTech
 				if(showGalTargetsWindow)
                     targetGalWindowPos = GUILayout.Window(GALwindowID, targetGalWindowPos, TargettingGalWindow, "Select Target", GUILayout.Width(GUI_WIDTH_SMALL));
 				if(showBodTargetsWindow)
-                    targetBodWindowPos = GUILayout.Window(BODwindowID, targetBodWindowPos, TargettingBodWindow, "Select Target", GUILayout.Width(GUI_WIDTH_SMALL));
+                    targetBodWindowPos = GUILayout.Window(BODwindowID, targetBodWindowPos, TargettingBodWindow, "Select Target", GUILayout.Width(GUI_WIDTH_SMALL));                
+
 			}
 		}
 
@@ -553,8 +655,8 @@ namespace TarsierSpaceTech
 			{
 				Utilities.Log_Debug("TSTTel","Looking at " + obj.theName);
 				if(obj.type == typeof(CelestialBody)){
-					CelestialBody body = (CelestialBody)obj.BaseObject;
-					doScience(body);
+					CelestialBody body = (CelestialBody)obj.BaseObject;                    
+                    doScience(body);
 					if (TSTProgressTracker.isActive)
 					{
 						TSTProgressTracker.OnTelescopePicture(body);
@@ -562,8 +664,8 @@ namespace TarsierSpaceTech
 				}
 				else if (obj.type == typeof(TSTGalaxy))
 				{
-					TSTGalaxy galaxy = (TSTGalaxy)obj.BaseObject;
-					doScience(galaxy);
+					TSTGalaxy galaxy = (TSTGalaxy)obj.BaseObject;                    
+                    doScience(galaxy);
 					if (TSTProgressTracker.isActive)
 					{
 						TSTProgressTracker.OnTelescopePicture(galaxy);
@@ -588,6 +690,8 @@ namespace TarsierSpaceTech
 			}
 		}
 
+        
+
 		private List<TargetableObject> getLookingAt()
 		{
 			List<TargetableObject> result = new List<TargetableObject>();
@@ -597,7 +701,7 @@ namespace TarsierSpaceTech
 			foreach (TargetableObject obj in galaxies.Concat(bodies))
 			{
 				Vector3 r = (obj.position - _cameraTransform.position);
-				float distance = r.magnitude;
+				float distance = r.magnitude;                
 				double theta = Vector3d.Angle(_cameraTransform.forward, r);
 				double visibleWidth = (2 * obj.size / distance) * 180 / Mathf.PI;
 				Utilities.Log_Debug("TSTTel","getLookingAt about to calc fov");
@@ -608,8 +712,8 @@ namespace TarsierSpaceTech
 					Utilities.Log_Debug("TSTTel","Looking at: " + obj.theName);
 					if (visibleWidth > fov)
 					{
-						Utilities.Log_Debug("TSTTel","Can see: " + obj.theName); 
-						result.Add(obj);
+						Utilities.Log_Debug("TSTTel","Can see: " + obj.theName);                         
+						result.Add(obj);                        
 					}
 				}
 			}
@@ -750,7 +854,6 @@ namespace TarsierSpaceTech
 			if (transmitters.Count > 0 && _scienceData.Contains(data))
 			{
 				transmitters.First().TransmitData(new List<ScienceData> { data });
-
 				_scienceData.Remove(data);
 			}
 		}
@@ -804,6 +907,7 @@ namespace TarsierSpaceTech
             }
             _scienceData.Add(data);
         }
+
         public bool IsRerunnable()
         {
             Utilities.Log_Debug("TSTTel", "Is rerunnable");
@@ -827,10 +931,10 @@ namespace TarsierSpaceTech
                     new Callback<ScienceData>(_onPageSendToLab));
             ExperimentsResultDialog.DisplayResult(page);
         }
-        
-#endregion Science
 
-		public override void OnSave(ConfigNode node)
+        #endregion Science
+
+        public override void OnSave(ConfigNode node)
 		{
             Utilities.Log_Debug("TSTTel", "OnSave Telescope"); 
             foreach (ScienceData data in _scienceData)
