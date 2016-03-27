@@ -61,7 +61,7 @@ namespace TarsierSpaceTech
                 target = FlightGlobals.Bodies.Find(b => b.name == t);
                 if (target == null)
                 {
-                    this.Log_Debug("Checking Galaxies");
+                    RSTUtils.Utilities.Log_Debug("Checking Galaxies");
                     target = TSTGalaxies.Galaxies.Find(g => g.name == t);
                 }
             }

@@ -83,9 +83,9 @@ namespace TarsierSpaceTech
 
         internal static bool IsModInstalled(string assemblyName)
             {
-                Assembly assembly = (from a in assemblies
+            Assembly assembly = (from a in assemblies
                                      where a.FullName.Contains(assemblyName)
-                                     select a).SingleOrDefault();
+                                     select a).FirstOrDefault();
                 return assembly != null;
             }
 

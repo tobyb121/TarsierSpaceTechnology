@@ -55,7 +55,7 @@ namespace TarsierSpaceTech
         {
             if (mesh == null)
             {
-                this.Log_Debug("Generating GalaxyMesh");
+                RSTUtils.Utilities.Log_Debug("Generating GalaxyMesh");
                 mesh = new Mesh();
                 mesh.vertices = new Vector3[]{
                     new Vector3(-1,0.75f,0),
@@ -98,17 +98,17 @@ namespace TarsierSpaceTech
             Vector3 pos = ConfigNode.ParseVector3(config.GetValue("location"));            
             textureURL = config.GetValue("textureURL");
             float size = float.Parse(config.GetValue("size"));
-            this.Log_Debug("Creating Galaxy: " + name + " " + pos.ToString() + " " + textureURL);
-            this.Log_Debug("Setting Name");
+            RSTUtils.Utilities.Log_Debug("Creating Galaxy: {0} : {1} : {2}" , name , pos.ToString() , textureURL);
+            RSTUtils.Utilities.Log_Debug("Setting Name");
             this.name = name;
             this.theName = theName;            
             this.size = 1e3f * size * ScaledSpace.ScaleFactor;                       
             this.scaledPosition = -130e6f * pos.normalized;
-            this.Log_Debug("Setting Scaled Position=" + this.scaledPosition);
-            this.Log_Debug("Position=" + this.position);            
+            RSTUtils.Utilities.Log_Debug("Setting Scaled Position= {0}" , this.scaledPosition.ToString());
+            RSTUtils.Utilities.Log_Debug("Position= {0}" , this.position.ToString());            
             this.setTexture(GameDatabase.Instance.GetTexture(textureURL, false));
-            this.Log_Debug("Tex=" + this.mat.mainTexture.name);
-            this.Log_Debug("Finished creating galaxy");
+            RSTUtils.Utilities.Log_Debug("Tex= {0}" , this.mat.mainTexture.name);
+            RSTUtils.Utilities.Log_Debug("Finished creating galaxy");
         }
 
         public void attach(GameObject parent)

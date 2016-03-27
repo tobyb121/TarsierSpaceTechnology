@@ -109,49 +109,49 @@ namespace TarsierSpaceTech
                 else if (m.ContractState == State.Active)
                     active++;
             }
-            this.Log_Debug("Telescope Contracts check offers=" + offers + " active=" + active);
+            RSTUtils.Utilities.Log_Debug("Telescope Contracts check offers= {0} active= {1}" , offers.ToString(), active.ToString());
             if (offers >= 1)
                 return false;
             if (active >= 1)
                 return false;
-            this.Log_Debug("Generating Telescope Contract");
+            RSTUtils.Utilities.Log_Debug("Generating Telescope Contract");
 
             agent = Contracts.Agents.AgentList.Instance.GetAgent("Tarsier Space Technology");
             base.SetExpiry();
             base.expiryType = DeadlineType.None;
             base.deadlineType = DeadlineType.None;
 
-            this.Log_Debug("Creating Parameter");
+            RSTUtils.Utilities.Log_Debug("Creating Parameter");
             TSTTelescopeContractParam param = new TSTTelescopeContractParam();
             this.AddParameter(param);
             string target_name = TSTProgressTracker.GetNextTelescopeTarget();
             if (target_name == default(string))
             {
-                this.Log_Debug("target body is default (not set), cannot generate");
+                RSTUtils.Utilities.Log_Debug("target body is default (not set), cannot generate");
                 return false;
             }
-            this.Log_Debug("Target: " + target_name);
+            RSTUtils.Utilities.Log_Debug("Target: {0}" , target_name);
             AvailablePart ap2 = PartLoader.getPartInfoByName("tarsierAdvSpaceTelescope");
             if (!ResearchAndDevelopment.PartTechAvailable(ap2) && !ResearchAndDevelopment.PartModelPurchased(ap2) && target_name == "Galaxy1")
             {
-                this.Log_Debug("Contracts for Planets completed and Galaxy contracts require advanced space telescope");
+                RSTUtils.Utilities.Log_Debug("Contracts for Planets completed and Galaxy contracts require advanced space telescope");
                 return false;
             }
-            this.Log_Debug("Checking Celestial Bodies");
+            RSTUtils.Utilities.Log_Debug("Checking Celestial Bodies");
             this.target = FlightGlobals.Bodies.Find(b => b.name == target_name);
             if (target == null)
             {
-                this.Log_Debug("Checking Galaxies");
+                RSTUtils.Utilities.Log_Debug("Checking Galaxies");
                 this.target = TSTGalaxies.Galaxies.Find(g => g.name == target_name);
             }
-            this.Log_Debug("Using target: " + this.target.ToString());
+            RSTUtils.Utilities.Log_Debug("Using target: {0}" , this.target.ToString());
             param.target = target;
-            this.Log_Debug("Creating Science Param");
+            RSTUtils.Utilities.Log_Debug("Creating Science Param");
             TSTScienceParam param2 = new TSTScienceParam();
             param2.matchFields.Add("TarsierSpaceTech.SpaceTelescope");
             param2.matchFields.Add("LookingAt" + target.name);
             this.AddParameter(param2);
-            this.Log_Debug("Created Science Param");
+            RSTUtils.Utilities.Log_Debug("Created Science Param");
             base.prestige = TSTProgressTracker.getTelescopePrestige(target.name);
             if (TSTProgressTracker.HasTelescopeCompleted(target))
             {
