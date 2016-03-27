@@ -25,7 +25,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-
+using RSTUtils;
 using UnityEngine;
 
 namespace TarsierSpaceTech
@@ -80,7 +80,7 @@ namespace TarsierSpaceTech
                 baseTransform.SetActive(false);
                 Debug.Log("TSTGalaxies BaseTransform setactive = false, ScaledSun does not exist");
             }
-            if (TSTInstalledMods.IsKopInstalled)
+            if (Utilities.IsKopInstalled)
             {
                 baseTransform.transform.parent = FlightGlobals.Bodies[1].transform;
                 Debug.Log("TSTGalaxies - Detected Kopernicus - BaseTransform set to Home Planet");

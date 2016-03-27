@@ -73,40 +73,40 @@ namespace TarsierSpaceTech
         [KSPEvent(name = "fillDrive", active = true, guiActive = true, externalToEVAOnly = false, guiName = "Fill Hard Drive")]
         public void fillDrive()
         {
-            Utilities.Log_Debug("TSTSDD","FILLING DRIVE");
+            RSTUtils.Utilities.Log_Debug("FILLING DRIVE");
 
             //List<Part> parts = vessel.Parts.Where(p => p.FindModulesImplementing<IScienceDataContainer>().Count > 0).ToList();
             List<Part> parts = FlightGlobals.ActiveVessel.Parts.Where(p => p.FindModulesImplementing<IScienceDataContainer>().Count > 0).ToList();
             parts.RemoveAll(p => p.FindModulesImplementing<TSTScienceHardDrive>().Count > 0);
-            Utilities.Log_Debug("TSTSDD","Parts=" + parts.Count);
+            RSTUtils.Utilities.Log_Debug("Parts= {0}" , parts.Count.ToString());
             foreach (Part p in parts)
             {
                 List<IScienceDataContainer> containers = p.FindModulesImplementing<IScienceDataContainer>().ToList();
-                Utilities.Log_Debug("TSTSDD","Got containers: " + containers.Count.ToString());
+                RSTUtils.Utilities.Log_Debug("Got containers: {0}" , containers.Count.ToString());
                 foreach (IScienceDataContainer container in containers)
                 {
-                    Utilities.Log_Debug("TSTSDD","Checking Data");
+                    RSTUtils.Utilities.Log_Debug("Checking Data");
                     ScienceData[] data = container.GetData();
-                    Utilities.Log_Debug("TSTSDD","Got Data: " + data.Length.ToString());
+                    RSTUtils.Utilities.Log_Debug("Got Data: {0}" , data.Length.ToString());
                     foreach (ScienceData d in data)
                     {
                         if (d != null)
                         {
-                            Utilities.Log_Debug("TSTSDD","Checking Space: " + d.dataAmount.ToString() + " " + _dataAmount.ToString() + " " + Capacity.ToString());
+                            RSTUtils.Utilities.Log_Debug("Checking Space: {0} : {1} : {2}" , d.dataAmount.ToString() , _dataAmount.ToString() , Capacity.ToString());
                             if (d.dataAmount + _dataAmount <= Capacity)
                             {
-                                if (Utilities.GetAvailableResource(part, "ElectricCharge") >= d.dataAmount * powerUsage)
+                                if (RSTUtils.Utilities.GetAvailableResource(part, "ElectricCharge") >= d.dataAmount * powerUsage)
                                 {
-                                    Utilities.Log_Debug("TSTSDD","Removing Electric Charge");
+                                    RSTUtils.Utilities.Log_Debug("Removing Electric Charge");
                                     part.RequestResource("ElectricCharge", d.dataAmount * powerUsage);
-                                    Utilities.Log_Debug("TSTSDD","Adding Data");
+                                    RSTUtils.Utilities.Log_Debug("Adding Data");
                                     scienceData.Add(d);
                                     d.dataAmount *= (1 - corruption);
-                                    Utilities.Log_Debug("TSTSDD","Incrementing stored val");
+                                    RSTUtils.Utilities.Log_Debug("Incrementing stored val");
                                     _DataAmount += d.dataAmount;
-                                    Utilities.Log_Debug("TSTSDD","Removing Data from source");
+                                    RSTUtils.Utilities.Log_Debug("Removing Data from source");
                                     container.DumpData(d);
-                                    Utilities.Log_Debug("TSTSDD","Data Added");
+                                    RSTUtils.Utilities.Log_Debug("Data Added");
                                 }
                                 else
                                 {

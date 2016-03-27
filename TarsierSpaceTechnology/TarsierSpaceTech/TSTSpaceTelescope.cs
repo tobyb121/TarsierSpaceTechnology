@@ -27,59 +27,73 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using System.IO;
+using Microsoft.Win32.SafeHandles;
+using RSTUtils;
 
 namespace TarsierSpaceTech
 {
 	public class TSTSpaceTelescope : PartModule, IScienceDataContainer
 	{
 		private int GUI_WIDTH_SMALL = 320; 
-        private int GUI_WIDTH_LARGE = 600;  
-        
-        private static int CAMwindowID = 5955555;
-        private static int GALwindowID = 5955556;
-        private static int BODwindowID = 5955557;              
+		private int GUI_WIDTH_LARGE = 600;  
+		
+		private static int CAMwindowID = 5955555;
+		private static int GALwindowID = 5955556;
+		private static int BODwindowID = 5955557;              
 
 		private bool _inEditor = false;
-		private Animation _animation;
+		private Animation _animationOpen;
+		private Animation _animationClose;
 		private Transform _baseTransform;
-        private Transform _cameraTransform;
-        public Transform cameraTransform
-        {
-            get { return _cameraTransform; }
-        }
+		private Transform _animationTransform;
+		private Transform _cameraTransform;
+		public Transform cameraTransform
+		{
+			get { return _cameraTransform; }
+		}
 		private Transform _lookTransform;
 		internal TSTCameraModule _camera; 
-                  
+				  
 
-        private bool _showTarget = false;		
+		private bool _showTarget = false;		
 		private bool _saveToFile = false;		
 		private List<ScienceData> _scienceData = new List<ScienceData>();
 
 		private Rect windowPos = new Rect(128, 128, 0, 0);
-		public WindowSate windowState = WindowSate.Small;
+		public WindowState windowState = WindowState.Small;
 		private Rect targetGalWindowPos = new Rect(512, 128, 0, 0);
 		private Rect targetBodWindowPos = new Rect(512, 128, 0, 0);        
 		private bool showGalTargetsWindow = false;
 		private bool showBodTargetsWindow = false;
 		private bool filterContractTargets = false;        
 		int selectedTargetIndex = -1;
-        private Vector2 GalscrollViewVector = Vector2.zero;
-        private Vector2 BodscrollViewVector = Vector2.zero;
-        public float PIDKp = 12f;
-        public float PIDKi = 6f;
-        public float PIDKd = 0.5f;
+		private Vector2 GalscrollViewVector = Vector2.zero;
+		private Vector2 BodscrollViewVector = Vector2.zero;
+		public float PIDKp = 12f;
+		public float PIDKi = 6f;
+		public float PIDKd = 0.5f;
 
 		[KSPField(guiActive = false, guiName = "maxZoom", isPersistant = true)]
 		public int maxZoom = 5;
 
 		[KSPField(isPersistant = true)]
 		public bool Active = false;
-        [KSPField]
+		[KSPField]
 		public string baseTransformName = "Telescope";       
-        [KSPField]
+		[KSPField]
 		public string cameraTransformName = "CameraTransform";       
-        [KSPField]
-		public string lookTransformName = "LookTransform";       
+		[KSPField]
+		public string lookTransformName = "LookTransform";
+		[KSPField]
+		public string animationTransformName = "Telescope";
+		[KSPField]
+		public string animationNameOpen = "";
+		[KSPField]
+		public string animationNameClose = "";
+		[KSPField]
+		public string animationClipNameOpen = "open";
+		[KSPField]
+		public string animationClipNameClose = "close";
 		[KSPField]
 		public bool servoControl = true;
 		private Quaternion zeroRotation;
@@ -111,170 +125,186 @@ namespace TarsierSpaceTech
 		public TargettingMode targettingMode = TargettingMode.Galaxy;
 		private TSTGalaxy galaxyTarget;
 		private CelestialBody bodyTarget;
-        private bool isRBactive = false;
-        private Dictionary<CelestialBody, bool> TrackedBodies = new Dictionary<CelestialBody, bool>();
-        private Dictionary<CelestialBody, int> ResearchState=  new Dictionary<CelestialBody, int>();
-        private RBWrapper.ModuleTrackBodies RBmoduleTrackBodies;
+		private bool isRBactive = false;
+		private Dictionary<CelestialBody, bool> TrackedBodies = new Dictionary<CelestialBody, bool>();
+		private Dictionary<CelestialBody, int> ResearchState=  new Dictionary<CelestialBody, int>();
+		private RBWrapper.ModuleTrackBodies RBmoduleTrackBodies;
 		
 
 		public override void OnStart(StartState state)
 		{
 			base.OnStart(state);
-			Utilities.Log_Debug("TSTTel","Starting Telescope");
+			Utilities.Log_Debug("TSTTel Starting Telescope");
 			part.CoMOffset = part.attachNodes[0].position;
 			if (state == StartState.Editor)
 			{
 				_inEditor = true;
 				return;
 			}            
-            _baseTransform = Utilities.FindChildRecursive(transform, baseTransformName);
+			_baseTransform = Utilities.FindChildRecursive(transform, baseTransformName);
 			_cameraTransform = Utilities.FindChildRecursive(transform,cameraTransformName);
-			_lookTransform = Utilities.FindChildRecursive(transform,lookTransformName);			
-            Utilities.PrintTransform(_baseTransform, "_basetransform");            
-            Utilities.PrintTransform(_cameraTransform, "_cameratransform");            
-            Utilities.PrintTransform(_lookTransform, "_looktransform");
-            this.Log_Debug("part.CoMOffset=" + part.CoMOffset);
+			_lookTransform = Utilities.FindChildRecursive(transform,lookTransformName);
+			_animationTransform = Utilities.FindChildRecursive(transform, animationTransformName);
+			Utilities.PrintTransform(_baseTransform, "_basetransform");
+			Utilities.PrintTransform(_cameraTransform, "_cameratransform");
+			Utilities.PrintTransform(_lookTransform, "_looktransform");
+			Utilities.Log_Debug("part.CoMOffset=" + part.CoMOffset.ToString());
 			zeroRotation = _cameraTransform.localRotation;
-            this.Log_Debug("zeroRotation=" + zeroRotation);
-            _camera = _cameraTransform.gameObject.AddComponent<TSTCameraModule>();
-			_animation = _baseTransform.animation;
-            
-            if (!Active) //camera is not active on startup
-            {
-                Events["eventOpenCamera"].active = true;
-                Events["eventCloseCamera"].active = false;
-                Events["eventShowGUI"].active = false;
-            }
+			Utilities.Log_Debug("zeroRotation=" + zeroRotation.ToString());
+			_camera = _cameraTransform.gameObject.AddComponent<TSTCameraModule>();
+			//_animation = _baseTransform.animation;
+			if (animationNameOpen == "")
+			{
+				_animationOpen = _animationTransform.animation;
+			}
+			else
+			{
+				_animationOpen = Utilities.FindAnimChildRecursive(_animationTransform, animationNameOpen);
+			}
+			if (animationNameClose == "")
+			{
+				_animationClose = _animationTransform.animation;
+			}
+			else
+			{
+				_animationClose = Utilities.FindAnimChildRecursive(_animationTransform, animationNameClose);
+			}
+			if (!Active) //camera is not active on startup
+			{
+				Events["eventOpenCamera"].active = true;
+				Events["eventCloseCamera"].active = false;
+				Events["eventShowGUI"].active = false;
+			}
 			else //Camera is active on startup
-            {
-                Events["eventOpenCamera"].active = false;
-                Events["eventCloseCamera"].active = true;
-                Events["eventShowGUI"].active = true;
-            }			
+			{
+				Events["eventOpenCamera"].active = false;
+				Events["eventCloseCamera"].active = true;
+				Events["eventShowGUI"].active = true;
+			}			
 			Events["eventControlFromHere"].active = false;
 			Events["eventReviewScience"].active = false;
-            
-            for (int i = 0; i < targets_raw.Count; i++)
+			
+			for (int i = 0; i < targets_raw.Count; i++)
 			{
 				Texture2D tex = new Texture2D(40, 40);
 				tex.LoadImage(targets_raw[i]);
 				targets.Add(tex);
 			}
-			Utilities.Log_Debug("TSTTel","Getting ExpIDs");
+			Utilities.Log_Debug("TSTTel Getting ExpIDs");
 			foreach (String expID in ResearchAndDevelopment.GetExperimentIDs())
 			{
-				Utilities.Log_Debug("TSTTel","Got ExpID: " + expID);
+				Utilities.Log_Debug("TSTTel Got ExpID: " + expID);
 			}
-			Utilities.Log_Debug("TSTTel","Got ExpIDs");
-            CAMwindowID = Utilities.getnextrandomInt();
-            GALwindowID = Utilities.getnextrandomInt();
-            BODwindowID = Utilities.getnextrandomInt();            
-            Utilities.Log_Debug("TSTTel","On end start");
-            StartCoroutine(setSASParams());
-            Utilities.Log_Debug("TSTTel","Adding Input Callback");            
+			Utilities.Log_Debug("TSTTel Got ExpIDs");
+			CAMwindowID = Utilities.getnextrandomInt();
+			GALwindowID = Utilities.getnextrandomInt();
+			BODwindowID = Utilities.getnextrandomInt();
+			Utilities.Log_Debug("TSTTel On end start");
+			StartCoroutine(setSASParams());
+			Utilities.Log_Debug("TSTTel Adding Input Callback");            
 			_vessel = vessel;
 			_vessel.OnAutopilotUpdate += new FlightInputCallback(onFlightInput);				
 			GameEvents.onVesselChange.Add(new EventData<Vessel>.OnEvent(refreshFlightInputHandler));
 			GameEvents.onVesselDestroy.Add(new EventData<Vessel>.OnEvent(removeFlightInputHandler));
 			GameEvents.OnVesselRecoveryRequested.Add(new EventData<Vessel>.OnEvent(removeFlightInputHandler));
-			Utilities.Log_Debug("TSTTel","Added Input Callback");
-            if (Active)
-                StartCoroutine(openCamera());
-            //If ResearchBodies is installed, initialise the PartModulewrapper and get the TrackedBodies dictionary item.
-            isRBactive = TSTInstalledMods.IsResearchBodiesInstalled;
-            if (isRBactive)
-            {
-                RBWrapper.InitRBDBWrapper();
-                RBWrapper.InitRBFLWrapper();
-                if (RBWrapper.APIFLReady)
-                {                    
-                    foreach (PartModule module in this.part.Modules)
-                    {
-                        if (module.moduleName == "ModuleTrackBodies")
-                        {
-                            RBmoduleTrackBodies = new RBWrapper.ModuleTrackBodies(module);
-                            TrackedBodies = RBmoduleTrackBodies.TrackedBodies;
-                            ResearchState = RBmoduleTrackBodies.ResearchState;
+			Utilities.Log_Debug("TSTTel Added Input Callback");
+			if (Active)
+				StartCoroutine(openCamera());
+			//If ResearchBodies is installed, initialise the PartModulewrapper and get the TrackedBodies dictionary item.
+			isRBactive = Utilities.IsResearchBodiesInstalled;
+			if (isRBactive)
+			{
+				RBWrapper.InitRBDBWrapper();
+				RBWrapper.InitRBFLWrapper();
+				if (RBWrapper.APIFLReady)
+				{                    
+					foreach (PartModule module in this.part.Modules)
+					{
+						if (module.moduleName == "ModuleTrackBodies")
+						{
+							RBmoduleTrackBodies = new RBWrapper.ModuleTrackBodies(module);
+							TrackedBodies = RBmoduleTrackBodies.TrackedBodies;
+							ResearchState = RBmoduleTrackBodies.ResearchState;
 
-                            if (File.Exists("saves/" + HighLogic.SaveFolder + "/researchbodies.cfg"))
-                            {
-                                ConfigNode mainnode = ConfigNode.Load("saves/" + HighLogic.SaveFolder + "/researchbodies.cfg");
-                                foreach (CelestialBody cb in TSTGalaxies.CBGalaxies)
-                                {
-                                    bool fileContainsGalaxy = false;
-                                    foreach (ConfigNode node in mainnode.GetNode("RESEARCHBODIES").nodes)
-                                    {
-                                        if (cb.bodyName.Contains(node.GetValue("body")))
-                                        {
-                                            if (bool.Parse(node.GetValue("ignore")))
-                                            {
-                                                TrackedBodies[cb] = true;
-                                                ResearchState[cb] = 100;
-                                            }
-                                            else
-                                            {
-                                                TrackedBodies[cb] = bool.Parse(node.GetValue("isResearched"));
-                                                if (node.HasValue("researchState"))
-                                                {
-                                                    ResearchState[cb] = int.Parse(node.GetValue("researchState"));
-                                                }
-                                                else
-                                                {
-                                                    ConfigNode cbNode = null;
-                                                    foreach (ConfigNode cbSettingNode in mainnode.GetNode("RESEARCHBODIES").nodes)
-                                                    {
-                                                        if (cbSettingNode.GetValue("body") == cb.GetName())
-                                                            cbNode = cbSettingNode;
-                                                    }
-                                                    cbNode.AddValue("researchState", "0");
-                                                    mainnode.Save("saves/" + HighLogic.SaveFolder + "/researchbodies.cfg");
-                                                    ResearchState[cb] = 0;
-                                                }
-                                            }
-                                            fileContainsGalaxy = true;
-                                        }
-                                    }
-                                    if (!fileContainsGalaxy)
-                                    {
-                                        ConfigNode newNodeForCB = mainnode.GetNode("RESEARCHBODIES").AddNode("BODY");
-                                        newNodeForCB.AddValue("body", cb.GetName());
-                                        newNodeForCB.AddValue("isResearched", "false");
-                                        newNodeForCB.AddValue("researchState", "0");
-                                        newNodeForCB.AddValue("ignore", "false");
-                                        TrackedBodies[cb] = false; ResearchState[cb] = 0;
-                                        mainnode.Save("saves/" + HighLogic.SaveFolder + "/researchbodies.cfg");
-                                    }
-                                }                                
-                            }
+							if (File.Exists("saves/" + HighLogic.SaveFolder + "/researchbodies.cfg"))
+							{
+								ConfigNode mainnode = ConfigNode.Load("saves/" + HighLogic.SaveFolder + "/researchbodies.cfg");
+								foreach (CelestialBody cb in TSTGalaxies.CBGalaxies)
+								{
+									bool fileContainsGalaxy = false;
+									foreach (ConfigNode node in mainnode.GetNode("RESEARCHBODIES").nodes)
+									{
+										if (cb.bodyName.Contains(node.GetValue("body")))
+										{
+											if (bool.Parse(node.GetValue("ignore")))
+											{
+												TrackedBodies[cb] = true;
+												ResearchState[cb] = 100;
+											}
+											else
+											{
+												TrackedBodies[cb] = bool.Parse(node.GetValue("isResearched"));
+												if (node.HasValue("researchState"))
+												{
+													ResearchState[cb] = int.Parse(node.GetValue("researchState"));
+												}
+												else
+												{
+													ConfigNode cbNode = null;
+													foreach (ConfigNode cbSettingNode in mainnode.GetNode("RESEARCHBODIES").nodes)
+													{
+														if (cbSettingNode.GetValue("body") == cb.GetName())
+															cbNode = cbSettingNode;
+													}
+													cbNode.AddValue("researchState", "0");
+													mainnode.Save("saves/" + HighLogic.SaveFolder + "/researchbodies.cfg");
+													ResearchState[cb] = 0;
+												}
+											}
+											fileContainsGalaxy = true;
+										}
+									}
+									if (!fileContainsGalaxy)
+									{
+										ConfigNode newNodeForCB = mainnode.GetNode("RESEARCHBODIES").AddNode("BODY");
+										newNodeForCB.AddValue("body", cb.GetName());
+										newNodeForCB.AddValue("isResearched", "false");
+										newNodeForCB.AddValue("researchState", "0");
+										newNodeForCB.AddValue("ignore", "false");
+										TrackedBodies[cb] = false; ResearchState[cb] = 0;
+										mainnode.Save("saves/" + HighLogic.SaveFolder + "/researchbodies.cfg");
+									}
+								}                                
+							}
 
-                            break;
-                        }
-                    }
-                }                               
-            }
-        }
-            
-        IEnumerator setSASParams()
-        {
-            while (FlightGlobals.ActiveVessel.Autopilot.RSAS.pidPitch == null)
-                yield return null;
-            this.Log_Debug("Setting PIDs");
-            FlightGlobals.ActiveVessel.Autopilot.RSAS.pidPitch.ReinitializePIDsOnly(PIDKp, PIDKi, PIDKd);
-            FlightGlobals.ActiveVessel.Autopilot.RSAS.pidRoll.ReinitializePIDsOnly(PIDKp, PIDKi, PIDKd);
-            FlightGlobals.ActiveVessel.Autopilot.RSAS.pidYaw.ReinitializePIDsOnly(PIDKp, PIDKi, PIDKd);
-        }
-
-        public void removeFlightInputHandler(Vessel target)
+							break;
+						}
+					}
+				}                               
+			}
+		}
+			
+		IEnumerator setSASParams()
 		{
-			Utilities.Log_Debug("TSTTel","Removing Input Callback vessel: " + target.name);
+			while (FlightGlobals.ActiveVessel.Autopilot.RSAS.pidPitch == null)
+				yield return null;
+			Utilities.Log_Debug("Setting PIDs");
+			FlightGlobals.ActiveVessel.Autopilot.RSAS.pidPitch.ReinitializePIDsOnly(PIDKp, PIDKi, PIDKd);
+			FlightGlobals.ActiveVessel.Autopilot.RSAS.pidRoll.ReinitializePIDsOnly(PIDKp, PIDKi, PIDKd);
+			FlightGlobals.ActiveVessel.Autopilot.RSAS.pidYaw.ReinitializePIDsOnly(PIDKp, PIDKi, PIDKd);
+		}
+
+		public void removeFlightInputHandler(Vessel target)
+		{
+			Utilities.Log_Debug("Removing Input Callback vessel: " + target.name);
 			if (this.vessel == target)
 			{
 				_vessel.OnAutopilotUpdate -= (onFlightInput);
 				GameEvents.onVesselChange.Remove(this.refreshFlightInputHandler);
 				GameEvents.onVesselDestroy.Remove(this.removeFlightInputHandler);
 				GameEvents.OnVesselRecoveryRequested.Remove(this.removeFlightInputHandler);
-                //StopCoroutine(setSASParams());
-                Utilities.Log_Debug("TSTTel","Input Callbacks removed this vessel");
+				//StopCoroutine(setSASParams());
+				Utilities.Log_Debug("Input Callbacks removed this vessel");
 			}            			
 		}
 
@@ -289,10 +319,10 @@ namespace TarsierSpaceTech
 
 		private void refreshFlightInputHandler(Vessel target)
 		{
-			Utilities.Log_Debug("TSTTel","OnVesselSwitch curr: " + vessel.name + " target: " + target.name);
+			Utilities.Log_Debug("OnVesselSwitch curr: " + vessel.name + " target: " + target.name);
 			if (this.vessel != target)
 			{
-				Utilities.Log_Debug("TSTTel","This vessel != target removing Callback");
+				Utilities.Log_Debug("This vessel != target removing Callback");
 				_vessel.OnAutopilotUpdate -= (onFlightInput);
 			}
 			if (this.vessel == target)
@@ -301,9 +331,9 @@ namespace TarsierSpaceTech
 				List<TSTSpaceTelescope> vpm = _vessel.FindPartModulesImplementing<TSTSpaceTelescope>();
 				if (vpm.Count > 0)
 				{
-					Utilities.Log_Debug("TSTTel","Adding Input Callback");
+					Utilities.Log_Debug("Adding Input Callback");
 					_vessel.OnAutopilotUpdate += new FlightInputCallback(onFlightInput);
-					Utilities.Log_Debug("TSTTel","Added Input Callback");
+					Utilities.Log_Debug("Added Input Callback");
 				}
 			}							   									
 		}
@@ -312,7 +342,7 @@ namespace TarsierSpaceTech
 		{
 			if (_camera.Enabled && servoControl)
 			{                
-                if (ctrl.X > 0)
+				if (ctrl.X > 0)
 				{
 					_cameraTransform.Rotate(Vector3.up, -0.005f * _camera.fov);
 				}
@@ -337,7 +367,7 @@ namespace TarsierSpaceTech
 				}
 			}
 		}
-                
+				
 		private ITargetable _lastTarget;
 		public override void OnUpdate()
 		{
@@ -349,25 +379,25 @@ namespace TarsierSpaceTech
 				_lastTarget = vessel.targetObject;
 			}
 
-            if (vessel.targetObject != null)
-            {
-                this.Log_Debug("Vessel target=" + vessel.targetObject.GetTransform().position);
-            }
+			if (vessel.targetObject != null)
+			{
+				Utilities.Log_Debug("Vessel target=" + vessel.targetObject.GetTransform().position.ToString());
+			}
 
-            //if (!_inEditor && _camera.Enabled && windowState != WindowSate.Hidden && vessel.isActiveVessel)
-            //{                
-                //if (_camera.Enabled && f++ % frameLimit == 0)                                   
-                //_camera.draw();                
+			//if (!_inEditor && _camera.Enabled && windowState != WindowSate.Hidden && vessel.isActiveVessel)
+			//{                
+				//if (_camera.Enabled && f++ % frameLimit == 0)                                   
+				//_camera.draw();                
 			//}
 		}
 
-        #region GUI
+		#region GUI
 
-        private void WindowGUI(int windowID)
+		private void WindowGUI(int windowID)
 		{            
-            GUILayout.BeginVertical();
+			GUILayout.BeginVertical();
 			GUILayout.BeginHorizontal();
-			GUILayout.Label("Zoom", GUILayout.ExpandWidth(false));
+			GUILayout.Label(new GUIContent("Zoom", "Set Zoom level on camera"), GUILayout.ExpandWidth(false));
 			_camera.ZoomLevel = GUILayout.HorizontalSlider(_camera.ZoomLevel, -1, maxZoom, GUILayout.ExpandWidth(true));
 			GUILayout.Label(getZoomString(_camera.ZoomLevel), GUILayout.ExpandWidth(false), GUILayout.Width(60));
 			GUILayout.EndHorizontal();
@@ -387,7 +417,7 @@ namespace TarsierSpaceTech
 				{
 					cameraTransform = _cameraTransform;
 					targetTransform = FlightGlobals.fetch.vesselTargetTransform;
-                    this.Log_Debug("showtarget cameratransform=" + cameraTransform.position + ",targettransform=" + targetTransform.position);
+					Utilities.Log_Debug("showtarget cameratransform=" + cameraTransform.position.ToString() + ",targettransform=" + targetTransform.position.ToString());
 				}
 				else if (targettingMode == TargettingMode.Galaxy && galaxyTarget != null)
 				{
@@ -412,55 +442,57 @@ namespace TarsierSpaceTech
 				}
 			}
 			GUILayout.BeginHorizontal();
-			if (GUILayout.Button("Reset Zoom")) _camera.ZoomLevel = 0;
-			if (GUILayout.Button(windowState == WindowSate.Small ? "Large" : "Small"))
+			if (GUILayout.Button(new GUIContent("Reset Zoom", "Reset the Camera Zoom Level"))) _camera.ZoomLevel = 0;
+			if (GUILayout.Button(windowState == WindowState.Small ? new GUIContent("Large", "Set Large Window Size") : new GUIContent("Small", "set Small Window Size")))
 			{
-				windowState = windowState == WindowSate.Small ? WindowSate.Large : WindowSate.Small;
-				int w=(windowState == WindowSate.Small ? GUI_WIDTH_SMALL : GUI_WIDTH_LARGE);
+				windowState = windowState == WindowState.Small ? WindowState.Large : WindowState.Small;
+				int w=(windowState == WindowState.Small ? GUI_WIDTH_SMALL : GUI_WIDTH_LARGE);
 				_camera.changeSize(w,w);
 				windowPos.height = 0;
 			};
-			if (GUILayout.Button(showGalTargetsWindow?"Hide Galaxies":"Show Galaxies")) showGalTargetsWindow = !showGalTargetsWindow;
-			if (GUILayout.Button(showBodTargetsWindow?"Hide Bodies":"Show Bodies")) showBodTargetsWindow = !showBodTargetsWindow;			
+			if (GUILayout.Button(showGalTargetsWindow ? new GUIContent("Hide Galaxies", "Hide the Galaxies Window") : new GUIContent("Show Galaxies", "Show the Galaxies Window"))) showGalTargetsWindow = !showGalTargetsWindow;
+			if (GUILayout.Button(showBodTargetsWindow? new GUIContent("Hide Bodies", "Hide the Celestial Bodies Window") : new GUIContent("Show Bodies", "Show the Celestial Bodies Window"))) showBodTargetsWindow = !showBodTargetsWindow;			
 			GUILayout.EndHorizontal();
 			GUILayout.BeginHorizontal();
-			if (GUILayout.Button("Hide")) hideGUI();
-			_showTarget = GUILayout.Toggle(_showTarget, "Show Target");
-			_saveToFile = GUILayout.Toggle(_saveToFile, "Save To File");
-			if (GUILayout.Button("Take Picture")) takePicture(_saveToFile);
+			if (GUILayout.Button(new GUIContent("Hide", "Hide this Window"))) hideGUI();
+			_showTarget = GUILayout.Toggle(_showTarget, new GUIContent("Show Target", "Show/Hide the Targeting Reticle"));
+			_saveToFile = GUILayout.Toggle(_saveToFile, new GUIContent("Save To File", "If this is on, picture files will be saved to GameData/TarsierSpaceTech/PluginData/TarsierSpaceTech"));
+			if (GUILayout.Button(new GUIContent("Take Picture", "Take a Picture with the Camera"))) takePicture(_saveToFile);
 			GUILayout.EndHorizontal();
 			GUILayout.EndVertical();
+			if (TSTMstStgs.Instance.TSTsettings.Tooltips)
+				Utilities.SetTooltipText();
 			GUI.DragWindow();
 		}
 		
 		private void TargettingBodWindow(int windowID)
 		{
 			
-            GUILayout.BeginVertical();
-            BodscrollViewVector = GUILayout.BeginScrollView(BodscrollViewVector, GUILayout.Height(300), GUILayout.Width(GUI_WIDTH_SMALL));
-            
-			filterContractTargets = GUILayout.Toggle(filterContractTargets, "Show only contract targets");           
-            //Utilities.Log_Debug("TSTTel",String.Format(" - TargettingWindow - TSTBodies.Count = {0}", FlightGlobals.Bodies.Count));			
-            int newTarget = 0;
-            if (isRBactive && RBWrapper.APIDBReady && RBWrapper.APIFLReady && RBmoduleTrackBodies.enabled)
-            {
-                bool filterRBTargets = isRBactive;
-                newTarget = FlightGlobals.Bodies.
-                            FindIndex(
-                                   g => (TSTProgressTracker.HasTelescopeCompleted(g) ||
-                                            (Contracts.ContractSystem.Instance && Contracts.ContractSystem.Instance.GetCurrentActiveContracts<TSTTelescopeContract>().Any(t => t.target.name == g.name))
-                                            ) ? GUILayout.Button(g.theName) : (filterContractTargets ? false : (RBmoduleTrackBodies.TrackedBodies[g] ? GUILayout.Button(g.theName) : false)));
-            }
-            else
-            {
-                newTarget = FlightGlobals.Bodies.
-                            FindIndex(
-                                g => (TSTProgressTracker.HasTelescopeCompleted(g) ||
-                                         (Contracts.ContractSystem.Instance && Contracts.ContractSystem.Instance.GetCurrentActiveContracts<TSTTelescopeContract>().Any(t => t.target.name == g.name))
-                                     ) ? GUILayout.Button(g.theName) : (filterContractTargets ? false : GUILayout.Button(g.theName)));
-            }			
+			GUILayout.BeginVertical();
+			BodscrollViewVector = GUILayout.BeginScrollView(BodscrollViewVector, GUILayout.Height(300), GUILayout.Width(GUI_WIDTH_SMALL));
+			
+			filterContractTargets = GUILayout.Toggle(filterContractTargets, new GUIContent("Show only contract targets", "If selected only targets that are the subject of a current contract will be shown"));           
+			//RSTUtils.Utilities.Log_Debug(String.Format(" - TargettingWindow - TSTBodies.Count = {0}", FlightGlobals.Bodies.Count));			
+			int newTarget = 0;
+			if (isRBactive && RBWrapper.APIDBReady && RBWrapper.APIFLReady && RBmoduleTrackBodies.enabled)
+			{
+				bool filterRBTargets = isRBactive;
+				newTarget = FlightGlobals.Bodies.
+							FindIndex(
+								   g => (TSTProgressTracker.HasTelescopeCompleted(g) ||
+											(Contracts.ContractSystem.Instance && Contracts.ContractSystem.Instance.GetCurrentActiveContracts<TSTTelescopeContract>().Any(t => t.target.name == g.name))
+											) ? GUILayout.Button(g.theName) : (filterContractTargets ? false : (RBmoduleTrackBodies.TrackedBodies[g] ? GUILayout.Button(g.theName) : false)));
+			}
+			else
+			{
+				newTarget = FlightGlobals.Bodies.
+							FindIndex(
+								g => (TSTProgressTracker.HasTelescopeCompleted(g) ||
+										 (Contracts.ContractSystem.Instance && Contracts.ContractSystem.Instance.GetCurrentActiveContracts<TSTTelescopeContract>().Any(t => t.target.name == g.name))
+									 ) ? GUILayout.Button(g.theName) : (filterContractTargets ? false : GUILayout.Button(g.theName)));
+			}			
 
-			//Utilities.Log_Debug("TSTTel",String.Format(" - TargettingWindow - newTarget = {0}", newTarget));
+			//RSTUtils.Utilities.Log_Debug(String.Format(" - TargettingWindow - newTarget = {0}", newTarget));
 
 			if (newTarget != -1 && newTarget != selectedTargetIndex)
 			{
@@ -471,91 +503,101 @@ namespace TarsierSpaceTech
 				bodyTarget = FlightGlobals.Bodies[selectedTargetIndex];
 				if (FlightGlobals.ActiveVessel.mainBody.name == bodyTarget.name)
 				{
-					Utilities.Log_Debug("TSTTel","Cannot Target: " + newTarget.ToString() + " " + bodyTarget.name + " in it's SOI");
+					Utilities.Log_Debug("Cannot Target: {0} : {1} in it's SOI" , newTarget.ToString() , bodyTarget.name);
 					ScreenMessages.PostScreenMessage("Cannot Target " + bodyTarget.theName + " as in it's SOI", 3f, ScreenMessageStyle.UPPER_CENTER);
 				}
 				else
 				{
 					FlightGlobals.fetch.SetVesselTarget(bodyTarget);
-					Utilities.Log_Debug("TSTTel","Targetting: " + newTarget.ToString() + " " + bodyTarget.name);
-                    Utilities.Log_Debug("TSTTel", "Targetting: " + newTarget.ToString() + " " + bodyTarget.name + ",layer=" + bodyTarget.gameObject.layer);
-                    Utilities.Log_Debug("pos=" + bodyTarget.position);
+					Utilities.Log_Debug("Targetting: {0} : {1}" , newTarget.ToString() , bodyTarget.name);
+					Utilities.Log_Debug("Targetting: {0} : {1}, layer= {2}" , newTarget.ToString() , bodyTarget.name , bodyTarget.gameObject.layer.ToString());
+					Utilities.Log_Debug("pos=" + bodyTarget.position.ToString());
 					ScreenMessages.PostScreenMessage("Target: " + bodyTarget.theName, 3f, ScreenMessageStyle.UPPER_CENTER);
 				}				
 			}            
-            GUILayout.EndScrollView(); 
+			GUILayout.EndScrollView(); 
 			GUILayout.Space(10);
-			showBodTargetsWindow = !GUILayout.Button("Hide");
+			showBodTargetsWindow = !GUILayout.Button(new GUIContent("Hide", "Hide this Window"));
 			GUILayout.EndVertical();
-            GUI.DragWindow();
+			if (TSTMstStgs.Instance.TSTsettings.Tooltips)
+				Utilities.SetTooltipText();
+			GUI.DragWindow();
 		}
 
 		private void TargettingGalWindow(int windowID)
 		{
-            
-            GUILayout.BeginVertical();
-            GalscrollViewVector = GUILayout.BeginScrollView(GalscrollViewVector, GUILayout.Height(300), GUILayout.Width(GUI_WIDTH_SMALL));
-            filterContractTargets = GUILayout.Toggle(filterContractTargets, "Show only contract targets");
-            //Utilities.Log_Debug("TSTTel",String.Format(" - TargettingWindow - TSTGalaxies.Galaxies.Count = {0}", TSTGalaxies.Galaxies.Count));			
+			
+			GUILayout.BeginVertical();
+			GalscrollViewVector = GUILayout.BeginScrollView(GalscrollViewVector, GUILayout.Height(300), GUILayout.Width(GUI_WIDTH_SMALL));
+			filterContractTargets = GUILayout.Toggle(filterContractTargets, new GUIContent("Show only contract targets", "If selected only targets that are the subject of a current contract will be shown"));
+			//RSTUtils.Utilities.Log_Debug(String.Format(" - TargettingWindow - TSTGalaxies.Galaxies.Count = {0}", TSTGalaxies.Galaxies.Count));			
 
-            int newTarget = 0;
-            if (isRBactive && RBWrapper.APIDBReady && RBWrapper.APIFLReady && RBmoduleTrackBodies.enabled)
-            {
-                bool filterRBTargets = isRBactive;
-                newTarget = TSTGalaxies.Galaxies.
-                            FindIndex(
-                                   g => (TSTProgressTracker.HasTelescopeCompleted(g) ||
-                                            (Contracts.ContractSystem.Instance && Contracts.ContractSystem.Instance.GetCurrentActiveContracts<TSTTelescopeContract>().Any(t => t.target.name == g.name))
-                                            ) ? GUILayout.Button(g.theName) : (filterContractTargets ? false : (RBmoduleTrackBodies.TrackedBodies[TSTGalaxies.CBGalaxies.Find(x => x.theName == g.theName)] ? GUILayout.Button(g.theName) : false)));
-            }
-            else
-            {
-                newTarget = TSTGalaxies.Galaxies.
-                            FindIndex(
-                                g => (TSTProgressTracker.HasTelescopeCompleted(g) ||
-                                         (Contracts.ContractSystem.Instance && Contracts.ContractSystem.Instance.GetCurrentActiveContracts<TSTTelescopeContract>().Any(t => t.target.name == g.name))
-                                     ) ? GUILayout.Button(g.theName) : (filterContractTargets ? false : GUILayout.Button(g.theName)));
-            }
+			int newTarget = 0;
+			if (isRBactive && RBWrapper.APIDBReady && RBWrapper.APIFLReady && RBmoduleTrackBodies.enabled)
+			{
+				bool filterRBTargets = isRBactive;
+				newTarget = TSTGalaxies.Galaxies.
+							FindIndex(
+								   g => (TSTProgressTracker.HasTelescopeCompleted(g) ||
+											(Contracts.ContractSystem.Instance && Contracts.ContractSystem.Instance.GetCurrentActiveContracts<TSTTelescopeContract>().Any(t => t.target.name == g.name))
+											) ? GUILayout.Button(g.theName) : (filterContractTargets ? false : (RBmoduleTrackBodies.TrackedBodies[TSTGalaxies.CBGalaxies.Find(x => x.theName == g.theName)] ? GUILayout.Button(g.theName) : false)));
+			}
+			else
+			{
+				newTarget = TSTGalaxies.Galaxies.
+							FindIndex(
+								g => (TSTProgressTracker.HasTelescopeCompleted(g) ||
+										 (Contracts.ContractSystem.Instance && Contracts.ContractSystem.Instance.GetCurrentActiveContracts<TSTTelescopeContract>().Any(t => t.target.name == g.name))
+									 ) ? GUILayout.Button(g.theName) : (filterContractTargets ? false : GUILayout.Button(g.theName)));
+			}
 
-            //Utilities.Log_Debug("TSTTel",String.Format(" - TargettingWindow - newTarget = {0}", newTarget));
+			//RSTUtils.Utilities.Log_Debug(String.Format(" - TargettingWindow - newTarget = {0}", newTarget));
 
-            if (newTarget != -1 && newTarget != selectedTargetIndex)
+			if (newTarget != -1 && newTarget != selectedTargetIndex)
 			{
 				vessel.targetObject = null;
 				FlightGlobals.fetch.SetVesselTarget(null);
 				targettingMode = TargettingMode.Galaxy;
 				selectedTargetIndex = newTarget;
 				galaxyTarget = TSTGalaxies.Galaxies[selectedTargetIndex];
-				FlightGlobals.fetch.SetVesselTarget(galaxyTarget);                
-				Utilities.Log_Debug("TSTTel","Targetting: " + newTarget.ToString() + " " + galaxyTarget.name + ",layer=" + galaxyTarget.gameObject.layer + ",scaledpos=" + galaxyTarget.scaledPosition);
-                Utilities.Log_Debug("pos=" + galaxyTarget.position);
+				FlightGlobals.fetch.SetVesselTarget(galaxyTarget);
+				Utilities.Log_Debug("Targetting: {0} : {1},layer= {2},scaledpos= {3}", newTarget.ToString() , galaxyTarget.name , galaxyTarget.gameObject.layer.ToString(), galaxyTarget.scaledPosition.ToString());
+				Utilities.Log_Debug("pos= {0}" , galaxyTarget.position.ToString());
 				ScreenMessages.PostScreenMessage("Target: "+galaxyTarget.theName, 3f, ScreenMessageStyle.UPPER_CENTER);
 			}            
-            GUILayout.EndScrollView(); 
+			GUILayout.EndScrollView(); 
 			GUILayout.Space(10);
-			showGalTargetsWindow = !GUILayout.Button("Hide");
+			showGalTargetsWindow = !GUILayout.Button(new GUIContent("Hide", "Hide this Window"));
 			GUILayout.EndVertical();
-            GUI.DragWindow();		
+			if (TSTMstStgs.Instance.TSTsettings.Tooltips)
+				Utilities.SetTooltipText();
+			GUI.DragWindow();		
 		}
-                
+				
 
-        public void OnGUI()
+		public void OnGUI()
 		{
-            if (!_inEditor && FlightUIModeController.Instance.Mode != FlightUIMode.ORBITAL && _camera.Enabled && windowState != WindowSate.Hidden 
-                && vessel.isActiveVessel && !Utilities.isPauseMenuOpen())
-			{
-                windowPos = GUILayout.Window(CAMwindowID, windowPos, WindowGUI, "Space Telescope", GUILayout.Width(windowState == WindowSate.Small ? GUI_WIDTH_SMALL : GUI_WIDTH_LARGE));
-				if(showGalTargetsWindow)
-                    targetGalWindowPos = GUILayout.Window(GALwindowID, targetGalWindowPos, TargettingGalWindow, "Select Target", GUILayout.Width(GUI_WIDTH_SMALL));
-				if(showBodTargetsWindow)
-                    targetBodWindowPos = GUILayout.Window(BODwindowID, targetBodWindowPos, TargettingBodWindow, "Select Target", GUILayout.Width(GUI_WIDTH_SMALL));                
 
+			if (Utilities.GameModeisFlight)
+			{
+				if (!_inEditor && FlightUIModeController.Instance.Mode != FlightUIMode.ORBITAL && _camera.Enabled && windowState != WindowState.Hidden
+				   && vessel.isActiveVessel && !Utilities.isPauseMenuOpen)
+				{
+					windowPos = GUILayout.Window(CAMwindowID, windowPos, WindowGUI, "Space Telescope", GUILayout.Width(windowState == WindowState.Small ? GUI_WIDTH_SMALL : GUI_WIDTH_LARGE), GUILayout.Height(windowState == WindowState.Small ? GUI_WIDTH_SMALL : GUI_WIDTH_LARGE));
+					if (showGalTargetsWindow)
+						targetGalWindowPos = GUILayout.Window(GALwindowID, targetGalWindowPos, TargettingGalWindow, "Select Target", GUILayout.Width(GUI_WIDTH_SMALL));
+					if (showBodTargetsWindow)
+						targetBodWindowPos = GUILayout.Window(BODwindowID, targetBodWindowPos, TargettingBodWindow, "Select Target", GUILayout.Width(GUI_WIDTH_SMALL));
+
+					if (TSTMstStgs.Instance.TSTsettings.Tooltips)
+						Utilities.DrawToolTip();
+				}
 			}
 		}
 
 		public void hideGUI()
 		{
-			windowState = WindowSate.Hidden;
+			windowState = WindowState.Hidden;
 			_camera.Enabled = false;
 			Events["eventShowGUI"].active = true;
 		}
@@ -564,7 +606,7 @@ namespace TarsierSpaceTech
 		public void eventShowGUI()
 		{
 			Events["eventShowGUI"].active = false;
-			windowState = WindowSate.Small;
+			windowState = WindowState.Small;
 			_camera.Enabled = true;
 		}
 
@@ -585,18 +627,28 @@ namespace TarsierSpaceTech
 
 		public IEnumerator openCamera()
 		{
-			if (_animation != null)
-            {                
-                _animation.Play("open");
-                IEnumerator wait = Utilities.WaitForAnimation(_animation, "open");
-                while (wait.MoveNext()) yield return null;                            
-            }            
+			if (_animationOpen != null)
+			{
+				if (animationClipNameOpen == "")
+				{
+					_animationOpen.Play();
+					IEnumerator wait = Utilities.WaitForAnimationNoClip(_animationOpen);
+					while (wait.MoveNext()) yield return null;
+				}
+				else
+				{
+					_animationOpen.Play(animationClipNameOpen);
+					IEnumerator wait = Utilities.WaitForAnimation(_animationOpen, animationClipNameOpen);
+					while (wait.MoveNext()) yield return null;
+				}
+											
+			}            
 			Events["eventCloseCamera"].active = true;
 			Events["eventControlFromHere"].active = true;
 			Events["toggleServos"].active = true;
 			_camera.Enabled = true;            
 			Active = true;
-			windowState = WindowSate.Small;
+			windowState = WindowState.Small;
 			_camera.changeSize(GUI_WIDTH_SMALL, GUI_WIDTH_SMALL );
 			_cameraTransform.localRotation = zeroRotation;
 		}
@@ -625,15 +677,25 @@ namespace TarsierSpaceTech
 
 		public IEnumerator closeCamera()
 		{
-            if (_animation != null)
-            {
-                
-                    _animation.Play("close");
-                    IEnumerator wait = Utilities.WaitForAnimation(_animation, "close");
-                    while (wait.MoveNext()) yield return null;
-                
-                
-            }
+			if (_animationClose != null)
+			{
+
+				if (animationClipNameClose == "")
+				{
+					_animationClose[animationNameClose].speed = -1f;
+					_animationClose[animationNameClose].normalizedTime = 1f;
+					_animationClose.Play();
+					IEnumerator wait = Utilities.WaitForAnimationNoClip(_animationClose);
+					while (wait.MoveNext()) yield return null;
+				}
+				else
+				{
+					_animationClose.Play(animationClipNameClose);
+					IEnumerator wait = Utilities.WaitForAnimation(_animationClose, animationClipNameClose);
+					while (wait.MoveNext()) yield return null;
+				}
+
+			}
 			Events["eventOpenCamera"].active = true;
 		}
 
@@ -646,17 +708,17 @@ namespace TarsierSpaceTech
 
 		public void takePicture(bool saveToFile)
 		{
-			Utilities.Log_Debug("TSTTel","Taking Picture");
+			Utilities.Log_Debug("Taking Picture");
 			_scienceData.Clear();
-			Utilities.Log_Debug("TSTTel","Checking Look At");
+			Utilities.Log_Debug("Checking Look At");
 			List<TargetableObject> objs=getLookingAt();
-			Utilities.Log_Debug("TSTTel","Looking at: " + objs.Count.ToString() + " celestial objects");
+			Utilities.Log_Debug("Looking at: {0} celestial objects" , objs.Count.ToString());
 			foreach (TargetableObject obj in objs)
 			{
-				Utilities.Log_Debug("TSTTel","Looking at " + obj.theName);
+				Utilities.Log_Debug("Looking at {0}" , obj.theName);
 				if(obj.type == typeof(CelestialBody)){
 					CelestialBody body = (CelestialBody)obj.BaseObject;                    
-                    doScience(body);
+					doScience(body);
 					if (TSTProgressTracker.isActive)
 					{
 						TSTProgressTracker.OnTelescopePicture(body);
@@ -665,14 +727,14 @@ namespace TarsierSpaceTech
 				else if (obj.type == typeof(TSTGalaxy))
 				{
 					TSTGalaxy galaxy = (TSTGalaxy)obj.BaseObject;                    
-                    doScience(galaxy);
+					doScience(galaxy);
 					if (TSTProgressTracker.isActive)
 					{
 						TSTProgressTracker.OnTelescopePicture(galaxy);
 					}
 				}
 			}
-			Utilities.Log_Debug("TSTTel","Gather Science complete");
+			Utilities.Log_Debug("Gather Science complete");
 			if (objs.Count == 0)
 			{
 				ScreenMessages.PostScreenMessage("No science collected",3f,ScreenMessageStyle.UPPER_CENTER);
@@ -680,73 +742,73 @@ namespace TarsierSpaceTech
 
 			if (saveToFile)
 			{
-				Utilities.Log_Debug("TSTTel","Saving to File");
+				Utilities.Log_Debug("Saving to File");
 				int i = 0;
 				while ((KSP.IO.File.Exists<TSTSpaceTelescope>("Telescope_" + DateTime.Now.ToString("d-m-y")+"_"+i.ToString() + ".png",null)) ||
-                    (KSP.IO.File.Exists<TSTSpaceTelescope>("Telescope_" + DateTime.Now.ToString("d-m-y")+"_"+i.ToString() + "Large.png",null))) 
-                    i++;
+					(KSP.IO.File.Exists<TSTSpaceTelescope>("Telescope_" + DateTime.Now.ToString("d-m-y")+"_"+i.ToString() + "Large.png",null))) 
+					i++;
 				_camera.saveToFile("Telescope_" + DateTime.Now.ToString("d-m-y") + "_" + i.ToString(), "TeleScope");
-                ScreenMessages.PostScreenMessage("Picture saved", 3f, ScreenMessageStyle.UPPER_CENTER);
+				ScreenMessages.PostScreenMessage("Picture saved", 3f, ScreenMessageStyle.UPPER_CENTER);
 			}
 		}
 
-        
+		
 
 		private List<TargetableObject> getLookingAt()
 		{
 			List<TargetableObject> result = new List<TargetableObject>();
 			List<TargetableObject> bodies = FlightGlobals.Bodies.Select(b => (TargetableObject)b).ToList();
 			List<TargetableObject> galaxies = TSTGalaxies.Galaxies.Select(g => (TargetableObject)g).ToList();
-			Utilities.Log_Debug("TSTTel","getLookingAt start");
+			Utilities.Log_Debug("getLookingAt start");
 			foreach (TargetableObject obj in galaxies.Concat(bodies))
 			{
 				Vector3 r = (obj.position - _cameraTransform.position);
 				float distance = r.magnitude;                
 				double theta = Vector3d.Angle(_cameraTransform.forward, r);
 				double visibleWidth = (2 * obj.size / distance) * 180 / Mathf.PI;
-				Utilities.Log_Debug("TSTTel","getLookingAt about to calc fov");
+				Utilities.Log_Debug("getLookingAt about to calc fov");
 				double fov = 0.05 * _camera.fov;
-				Utilities.Log_Debug("TSTTel",obj.theName + ": distance=" + distance.ToString() + "  theta=" + theta.ToString() + "  visibleWidth=" + visibleWidth.ToString() + " fov=" + fov.ToString());                
+				Utilities.Log_Debug("{0}: distance= {1}, theta= {2}, visibleWidth= {3}, fov= {4}" , obj.theName , distance.ToString() , theta.ToString() , visibleWidth.ToString() , fov.ToString());                
 				if (theta < _camera.fov / 2)
 				{
-					Utilities.Log_Debug("TSTTel","Looking at: " + obj.theName);
+					Utilities.Log_Debug("Looking at: {0}" , obj.theName);
 					if (visibleWidth > fov)
 					{
-						Utilities.Log_Debug("TSTTel","Can see: " + obj.theName);                         
+						Utilities.Log_Debug("Can see: {0}" , obj.theName);                         
 						result.Add(obj);                        
 					}
 				}
 			}
 			return result;
 		}
-        #region Science
+		#region Science
 
-        private void doScience(TSTGalaxy galaxy)
+		private void doScience(TSTGalaxy galaxy)
 		{
-			Utilities.Log_Debug("TSTTel","Doing Science for " + galaxy.theName);
+			Utilities.Log_Debug("Doing Science for {0}" , galaxy.theName);
 			ScienceExperiment experiment = ResearchAndDevelopment.GetExperiment("TarsierSpaceTech.SpaceTelescope");
-			Utilities.Log_Debug("TSTTel","Got experiment");
+			Utilities.Log_Debug("Got experiment");
 			ScienceSubject subject = ResearchAndDevelopment.GetExperimentSubject(experiment, getExperimentSituation(), Sun.Instance.sun, "LookingAt" + galaxy.name);
 			subject.title = "Space Telescope picture of " + galaxy.theName;
-			Utilities.Log_Debug("TSTTel","Got subject, determining science data using " + part.name);
+			Utilities.Log_Debug("Got subject, determining science data using {0}" , part.name);
 			if (experiment.IsAvailableWhile(getExperimentSituation(), vessel.mainBody))
 			{
 				if (part.name == "tarsierSpaceTelescope")
 				{
 					ScienceData data = new ScienceData((experiment.baseValue / 2) * subject.dataScale, xmitDataScalar, labBoostScalar, subject.id, subject.title, false, part.flightID);
-					Utilities.Log_Debug("TSTTel","Got data");
+					Utilities.Log_Debug("Got data");
 					data.title = "Tarsier Space Telescope: Orbiting " + vessel.mainBody.theName + " looking at " + galaxy.theName;
 					_scienceData.Add(data);
-					Utilities.Log_Debug("TSTTel","Added Data Amt=" + data.dataAmount + " TransmitValue=" + data.transmitValue + " LabBoost=" + data.labBoost + " LabValue=" + data.labValue);
+					Utilities.Log_Debug("Added Data Amt= {0}, TransmitValue= {1}, LabBoost= {2}, LabValue= {3}", data.dataAmount.ToString(), data.transmitValue.ToString(), data.labBoost.ToString(), data.labValue.ToString());
 					ScreenMessages.PostScreenMessage("Collected Science for " + galaxy.theName, 3f, ScreenMessageStyle.UPPER_CENTER);
 				}
 				else
 				{
 					ScienceData data = new ScienceData(experiment.baseValue * subject.dataScale, xmitDataScalar, labBoostScalar, subject.id, subject.title, false, part.flightID);
-					Utilities.Log_Debug("TSTTel","Got data");
+					Utilities.Log_Debug("Got data");
 					data.title = "Tarsier Space Telescope: Orbiting " + vessel.mainBody.theName + " looking at " + galaxy.theName;
 					_scienceData.Add(data);
-					Utilities.Log_Debug("TSTTel","Added Data Amt=" + data.dataAmount + " TransmitValue=" + data.transmitValue + " LabBoost=" + data.labBoost + " LabValue=" + data.labValue);
+					Utilities.Log_Debug("Added Data Amt= {0}, TransmitValue= {1}, LabBoost= {2}, LabValue= {3}" , data.dataAmount.ToString(), data.transmitValue.ToString(), data.labBoost.ToString(), data.labValue.ToString());
 					ScreenMessages.PostScreenMessage("Collected Science for " + galaxy.theName, 3f, ScreenMessageStyle.UPPER_CENTER);
 				}                
 				
@@ -755,30 +817,30 @@ namespace TarsierSpaceTech
 
 		private void doScience(CelestialBody planet)
 		{
-			Utilities.Log_Debug("TSTTel","Doing Science for " + planet.theName);
+			Utilities.Log_Debug("Doing Science for {0}" , planet.theName);
 			ScienceExperiment experiment = ResearchAndDevelopment.GetExperiment("TarsierSpaceTech.SpaceTelescope");
-			Utilities.Log_Debug("TSTTel","Got experiment");
+			Utilities.Log_Debug("Got experiment");
 			ScienceSubject subject = ResearchAndDevelopment.GetExperimentSubject(experiment, getExperimentSituation(), planet, "LookingAt" + planet.name);
 			subject.title = "Space Telescope picture of "+planet.theName;
-			Utilities.Log_Debug("TSTTel","Got subject");
+			Utilities.Log_Debug("Got subject");
 			if (experiment.IsAvailableWhile(getExperimentSituation(), vessel.mainBody))
 			{
 				if (part.name == "tarsierSpaceTelescope")
 				{
 					ScienceData data = new ScienceData((experiment.baseValue * 0.8f) * subject.dataScale, xmitDataScalar, labBoostScalar, subject.id, subject.title, false, part.flightID);
-					Utilities.Log_Debug("TSTTel","Got data");
+					Utilities.Log_Debug("Got data");
 					data.title = "Tarsier Space Telescope: Oriting " + vessel.mainBody.theName + " looking at " + planet.theName;
 					_scienceData.Add(data);
-					Utilities.Log_Debug("TSTTel","Added Data Amt=" + data.dataAmount + " TransmitValue=" + data.transmitValue + " LabBoost=" + data.labBoost + " LabValue=" + data.labValue);
+					Utilities.Log_Debug("Added Data Amt= {0}, TransmitValue= {1}, LabBoost= {2}, LabValue= {3}" , data.dataAmount.ToString(), data.transmitValue.ToString(), data.labBoost.ToString(), data.labValue.ToString());
 					ScreenMessages.PostScreenMessage("Collected Science for " + planet.theName, 3f, ScreenMessageStyle.UPPER_CENTER);
 				}
 				else
 				{
 					ScienceData data = new ScienceData(experiment.baseValue * subject.dataScale, xmitDataScalar, labBoostScalar, subject.id, subject.title, false, part.flightID);
-					Utilities.Log_Debug("TSTTel","Got data");
+					Utilities.Log_Debug("Got data");
 					data.title = "Tarsier Space Telescope: Oriting " + vessel.mainBody.theName + " looking at " + planet.theName;
 					_scienceData.Add(data);
-					Utilities.Log_Debug("TSTTel","Added Data Amt=" + data.dataAmount + " TransmitValue=" + data.transmitValue + " LabBoost=" + data.labBoost + " LabValue=" + data.labValue);
+					Utilities.Log_Debug("Added Data Amt= {0}, TransmitValue= {1}, LabBoost= {2}, LabValue= {3}" , data.dataAmount.ToString(), data.transmitValue.ToString(), data.labBoost.ToString(), data.labValue.ToString());
 					ScreenMessages.PostScreenMessage("Collected Science for " + planet.theName, 3f, ScreenMessageStyle.UPPER_CENTER);
 				}
 			}
@@ -823,7 +885,7 @@ namespace TarsierSpaceTech
 			return base.GetInfo();
 		}
 
-		public enum WindowSate
+		public enum WindowState
 		{
 			Small, Large, Hidden
 		}
@@ -874,86 +936,86 @@ namespace TarsierSpaceTech
 
 		private void _onPageSendToLab(ScienceData data)
 		{
-			Utilities.Log_Debug("TSTTel","Sent to lab");
+			Utilities.Log_Debug("Sent to lab");
 		}
 
 
-        // IScienceDataContainer
-        public void DumpData(ScienceData data)
-        {
-            _scienceData.Remove(data);
-        }
-
-        public ScienceData[] GetData()
-        {
-            return _scienceData.ToArray();
-        }
-
-        public int GetScienceCount()
-        {
-            return _scienceData.Count;
-        }
-
-        public void ReviewData()
-        {
-            eventReviewScience();
-        }
-
-        public void ReturnData(ScienceData data)
-        {
-            if (data == null)
-            {
-                return;
-            }
-            _scienceData.Add(data);
-        }
-
-        public bool IsRerunnable()
-        {
-            Utilities.Log_Debug("TSTTel", "Is rerunnable");
-            return true;
-        }
-
-        public void ReviewDataItem(ScienceData data)
-        {
-            ExperimentResultDialogPage page = new ExperimentResultDialogPage(
-                    part,
-                    data,
-                    xmitDataScalar,
-                    data.labBoost,
-                    false,
-                    "",
-                    true,
-                    false,
-                    new Callback<ScienceData>(_onPageDiscard),
-                    new Callback<ScienceData>(_onPageKeep),
-                    new Callback<ScienceData>(_onPageTransmit),
-                    new Callback<ScienceData>(_onPageSendToLab));
-            ExperimentsResultDialog.DisplayResult(page);
-        }
-
-        #endregion Science
-
-        public override void OnSave(ConfigNode node)
+		// IScienceDataContainer
+		public void DumpData(ScienceData data)
 		{
-            Utilities.Log_Debug("TSTTel", "OnSave Telescope"); 
-            foreach (ScienceData data in _scienceData)
+			_scienceData.Remove(data);
+		}
+
+		public ScienceData[] GetData()
+		{
+			return _scienceData.ToArray();
+		}
+
+		public int GetScienceCount()
+		{
+			return _scienceData.Count;
+		}
+
+		public void ReviewData()
+		{
+			eventReviewScience();
+		}
+
+		public void ReturnData(ScienceData data)
+		{
+			if (data == null)
+			{
+				return;
+			}
+			_scienceData.Add(data);
+		}
+
+		public bool IsRerunnable()
+		{
+			Utilities.Log_Debug("Is rerunnable");
+			return true;
+		}
+
+		public void ReviewDataItem(ScienceData data)
+		{
+			ExperimentResultDialogPage page = new ExperimentResultDialogPage(
+					part,
+					data,
+					xmitDataScalar,
+					data.labBoost,
+					false,
+					"",
+					true,
+					false,
+					new Callback<ScienceData>(_onPageDiscard),
+					new Callback<ScienceData>(_onPageKeep),
+					new Callback<ScienceData>(_onPageTransmit),
+					new Callback<ScienceData>(_onPageSendToLab));
+			ExperimentsResultDialog.DisplayResult(page);
+		}
+
+		#endregion Science
+
+		public override void OnSave(ConfigNode node)
+		{
+			Utilities.Log_Debug("OnSave Telescope"); 
+			foreach (ScienceData data in _scienceData)
 			{
 				data.Save(node.AddNode("ScienceData"));
 			}
-            TSTMstStgs.Instance.TSTsettings.CwindowPosX = windowPos.x;
-            TSTMstStgs.Instance.TSTsettings.CwindowPosY = windowPos.y;
-            TSTMstStgs.Instance.TSTsettings.BodwindowPosX = targetBodWindowPos.x;
-            TSTMstStgs.Instance.TSTsettings.BodwindowPosY = targetBodWindowPos.y;
-            TSTMstStgs.Instance.TSTsettings.GalwindowPosX = targetGalWindowPos.x;
-            TSTMstStgs.Instance.TSTsettings.GalwindowPosY = targetGalWindowPos.y;
-            Utilities.Log_Debug("TSTTel", "OnSave Telescope End");
+			TSTMstStgs.Instance.TSTsettings.CwindowPosX = windowPos.x;
+			TSTMstStgs.Instance.TSTsettings.CwindowPosY = windowPos.y;
+			TSTMstStgs.Instance.TSTsettings.BodwindowPosX = targetBodWindowPos.x;
+			TSTMstStgs.Instance.TSTsettings.BodwindowPosY = targetBodWindowPos.y;
+			TSTMstStgs.Instance.TSTsettings.GalwindowPosX = targetGalWindowPos.x;
+			TSTMstStgs.Instance.TSTsettings.GalwindowPosY = targetGalWindowPos.y;
+			Utilities.Log_Debug("OnSave Telescope End");
 		}
 
 		public override void OnLoad(ConfigNode node)
 		{
-            Utilities.Log_Debug("TSTTel", "OnLoad Telescope");
-            if (node.HasNode("SCIENCE"))
+			Utilities.Log_Debug("OnLoad Telescope");
+			if (node.HasNode("SCIENCE"))
 			{
 				ConfigNode science = node.GetNode("SCIENCE");
 				foreach (ConfigNode n in science.GetNodes("DATA"))
@@ -965,20 +1027,20 @@ namespace TarsierSpaceTech
 			{
 				_scienceData.Add(new ScienceData(n));
 			}
-            windowPos.x = TSTMstStgs.Instance.TSTsettings.CwindowPosX;
-            windowPos.y = TSTMstStgs.Instance.TSTsettings.CwindowPosY;
-            targetBodWindowPos.x = TSTMstStgs.Instance.TSTsettings.BodwindowPosX;
-            targetBodWindowPos.y = TSTMstStgs.Instance.TSTsettings.BodwindowPosY;
-            targetGalWindowPos.x = TSTMstStgs.Instance.TSTsettings.GalwindowPosX;
-            targetGalWindowPos.y = TSTMstStgs.Instance.TSTsettings.GalwindowPosY;
-            GUI_WIDTH_SMALL = TSTMstStgs.Instance.TSTsettings.TelewinSml;
-            GUI_WIDTH_LARGE = TSTMstStgs.Instance.TSTsettings.TelewinLge;
-            Utilities.Log_Debug("TSTTel", "OnLoad Telescope End");
+			windowPos.x = TSTMstStgs.Instance.TSTsettings.CwindowPosX;
+			windowPos.y = TSTMstStgs.Instance.TSTsettings.CwindowPosY;
+			targetBodWindowPos.x = TSTMstStgs.Instance.TSTsettings.BodwindowPosX;
+			targetBodWindowPos.y = TSTMstStgs.Instance.TSTsettings.BodwindowPosY;
+			targetGalWindowPos.x = TSTMstStgs.Instance.TSTsettings.GalwindowPosX;
+			targetGalWindowPos.y = TSTMstStgs.Instance.TSTsettings.GalwindowPosY;
+			GUI_WIDTH_SMALL = TSTMstStgs.Instance.TSTsettings.TelewinSml;
+			GUI_WIDTH_LARGE = TSTMstStgs.Instance.TSTsettings.TelewinLge;
+			Utilities.Log_Debug("OnLoad Telescope End");
 		}
 
-        #region Galaxy
+		#region Galaxy
 
-        //Galaxy Wrapper
+		//Galaxy Wrapper
 		public enum TargettingMode
 		{
 			Galaxy,
@@ -1063,7 +1125,7 @@ namespace TarsierSpaceTech
 					return galaxy == null ? body.theName : galaxy.theName;
 				}
 			}
-        }
-        #endregion Galaxy
-    }
+		}
+		#endregion Galaxy
+	}
 }

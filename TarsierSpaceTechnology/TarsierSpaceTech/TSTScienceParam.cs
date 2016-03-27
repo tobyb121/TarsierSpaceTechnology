@@ -44,7 +44,7 @@ namespace TarsierSpaceTech
 
         protected override void OnRegister()
         {
-            this.Log_Debug("Adding Callback for science data received on contract");
+            RSTUtils.Utilities.Log_Debug("Adding Callback for science data received on contract");
             GameEvents.OnScienceRecieved.Add(new EventData<float,ScienceSubject,ProtoVessel,bool>.OnEvent(OnScienceData));
             //GameEvents.OnScienceRecieved.Add(OnScienceData);            
             
@@ -52,7 +52,7 @@ namespace TarsierSpaceTech
 
         protected override void OnUnregister()
         {
-            this.Log_Debug("Removing Callback for science data received on contract");
+            RSTUtils.Utilities.Log_Debug("Removing Callback for science data received on contract");
             GameEvents.OnScienceRecieved.Remove(new EventData<float, ScienceSubject,ProtoVessel,bool>.OnEvent(OnScienceData));
             //GameEvents.OnScienceRecieved.Remove(OnScienceData);
             
@@ -83,14 +83,14 @@ namespace TarsierSpaceTech
 
         private void OnScienceData(float amount, ScienceSubject subject, ProtoVessel vessel, bool notsure)        
         {
-            this.Log_Debug("Received Science Data from " + vessel.vesselName + " subject=" + subject.id + " amount=" + amount.ToString("000.00") + " bool=" + notsure);
+            RSTUtils.Utilities.Log_Debug("Received Science Data from " + vessel.vesselName + " subject=" + subject.id + " amount=" + amount.ToString("000.00") + " bool=" + notsure);
             bool match=true;
             foreach (string f in matchFields)
             {
-                this.Log_Debug("matchFields=" + f);
+                RSTUtils.Utilities.Log_Debug("matchFields=" + f);
                 match &= subject.HasPartialIDstring(f);
             }
-            this.Log_Debug("Match result?=" + match.ToString());
+            RSTUtils.Utilities.Log_Debug("Match result?=" + match.ToString());
             if (match)
             {
                 base.SetComplete();

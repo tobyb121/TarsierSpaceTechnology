@@ -34,7 +34,7 @@ namespace TarsierSpaceTech
 	{
 		private bool _inEditor = false;
 
-        private static int CHMCwindowID = 77777898;
+		private static int CHMCwindowID = 77777898;
 		private int GUI_WIDTH_SMALL = 256;
 		private int GUI_WIDTH_LARGE = 512;
 
@@ -49,8 +49,8 @@ namespace TarsierSpaceTech
 		private Animation _animationObj;
 
 		private Rect _windowRect=new Rect();
-        public WindowSate windowState = WindowSate.Small;
-        private bool _saveToFile = false;	
+		public WindowSate windowState = WindowSate.Small;
+		private bool _saveToFile = false;	
 
 		private int frameLimit = 5;
 		private int f = 0;
@@ -70,8 +70,8 @@ namespace TarsierSpaceTech
 		[KSPField]
 		public float labBoostScalar = 0f;
 
-        [KSPField(isPersistant = true)]
-        public bool Active = false;
+		[KSPField(isPersistant = true)]
+		public bool Active = false;
 		
 		private Vessel _vessel;
 
@@ -85,12 +85,12 @@ namespace TarsierSpaceTech
 				return;
 			}
 
-			Utilities.Log_Debug("TSTChm","Starting ChemCam");
-			_lookTransform = Utilities.FindChildRecursive(transform,"CameraTransform");
+			RSTUtils.Utilities.Log_Debug("Starting ChemCam");
+			_lookTransform = RSTUtils.Utilities.FindChildRecursive(transform,"CameraTransform");
 			_camera=_lookTransform.gameObject.AddComponent<TSTCameraModule>();
 
-			Utilities.Log_Debug("TSTChm","Adding Lazer");
-			_lazerTransform = Utilities.FindChildRecursive(transform, "LazerTransform");
+			RSTUtils.Utilities.Log_Debug("Adding Lazer");
+			_lazerTransform = RSTUtils.Utilities.FindChildRecursive(transform, "LazerTransform");
 			_lazerObj = _lazerTransform.gameObject.AddComponent<LineRenderer>();
 			_lazerObj.enabled = false;
 			_lazerObj.castShadows = false;
@@ -103,34 +103,34 @@ namespace TarsierSpaceTech
 			_lazerObj.material.color = Color.red;
 			_lazerObj.SetColors(Color.red, Color.red);
 
-			Utilities.Log_Debug("TSTChm","Finding Camera Transforms");
-			_headTransform = Utilities.FindChildRecursive(transform, "CamBody");
-			_upperArmTransform = Utilities.FindChildRecursive(transform, "ArmUpper");
+			RSTUtils.Utilities.Log_Debug("Finding Camera Transforms");
+			_headTransform = RSTUtils.Utilities.FindChildRecursive(transform, "CamBody");
+			_upperArmTransform = RSTUtils.Utilities.FindChildRecursive(transform, "ArmUpper");
 
-			Utilities.Log_Debug("TSTChm","Finding Animation Object");
-			_animationObj = Utilities.FindChildRecursive(transform, "ChemCam").animation;
+			RSTUtils.Utilities.Log_Debug("Finding Animation Object");
+			_animationObj = RSTUtils.Utilities.FindChildRecursive(transform, "ChemCam").animation;
 
 			viewfinder.LoadImage(Properties.Resources.viewfinder);
 
 			PlanetNames = (from CelestialBody b in FlightGlobals.Bodies select b.name).ToList();
-            CHMCwindowID = Utilities.getnextrandomInt();
+			CHMCwindowID = RSTUtils.Utilities.getnextrandomInt();
 			
-			Utilities.Log_Debug("TSTChm","Adding Input Callback");            
+			RSTUtils.Utilities.Log_Debug("Adding Input Callback");            
 			_vessel = vessel;
 			vessel.OnAutopilotUpdate += new FlightInputCallback(handleInput);
 			GameEvents.onVesselChange.Add(new EventData<Vessel>.OnEvent(refreshFlghtInptHandler));
 			GameEvents.onVesselDestroy.Add(new EventData<Vessel>.OnEvent(removeFlghtInptHandler));
 			GameEvents.OnVesselRecoveryRequested.Add(new EventData<Vessel>.OnEvent(removeFlghtInptHandler));
-			Utilities.Log_Debug("TSTChm","Added Input Callback");
+			RSTUtils.Utilities.Log_Debug("Added Input Callback");
 			
 			Events["eventOpenCamera"].active = true;
 			Actions["actionOpenCamera"].active = true;
 			Events["eventCloseCamera"].active = false;
 			Actions["actionCloseCamera"].active = false;
 			updateAvailableEvents();
-            if (Active)
-                StartCoroutine(openCamera());
-        }
+			if (Active)
+				StartCoroutine(openCamera());
+		}
 
 		public override void OnUpdate()
 		{
@@ -147,54 +147,58 @@ namespace TarsierSpaceTech
 
 		public void removeFlghtInptHandler(Vessel target)
 		{
-			Utilities.Log_Debug("TSTChm","Removing Input Callback vessel: " + target.name);
+			RSTUtils.Utilities.Log_Debug("{0}:Removing Input Callback vessel: {1}" , this.GetType().Name , target.name);
 			if (this.vessel == target)
 			{
 				_vessel.OnAutopilotUpdate -= (handleInput);
 				GameEvents.onVesselChange.Remove(this.refreshFlghtInptHandler);
 				GameEvents.onVesselDestroy.Remove(this.removeFlghtInptHandler);
 				GameEvents.OnVesselRecoveryRequested.Remove(this.removeFlghtInptHandler);
-				Utilities.Log_Debug("TSTChm","Input Callbacks removed this vessel");
+				RSTUtils.Utilities.Log_Debug("Input Callbacks removed this vessel");
 			}            
 		}
 
-        public enum WindowSate
-        {
-            Small, Large, Hidden
-        }
+		public enum WindowSate
+		{
+			Small, Large, Hidden
+		}
 
 		private void drawWindow(int windowID)
 		{
 			GUILayout.Box(_camera.Texture2D);
 			GUI.DrawTexture(GUILayoutUtility.GetLastRect(), viewfinder);
-            GUILayout.BeginHorizontal();
-            _saveToFile = GUILayout.Toggle(_saveToFile, "Save To File");
-            if (GUILayout.Button("Fire")) StartCoroutine(fireCamera(_saveToFile));
-            if (GUILayout.Button(windowState == WindowSate.Small ? "Large" : "Small"))
-            {
-                windowState = windowState == WindowSate.Small ? WindowSate.Large : WindowSate.Small;
-                int w = (windowState == WindowSate.Small ? GUI_WIDTH_SMALL : GUI_WIDTH_LARGE);
-                _camera.changeSize(w, w);
-                _windowRect.height = 0;
-            };
-            GUILayout.EndHorizontal();
+			GUILayout.BeginHorizontal();
+			_saveToFile = GUILayout.Toggle(_saveToFile, new GUIContent("Save To File", "If this is on, picture files will be saved to GameData/TarsierSpaceTech/PluginData/TarsierSpaceTech"));
+			if (GUILayout.Button(new GUIContent("Fire", "Fire the Laser!"))) StartCoroutine(fireCamera(_saveToFile));
+			if (GUILayout.Button(windowState == WindowSate.Small ? new GUIContent("Large", "Set Large Window Size") : new GUIContent("Small", "set Small Window Size")))
+			{
+				windowState = windowState == WindowSate.Small ? WindowSate.Large : WindowSate.Small;
+				int w = (windowState == WindowSate.Small ? GUI_WIDTH_SMALL : GUI_WIDTH_LARGE);
+				_camera.changeSize(w, w);
+				_windowRect.height = 0;
+			};
+			GUILayout.EndHorizontal();
+			if (TSTMstStgs.Instance.TSTsettings.Tooltips)
+				RSTUtils.Utilities.SetTooltipText();
 			GUI.DragWindow();
 		}
 
 		public void OnGUI()
 		{
-            if (!_inEditor && _camera.Enabled && vessel.isActiveVessel && FlightUIModeController.Instance.Mode != FlightUIMode.ORBITAL && !Utilities.isPauseMenuOpen())
+			if (!_inEditor && _camera.Enabled && vessel.isActiveVessel && FlightUIModeController.Instance.Mode != FlightUIMode.ORBITAL && !RSTUtils.Utilities.isPauseMenuOpen)
 			{
-                _windowRect = GUILayout.Window(CHMCwindowID, _windowRect, drawWindow, "ChemCam - Use I,J,K,L to move camera", GUILayout.Width(GUI_WIDTH_SMALL));
+				_windowRect = GUILayout.Window(CHMCwindowID, _windowRect, drawWindow, "ChemCam - Use I,J,K,L to move camera", GUILayout.Width(GUI_WIDTH_SMALL));
+				if (TSTMstStgs.Instance.TSTsettings.Tooltips)
+					RSTUtils.Utilities.DrawToolTip();
 			}
 		}
 
 		private void refreshFlghtInptHandler(Vessel target)
 		{
-			Utilities.Log_Debug("TSTChm","OnVesselSwitch curr: " + vessel.name + " target: " + target.name);
+			RSTUtils.Utilities.Log_Debug("OnVesselSwitch curr: {0}, target: {1}" , vessel.name , target.name);
 			if (this.vessel != target)
 			{
-				Utilities.Log_Debug("TSTChm","This vessel != target removing Callback");
+				RSTUtils.Utilities.Log_Debug("This vessel != target removing Callback");
 				_vessel.OnAutopilotUpdate -= (handleInput);
 			}
 				
@@ -204,9 +208,9 @@ namespace TarsierSpaceTech
 				List<TSTChemCam> vpm = _vessel.FindPartModulesImplementing<TSTChemCam>();
 				if (vpm.Count > 0)
 				{
-					Utilities.Log_Debug("TSTChm","Adding Input Callback");
+					RSTUtils.Utilities.Log_Debug("Adding Input Callback");
 					_vessel.OnAutopilotUpdate += new FlightInputCallback(handleInput);
-					Utilities.Log_Debug("TSTChm","Added Input Callback");
+					RSTUtils.Utilities.Log_Debug("Added Input Callback");
 				}            
 			}
 			
@@ -254,16 +258,16 @@ namespace TarsierSpaceTech
 			_animationObj.Play("open");
 			Events["eventOpenCamera"].active = false;
 			Actions["actionOpenCamera"].active = false;
-			IEnumerator wait = Utilities.WaitForAnimation(_animationObj, "open");
+			IEnumerator wait = RSTUtils.Utilities.WaitForAnimation(_animationObj, "open");
 			while (wait.MoveNext()) yield return null;
 			string anim="wiggle"+UnityEngine.Random.Range(1,5).ToString();
 			_animationObj.Play(anim);
-			wait = Utilities.WaitForAnimation(_animationObj, anim);
+			wait = RSTUtils.Utilities.WaitForAnimation(_animationObj, anim);
 			while (wait.MoveNext()) yield return null;
 			Events["eventCloseCamera"].active = true;
 			Actions["actionCloseCamera"].active = true;
 			_camera.Enabled = true;
-            Active = true;
+			Active = true;
 			_camera.fov = 80;
 			_camera.changeSize(GUI_WIDTH_SMALL, GUI_WIDTH_SMALL);
 			
@@ -285,7 +289,7 @@ namespace TarsierSpaceTech
 			Events["eventCloseCamera"].active = false;
 			Actions["actionCloseCamera"].active = false;
 			_camera.Enabled = false;
-            Active = false;
+			Active = false;
 			while (_upperArmTransform.localEulerAngles != Vector3.zero || _headTransform.localEulerAngles != Vector3.zero)
 			{
 				float rotZ = _upperArmTransform.localEulerAngles.z;
@@ -299,7 +303,7 @@ namespace TarsierSpaceTech
 				yield return null;
 			}
 			_animationObj.Play("close");
-			IEnumerator wait = Utilities.WaitForAnimation(_animationObj, "close");
+			IEnumerator wait = RSTUtils.Utilities.WaitForAnimation(_animationObj, "close");
 			while (wait.MoveNext()) yield return null;
 			Events["eventOpenCamera"].active = true;
 			Actions["actionOpenCamera"].active = true;
@@ -321,7 +325,7 @@ namespace TarsierSpaceTech
 			updateAvailableEvents();
 		}
 
-        private IEnumerator fireCamera(bool saveToFile)
+		private IEnumerator fireCamera(bool saveToFile)
 		{
 			_lazerObj.enabled = true;
 			yield return new WaitForSeconds(0.75f);
@@ -331,7 +335,7 @@ namespace TarsierSpaceTech
 			{
 				if (hit.distance < 10f)
 				{
-					Utilities.Log_Debug("TSTChm","Hit Planet");
+					RSTUtils.Utilities.Log_Debug("Hit Planet");
 					Transform t = hit.collider.transform;
 					while (t != null)
 					{
@@ -344,42 +348,42 @@ namespace TarsierSpaceTech
 						CelestialBody body=FlightGlobals.Bodies.Find(c=>c.name==t.name);
 						doScience(body);						
 					}
-                    else
-                    {
-                        ScreenMessages.PostScreenMessage("No Terrain in Range to analyse", 3f, ScreenMessageStyle.UPPER_CENTER);
-                    }
+					else
+					{
+						ScreenMessages.PostScreenMessage("No Terrain in Range to analyse", 3f, ScreenMessageStyle.UPPER_CENTER);
+					}
 				}
 			}
-            if (saveToFile)
-            {
-                Utilities.Log_Debug("TSTChm", "Saving to File");
-                int i = 0;
-                while ((KSP.IO.File.Exists<TSTChemCam>("ChemCam_" + DateTime.Now.ToString("d-m-y") + "_" + i.ToString() + ".png", null)) ||
-                    (KSP.IO.File.Exists<TSTChemCam>("ChemCam_" + DateTime.Now.ToString("d-m-y") + "_" + i.ToString() + "Large.png", null)))
-                    i++;
-                _camera.saveToFile("ChemCam_" + DateTime.Now.ToString("d-m-y") + "_" + i.ToString(), "ChemCam");
-                ScreenMessages.PostScreenMessage("Picture saved", 3f, ScreenMessageStyle.UPPER_CENTER);
-            }			
+			if (saveToFile)
+			{
+				RSTUtils.Utilities.Log_Debug("Saving to File");
+				int i = 0;
+				while ((KSP.IO.File.Exists<TSTChemCam>("ChemCam_" + DateTime.Now.ToString("d-m-y") + "_" + i.ToString() + ".png", null)) ||
+					(KSP.IO.File.Exists<TSTChemCam>("ChemCam_" + DateTime.Now.ToString("d-m-y") + "_" + i.ToString() + "Large.png", null)))
+					i++;
+				_camera.saveToFile("ChemCam_" + DateTime.Now.ToString("d-m-y") + "_" + i.ToString(), "ChemCam");
+				ScreenMessages.PostScreenMessage("Picture saved", 3f, ScreenMessageStyle.UPPER_CENTER);
+			}			
 		}
 
 		public void doScience(CelestialBody planet)
 		{
-			Utilities.Log_Debug("TSTChm","Doing Science for " + planet.theName);
+			RSTUtils.Utilities.Log_Debug("Doing Science for {0}" , planet.theName);
 			ScienceExperiment experiment = ResearchAndDevelopment.GetExperiment(ExperimentID);
-			Utilities.Log_Debug("TSTChm","Got experiment");
+			RSTUtils.Utilities.Log_Debug("Got experiment");
 			string biome = "";
 			if (part.vessel.landedAt != string.Empty)
 				biome = part.vessel.landedAt;
 			else
 				biome = ScienceUtil.GetExperimentBiome(planet, FlightGlobals.ship_latitude, FlightGlobals.ship_longitude);
 			ScienceSubject subject = ResearchAndDevelopment.GetExperimentSubject(experiment, ScienceUtil.GetExperimentSituation(vessel), planet, biome);
-			Utilities.Log_Debug("TSTChm","Got subject");
+			RSTUtils.Utilities.Log_Debug("Got subject");
 			if (experiment.IsAvailableWhile(ScienceUtil.GetExperimentSituation(vessel), planet))
 			{
 				ScienceData data = new ScienceData(experiment.baseValue * subject.dataScale, xmitDataScalar, labBoostScalar, subject.id, subject.title, false, part.flightID);
-				Utilities.Log_Debug("TSTChm","Got data");
+				RSTUtils.Utilities.Log_Debug("Got data");
 				_scienceData.Add(data);
-				Utilities.Log_Debug("TSTChm","Added Data");
+				RSTUtils.Utilities.Log_Debug("Added Data");
 				ScreenMessages.PostScreenMessage("Collected Science for " + planet.theName, 3f, ScreenMessageStyle.UPPER_CENTER);
 				if (TSTProgressTracker.isActive)
 				{
@@ -435,7 +439,7 @@ namespace TarsierSpaceTech
 
 		private void _onPageSendToLab(ScienceData data)
 		{
-			Utilities.Log_Debug("TSTChm","Sent to lab");
+			RSTUtils.Utilities.Log_Debug("Sent to lab");
 		}
 
 		public override void OnSave(ConfigNode node)
@@ -444,8 +448,8 @@ namespace TarsierSpaceTech
 			{
 				data.Save(node.AddNode("ScienceData"));
 			}
-            TSTMstStgs.Instance.TSTsettings.CwindowPosX = _windowRect.x;
-            TSTMstStgs.Instance.TSTsettings.CwindowPosY = _windowRect.y; 
+			TSTMstStgs.Instance.TSTsettings.CwindowPosX = _windowRect.x;
+			TSTMstStgs.Instance.TSTsettings.CwindowPosY = _windowRect.y; 
 		}
 
 		public override void OnLoad(ConfigNode node)
@@ -462,10 +466,10 @@ namespace TarsierSpaceTech
 			{
 				_scienceData.Add(new ScienceData(n));
 			}
-            _windowRect.x = TSTMstStgs.Instance.TSTsettings.CwindowPosX;
-            _windowRect.y = TSTMstStgs.Instance.TSTsettings.CwindowPosY;            
-            GUI_WIDTH_SMALL = TSTMstStgs.Instance.TSTsettings.ChemwinSml;
-            GUI_WIDTH_LARGE = TSTMstStgs.Instance.TSTsettings.ChemwinLge;
+			_windowRect.x = TSTMstStgs.Instance.TSTsettings.CwindowPosX;
+			_windowRect.y = TSTMstStgs.Instance.TSTsettings.CwindowPosY;            
+			GUI_WIDTH_SMALL = TSTMstStgs.Instance.TSTsettings.ChemwinSml;
+			GUI_WIDTH_LARGE = TSTMstStgs.Instance.TSTsettings.ChemwinLge;
 		}
 
 		// IScienceDataContainer
@@ -489,18 +493,18 @@ namespace TarsierSpaceTech
 			eventReviewScience();
 		}
 
-        public void ReturnData(ScienceData data)
-        {
-            if (data == null)
-            {
-                return;
-            }
-            _scienceData.Add(data);
-        }
-
-        public bool IsRerunnable()
+		public void ReturnData(ScienceData data)
 		{
-			Utilities.Log_Debug("TSTChm","Is rerunnable");
+			if (data == null)
+			{
+				return;
+			}
+			_scienceData.Add(data);
+		}
+
+		public bool IsRerunnable()
+		{
+			RSTUtils.Utilities.Log_Debug("Is rerunnable");
 			return true;
 		}
 
