@@ -26,6 +26,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace TarsierSpaceTech
 {
@@ -78,11 +79,11 @@ namespace TarsierSpaceTech
                 
             }                              
             gameObject.GetComponent<MeshFilter>().mesh = mesh;                          
-            renderer.material = mat;
+            gameObject.GetComponent<Renderer>().material = mat;
             gameObject.layer = 10;
-            renderer.castShadows = false;
-            renderer.receiveShadows = false;
-            renderer.enabled = true;
+            gameObject.GetComponent<Renderer>().shadowCastingMode = ShadowCastingMode.Off;
+            gameObject.GetComponent<Renderer>().receiveShadows = false;
+            gameObject.GetComponent<Renderer>().enabled = true;
         }
         
         public void Update()

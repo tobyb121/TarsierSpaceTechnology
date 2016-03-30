@@ -27,6 +27,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using System.IO;
+using KSP.UI.Screens.Flight.Dialogs;
 using Microsoft.Win32.SafeHandles;
 using RSTUtils;
 
@@ -155,16 +156,16 @@ namespace TarsierSpaceTech
 			//_animation = _baseTransform.animation;
 			if (animationNameOpen == "")
 			{
-				_animationOpen = _animationTransform.animation;
-			}
+				_animationOpen = _animationTransform.GetComponent<Animation>();
+            }
 			else
 			{
 				_animationOpen = Utilities.FindAnimChildRecursive(_animationTransform, animationNameOpen);
 			}
 			if (animationNameClose == "")
 			{
-				_animationClose = _animationTransform.animation;
-			}
+				_animationClose = _animationTransform.GetComponent<Animation>();
+            }
 			else
 			{
 				_animationClose = Utilities.FindAnimChildRecursive(_animationTransform, animationNameClose);
@@ -978,7 +979,8 @@ namespace TarsierSpaceTech
 
 		public void ReviewDataItem(ScienceData data)
 		{
-			ExperimentResultDialogPage page = new ExperimentResultDialogPage(
+            ScienceLabSearch labSearch = new ScienceLabSearch(FlightGlobals.ActiveVessel, data);
+            ExperimentResultDialogPage page = new ExperimentResultDialogPage(
 					part,
 					data,
 					xmitDataScalar,
@@ -986,7 +988,7 @@ namespace TarsierSpaceTech
 					false,
 					"",
 					true,
-					false,
+					labSearch,
 					new Callback<ScienceData>(_onPageDiscard),
 					new Callback<ScienceData>(_onPageKeep),
 					new Callback<ScienceData>(_onPageTransmit),

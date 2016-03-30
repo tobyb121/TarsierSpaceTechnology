@@ -1,4 +1,5 @@
-﻿V5.9 Fixed TST AppLauncher Icon appearing in map view even when active vessel has no TST parts.    
+﻿V6.0 Ksp 1.1 Experimentals.
+V5.9 Fixed TST AppLauncher Icon appearing in map view even when active vessel has no TST parts.    
 	Fixed error on start-up for integration with Kopernicus mod.
 	Fixed KIS/KAS support for the small Science Drive.
 	Massive re-factor of the code base for future ease of maintenace support and preparations for KSP 1.1 (THIS DOES NOT mean TST is ready for KSP 1.1).	

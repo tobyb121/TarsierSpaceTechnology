@@ -27,6 +27,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using RSTUtils;
 using UnityEngine;
+using KSP.UI.Screens;
 
 namespace TarsierSpaceTech
 {
@@ -188,7 +189,7 @@ namespace TarsierSpaceTech
             // add callbacks for vessel load and change
             GameEvents.onGameSceneLoadRequested.Add(OnGameSceneLoadRequestedForAppLauncher);
             Utilities.setScaledScreen();
-            RenderingManager.AddToPostDrawQueue(5, this.onDraw);
+            //RenderingManager.AddToPostDrawQueue(5, this.onDraw);
             Utilities.Log_Debug("TSTMenu Start complete");
         }
 
@@ -210,7 +211,7 @@ namespace TarsierSpaceTech
             }
             
             if (GuiVisible) GuiVisible = !GuiVisible;
-            RenderingManager.RemoveFromPostDrawQueue(5, this.onDraw);
+            //RenderingManager.RemoveFromPostDrawQueue(5, this.onDraw);
             GameEvents.onGameSceneLoadRequested.Remove(OnGameSceneLoadRequestedForAppLauncher);
             TSTMstStgs.Instance.TSTsettings.FwindowPosX = FwindowPos.x;
             TSTMstStgs.Instance.TSTsettings.FwindowPosY = FwindowPos.y;
@@ -270,7 +271,7 @@ namespace TarsierSpaceTech
 
         //GUI Functions Follow
 
-        private void onDraw()
+        private void OnGUI()
         {
             //if (Utilities.GameModeisEVA || !GuiVisible || Utilities.isPauseMenuOpen)  // EVA kerbal, GUI not set to visible or pause menu is open :- do nothing
             if (Utilities.GameModeisEVA || !GuiVisible)

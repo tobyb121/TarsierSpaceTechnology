@@ -24,6 +24,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using KSP.UI.Screens.Flight.Dialogs;
 using UnityEngine;
 
 namespace TarsierSpaceTech
@@ -232,6 +233,7 @@ namespace TarsierSpaceTech
         {
             foreach (ScienceData data in scienceData)
             {
+                ScienceLabSearch labSearch = new ScienceLabSearch(FlightGlobals.ActiveVessel, data);
                 ExperimentResultDialogPage page = new ExperimentResultDialogPage(
                     part,
                     data,
@@ -240,7 +242,7 @@ namespace TarsierSpaceTech
                     true,
                     "If you transmit this data it will only be worth: " + Mathf.Round(data.transmitValue * 100).ToString() + "% of the full science value",
                     true,
-                    false,
+                    labSearch,
                     new Callback<ScienceData>(_onPageDiscard),
                     new Callback<ScienceData>(_onPageKeep),
                     new Callback<ScienceData>(_onPageTransmit),
@@ -265,6 +267,7 @@ namespace TarsierSpaceTech
 
         public void ReviewDataItem(ScienceData data)
         {
+            ScienceLabSearch labSearch = new ScienceLabSearch(FlightGlobals.ActiveVessel, data);
             ExperimentResultDialogPage page = new ExperimentResultDialogPage(
                     part,
                     data,
@@ -273,7 +276,7 @@ namespace TarsierSpaceTech
                     true,
                     "If you transmit this data it will only be worth: " + Mathf.Round(data.transmitValue * 100).ToString() + "% of the full science value",
                     true,
-                    false,
+                    labSearch,
                     new Callback<ScienceData>(_onPageDiscard),
                     new Callback<ScienceData>(_onPageKeep),
                     new Callback<ScienceData>(_onPageTransmit),

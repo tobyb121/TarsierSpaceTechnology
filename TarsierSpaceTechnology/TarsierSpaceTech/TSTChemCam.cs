@@ -26,6 +26,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using KSP.UI.Screens.Flight.Dialogs;
 using UnityEngine;
 
 namespace TarsierSpaceTech
@@ -108,7 +109,7 @@ namespace TarsierSpaceTech
 			_upperArmTransform = RSTUtils.Utilities.FindChildRecursive(transform, "ArmUpper");
 
 			RSTUtils.Utilities.Log_Debug("Finding Animation Object");
-			_animationObj = RSTUtils.Utilities.FindChildRecursive(transform, "ChemCam").animation;
+			_animationObj = RSTUtils.Utilities.FindChildRecursive(transform, "ChemCam").GetComponent<Animation>();
 
 			viewfinder.LoadImage(Properties.Resources.viewfinder);
 
@@ -510,7 +511,8 @@ namespace TarsierSpaceTech
 
 		public void ReviewDataItem(ScienceData data)
 		{
-			ExperimentResultDialogPage page = new ExperimentResultDialogPage(
+            ScienceLabSearch labSearch = new ScienceLabSearch(FlightGlobals.ActiveVessel, data);
+            ExperimentResultDialogPage page = new ExperimentResultDialogPage(
 					part,
 					data,
 					xmitDataScalar,
@@ -518,7 +520,7 @@ namespace TarsierSpaceTech
 					false,
 					"",
 					true,
-					false,
+                    labSearch,
 					new Callback<ScienceData>(_onPageDiscard),
 					new Callback<ScienceData>(_onPageKeep),
 					new Callback<ScienceData>(_onPageTransmit),
