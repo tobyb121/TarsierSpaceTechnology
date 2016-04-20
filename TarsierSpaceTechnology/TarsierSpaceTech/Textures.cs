@@ -10,10 +10,11 @@
 // THE SOFTWARE.
 
 using System;
-using UnityEngine;
+using System.IO;
 using RSTUtils;
+using UnityEngine;
 
-namespace TarsierSpaceTech
+namespace TarsierSpaceTech 
 {
     [KSPAddon(KSPAddon.Startup.MainMenu, false)]
     public class LoadGlobals : MonoBehaviour
@@ -48,7 +49,7 @@ namespace TarsierSpaceTech
         internal static Texture2D BtnRedCross = new Texture2D(16, 16, TextureFormat.ARGB32, false);
         internal static Texture2D BtnResize = new Texture2D(16, 16, TextureFormat.ARGB32, false);
 
-        internal static String PathIconsPath = System.IO.Path.Combine(TSTMstStgs._AssemblyFolder.Substring(0, TSTMstStgs._AssemblyFolder.IndexOf("\\TarsierSpaceTech\\") + 17), "Icons").Replace("\\", "/");
+        internal static String PathIconsPath = Path.Combine(TSTMstStgs._AssemblyFolder.Substring(0, TSTMstStgs._AssemblyFolder.IndexOf("\\TarsierSpaceTech\\") + 17), "Icons").Replace("\\", "/");
         internal static String PathToolbarIconsPath = PathIconsPath.Substring(PathIconsPath.ToLower().IndexOf("/gamedata/") + 10);
 
 
@@ -62,7 +63,7 @@ namespace TarsierSpaceTech
             }
             catch (Exception)
             {
-                RSTUtils.Utilities.Log("TST Failed to Load Textures - are you missing a file?");
+                Utilities.Log("TST Failed to Load Textures - are you missing a file?");
             }
         }
 
@@ -74,37 +75,37 @@ namespace TarsierSpaceTech
                 if (folderPath == "") folderPath = PathIconsPath;
 
                 //File Exists check
-                if (System.IO.File.Exists(String.Format("{0}/{1}", folderPath, fileName)))
+                if (File.Exists(String.Format("{0}/{1}", folderPath, fileName)))
                 {
                     try
                     {
-                        tex.LoadImage(System.IO.File.ReadAllBytes(String.Format("{0}/{1}", folderPath, fileName)));
+                        tex.LoadImage(File.ReadAllBytes(String.Format("{0}/{1}", folderPath, fileName)));
                         blnReturn = true;
                     }
                     catch (Exception ex)
                     {
-                        RSTUtils.Utilities.Log("TST Failed to load the texture:" + folderPath + "(" + fileName + ")");
-                        RSTUtils.Utilities.Log(ex.Message);
+                        Utilities.Log("TST Failed to load the texture:" + folderPath + "(" + fileName + ")");
+                        Utilities.Log(ex.Message);
                     }
                 }
                 else
                 {
-                    RSTUtils.Utilities.Log("TST Cannot find texture to load:" + folderPath + "(" + fileName + ")");
+                    Utilities.Log("TST Cannot find texture to load:" + folderPath + "(" + fileName + ")");
                 }
 
 
             }
             catch (Exception ex)
             {
-                RSTUtils.Utilities.Log("TST Failed to load (are you missing a file):" + folderPath + "(" + fileName + ")");
-                RSTUtils.Utilities.Log(ex.Message);
+                Utilities.Log("TST Failed to load (are you missing a file):" + folderPath + "(" + fileName + ")");
+                Utilities.Log(ex.Message);
             }
             return blnReturn;
         }
 
         internal static GUIStyle ResizeStyle, ClosebtnStyle;
 
-        internal static bool StylesSet = false;
+        internal static bool StylesSet;
 
         internal static void SetupStyles()
         {
@@ -122,7 +123,7 @@ namespace TarsierSpaceTech
                 padding = new RectOffset(4, 4, 6, 4),
                 alignment = TextAnchor.MiddleCenter
             };
-            Utilities._TooltipStyle.normal.background = Textures.TooltipBox;
+            Utilities._TooltipStyle.normal.background = TooltipBox;
             Utilities._TooltipStyle.normal.textColor = new Color32(207, 207, 207, 255);
             Utilities._TooltipStyle.hover.textColor = Color.blue;
             

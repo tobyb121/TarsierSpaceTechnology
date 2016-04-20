@@ -32,9 +32,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using RSTUtils;
 using UnityEngine;
-
+using Object = System.Object;
 
 namespace TarsierSpaceTech
 {
@@ -42,7 +41,7 @@ namespace TarsierSpaceTech
     public class TSTDOE : MonoBehaviour
     {
         private List<TSTCameraModule> TSTCam = new List<TSTCameraModule>();
-        private static bool DOEPresent = false;
+        private static bool DOEPresent;
 
         private void Start()
         {
@@ -134,10 +133,10 @@ namespace TarsierSpaceTech
     /// </summary>
     public class DOEWrapper 
     {
-        protected static System.Type DOEType;
-        protected static System.Type DOEFlareDrawType;
+        protected static Type DOEType;
+        protected static Type DOEFlareDrawType;
                         
-        protected static System.Object actualDOEFlareDraw;        
+        protected static Object actualDOEFlareDraw;        
 
         /// <summary>
         /// This is the DOE API object
@@ -175,8 +174,7 @@ namespace TarsierSpaceTech
         /// <summary>
         /// This method will set up the DOE object and wrap all the methods/functions
         /// </summary>
-        /// <param name="Force">This option will force the Init function to rebind everything</param>
-        /// <returns></returns>
+        /// <returns>bool success of method call</returns>
         public static Boolean InitDOEWrapper()
         {
             //reset the internal objects
@@ -241,7 +239,7 @@ namespace TarsierSpaceTech
         /// </summary>
         public class DOEAPI
         {
-            internal DOEAPI(System.Object actualDOEFlareDraw)
+            internal DOEAPI(Object actualDOEFlareDraw)
             {
                 //store the actual object
                 APIactualDOEFlareDraw = actualDOEFlareDraw;
@@ -257,10 +255,10 @@ namespace TarsierSpaceTech
                 LogFormatted_DebugOnly("Getting Methods");
                 SetExternalFOVControlMethod = DOEFlareDrawType.GetMethod("SetExternalFOVControl", BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance);
                 SetFOVMethod = DOEFlareDrawType.GetMethod("SetFOV", BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance);
-                LogFormatted_DebugOnly("Success: " + (SetExternalFOVControlMethod != null).ToString());
+                LogFormatted_DebugOnly("Success: " + (SetExternalFOVControlMethod != null));
             }
 
-            private System.Object APIactualDOEFlareDraw;
+            private Object APIactualDOEFlareDraw;
 
             #region Methods
 
@@ -275,7 +273,7 @@ namespace TarsierSpaceTech
             {
                 try
                 {
-                    SetExternalFOVControlMethod.Invoke(APIactualDOEFlareDraw, new System.Object[] { setting });
+                    SetExternalFOVControlMethod.Invoke(APIactualDOEFlareDraw, new Object[] { setting });
                     return true;
                 }
                 catch (Exception ex)
@@ -298,7 +296,7 @@ namespace TarsierSpaceTech
             {
                 try
                 {
-                    SetFOVMethod.Invoke(APIactualDOEFlareDraw, new System.Object[] { setting });
+                    SetFOVMethod.Invoke(APIactualDOEFlareDraw, new Object[] { setting });
                     return true;
                 }
                 catch (Exception ex)
@@ -320,7 +318,7 @@ namespace TarsierSpaceTech
         /// </summary>
         /// <param name="Message">Text to be printed - can be formatted as per String.format</param>
         /// <param name="strParams">Objects to feed into a String.format</param>        
-        internal static void LogFormatted_DebugOnly(String Message, params System.Object[] strParams)
+        internal static void LogFormatted_DebugOnly(String Message, params Object[] strParams)
         {
             TSTSettings TSTsettings = TSTMstStgs.Instance.TSTsettings;
             if (TSTsettings.debugging)
@@ -332,13 +330,13 @@ namespace TarsierSpaceTech
         /// </summary>
         /// <param name="Message">Text to be printed - can be formatted as per String.format</param>
         /// <param name="strParams">Objects to feed into a String.format</param>
-        internal static void LogFormatted(String Message, params System.Object[] strParams)
+        internal static void LogFormatted(String Message, params Object[] strParams)
         {
             Message = String.Format(Message, strParams);
             String strMessageLine = String.Format("{0},{2}-{3},{1}",
-                DateTime.Now, Message, System.Reflection.Assembly.GetExecutingAssembly().GetName().Name,
-                System.Reflection.MethodBase.GetCurrentMethod().DeclaringType.Name);
-            UnityEngine.Debug.Log(strMessageLine);
+                DateTime.Now, Message, Assembly.GetExecutingAssembly().GetName().Name,
+                MethodBase.GetCurrentMethod().DeclaringType.Name);
+            Debug.Log(strMessageLine);
         }
 
         #endregion Logging Stuff

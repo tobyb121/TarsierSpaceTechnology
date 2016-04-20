@@ -22,11 +22,6 @@
  *  along with TarsierSpaceTech.  If not, see <http://opensource.org/licenses/MIT>.
  *
  */
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using UnityEngine;
 
 namespace TarsierSpaceTech
 {
@@ -48,17 +43,17 @@ namespace TarsierSpaceTech
         public override void OnStart(StartState state)
         {
             base.OnStart(state);
-            _basePitchTorque = base.PitchTorque;
-            _baseYawTorque = base.YawTorque;
-            _baseRollTorque = base.RollTorque;
+            _basePitchTorque = PitchTorque;
+            _baseYawTorque = YawTorque;
+            _baseRollTorque = RollTorque;
         }
                        
         public override void OnUpdate()
         {
             base.OnUpdate();
-            base.PitchTorque = _basePitchTorque * (powerscale + ((1 - powerscale) * sensitivity));
-            base.RollTorque  = _baseRollTorque * (powerscale + ((1 - powerscale) * sensitivity));
-            base.YawTorque = _baseYawTorque * (powerscale + ((1 - powerscale) * sensitivity));
+            PitchTorque = _basePitchTorque * (powerscale + ((1 - powerscale) * sensitivity));
+            RollTorque  = _baseRollTorque * (powerscale + ((1 - powerscale) * sensitivity));
+            YawTorque = _baseYawTorque * (powerscale + ((1 - powerscale) * sensitivity));
             //base.OnUpdate();
         }
     }  

@@ -23,10 +23,11 @@
  */
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Collections.Generic;
-
+using UnityEngine;
+using Object = System.Object;
 
 namespace TarsierSpaceTech
 {
@@ -35,20 +36,20 @@ namespace TarsierSpaceTech
     /// </summary>
     public class RBWrapper
     {
-        protected static System.Type RBSCAPIType;
-        protected static System.Type RBDBAPIType;
-        protected static System.Type RBFLAPIType;
-        protected static Object actualRBSC = null;
-        protected static Object actualRBDB = null;
-        protected static Object actualRBFL = null;
+        protected static Type RBSCAPIType;
+        protected static Type RBDBAPIType;
+        protected static Type RBFLAPIType;
+        protected static Object actualRBSC;
+        protected static Object actualRBDB;
+        protected static Object actualRBFL;
 
         /// <summary>
         /// This is the ResearchBodies API object
         ///
         /// SET AFTER INIT
         /// </summary>
-        public static RBSCAPI RBSCactualAPI = null;
-        public static RBDBAPI RBDBactualAPI = null;
+        public static RBSCAPI RBSCactualAPI;
+        public static RBDBAPI RBDBactualAPI;
 
         /// <summary>
         /// Whether we found the ResearchBodies API assembly in the loadedassemblies.
@@ -73,9 +74,9 @@ namespace TarsierSpaceTech
         ///
         /// SET AFTER INIT
         /// </summary>
-        private static Boolean _RBSCWrapped = false;
-        private static Boolean _RBDBWrapped = false;
-        private static Boolean _RBFLWrapped = false;
+        private static Boolean _RBSCWrapped;
+        private static Boolean _RBDBWrapped;
+        private static Boolean _RBFLWrapped;
 
         /// <summary>
         /// Whether the object has been wrapped
@@ -87,8 +88,7 @@ namespace TarsierSpaceTech
         /// <summary>
         /// This method will set up the ResearchBodies object and wrap all the methods/functions
         /// </summary>
-        /// <param name="Force">This option will force the Init function to rebind everything</param>
-        /// <returns></returns>
+        /// <returns>Bool success of method</returns>
         public static Boolean InitRBSCWrapper()
         {
             //reset the internal objects
@@ -138,8 +138,7 @@ namespace TarsierSpaceTech
         /// <summary>
         /// This method will set up the ModuleTrackBodies object and wrap all the methods/functions
         /// </summary>
-        /// <param name="Force">This option will force the Init function to rebind everything</param>
-        /// <returns></returns>
+        /// <returns>Bool success of method</returns>
         public static Boolean InitRBFLWrapper()
         {
             //reset the internal objects
@@ -169,8 +168,7 @@ namespace TarsierSpaceTech
         /// <summary>
         /// This method will set up the DAtabase object and wrap all the methods/functions
         /// </summary>
-        /// <param name="Force">This option will force the Init function to rebind everything</param>
-        /// <returns></returns>
+        /// <returns>Bool success of method</returns>
         public static Boolean InitRBDBWrapper()
         {
             //reset the internal objects
@@ -234,32 +232,32 @@ namespace TarsierSpaceTech
 
                 LogFormatted_DebugOnly("Getting enabled field");
                 SCenabledField = RBSCAPIType.GetField("enable", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-                LogFormatted_DebugOnly("Success: " + (SCenabledField != null).ToString());
+                LogFormatted_DebugOnly("Success: " + (SCenabledField != null));
 
                 LogFormatted_DebugOnly("Getting TrackedBodies field");
                 SCTrackedBodiesField = RBSCAPIType.GetField("TrackedBodies", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-                LogFormatted_DebugOnly("Success: " + (SCTrackedBodiesField != null).ToString());
+                LogFormatted_DebugOnly("Success: " + (SCTrackedBodiesField != null));
 
                 LogFormatted_DebugOnly("Getting TrackedBodies field");
                 SCResearchStateField = RBSCAPIType.GetField("ResearchState", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-                LogFormatted_DebugOnly("Success: " + (SCResearchStateField != null).ToString());
+                LogFormatted_DebugOnly("Success: " + (SCResearchStateField != null));
 
                 //Methods
                 LogFormatted_DebugOnly("Getting Research Method");
                 ResearchMethod = RBSCAPIType.GetMethod("Research", BindingFlags.Public | BindingFlags.Static);
-                LogFormatted_DebugOnly("Success: " + (ResearchMethod != null).ToString());
+                LogFormatted_DebugOnly("Success: " + (ResearchMethod != null));
 
                 LogFormatted_DebugOnly("Getting LaunchResearchPlan Method");
                 LaunchResearchPlanMethod = RBSCAPIType.GetMethod("LaunchResearchPlan", BindingFlags.Public | BindingFlags.Static);
-                LogFormatted_DebugOnly("Success: " + (LaunchResearchPlanMethod != null).ToString());
+                LogFormatted_DebugOnly("Success: " + (LaunchResearchPlanMethod != null));
 
                 LogFormatted_DebugOnly("Getting StopResearchPlan Method");
                 StopResearchPlanMethod = RBSCAPIType.GetMethod("StopResearchPlan", BindingFlags.Public | BindingFlags.Static);
-                LogFormatted_DebugOnly("Success: " + (StopResearchPlanMethod != null).ToString());
+                LogFormatted_DebugOnly("Success: " + (StopResearchPlanMethod != null));
 
                 LogFormatted_DebugOnly("Getting LoadBodyLook Method");
                 LoadBodyLookMethod = RBSCAPIType.GetMethod("LoadBodyLook", BindingFlags.Public | BindingFlags.Static);
-                LogFormatted_DebugOnly("Success: " + (LoadBodyLookMethod != null).ToString());
+                LogFormatted_DebugOnly("Success: " + (LoadBodyLookMethod != null));
                 
             }
 
@@ -268,8 +266,9 @@ namespace TarsierSpaceTech
             private FieldInfo SCenabledField;
 
             /// <summary>
-            /// Whether the enabled field is set
+            /// get the value of the enabled field
             /// </summary>
+            /// <returns>Bool enabled field</returns>
             public Boolean enabled
             {
                 get
@@ -284,8 +283,9 @@ namespace TarsierSpaceTech
             private FieldInfo SCTrackedBodiesField;
 
             /// <summary>
-            /// Whether the enabled field is set
+            /// Get the TrackedBodies dictionary
             /// </summary>
+            /// <returns>TrackedBodies dictionary</returns>
             public Dictionary<CelestialBody, bool> TrackedBodies
             {
                 get
@@ -300,8 +300,9 @@ namespace TarsierSpaceTech
             private FieldInfo SCResearchStateField;
 
             /// <summary>
-            /// Whether the enabled field is set
+            /// Get the ResearchState Dictionary
             /// </summary>
+            /// <returns>ResearchState dictionary</returns>
             public Dictionary<CelestialBody, int> ResearchState
             {
                 get
@@ -318,15 +319,16 @@ namespace TarsierSpaceTech
             private MethodInfo ResearchMethod;
 
             /// <summary>
-            /// Whether the current vessel HasLocalControl
+            /// Add Research points to a celstialbody
             /// </summary>
-            /// <param name="id">The vessel id reference</param>
-            /// <returns>Success of call</returns>
+            /// <param name="body">The celestialbody</param>
+            /// /// <param name="researchToAdd">How much research to add for the celestialbody</param>
+            /// <returns>Bool indicating Success of call</returns>
             internal bool Research(CelestialBody body, int researchToAdd)
             {
                 try
                 {
-                    return (bool)ResearchMethod.Invoke(APIactualRBSC, new System.Object[] { body, researchToAdd });
+                    return (bool)ResearchMethod.Invoke(APIactualRBSC, new Object[] { body, researchToAdd });
                 }
                 catch (Exception ex)
                 {
@@ -340,15 +342,15 @@ namespace TarsierSpaceTech
             private MethodInfo LaunchResearchPlanMethod;
 
             /// <summary>
-            /// Whether the current vessel HasAnyConnection
+            /// Start a Researchlan for a celestialbody
             /// </summary>
-            /// <param name="id">The vessel id reference</param>
-            /// <returns>Success of call</returns>
+            /// <param name="cb">The celestialbody</param>
+            /// <returns>Bool indicating Success of call</returns>
             internal bool LaunchResearchPlan(CelestialBody cb)
             {
                 try
                 {
-                    LaunchResearchPlanMethod.Invoke(APIactualRBSC, new System.Object[] { cb });
+                    LaunchResearchPlanMethod.Invoke(APIactualRBSC, new Object[] { cb });
                     return true;
                 }
                 catch (Exception ex)
@@ -363,15 +365,15 @@ namespace TarsierSpaceTech
             private MethodInfo StopResearchPlanMethod;
 
             /// <summary>
-            /// Gets the signal delay
+            /// Stop Research plan for a celestialbody
             /// </summary>
-            /// <param name="id">The vessel id reference</param>
-            /// <returns>A double indicating the signaldelay time</returns>
+            /// <param name="cb">The celestialbody</param>
+            /// <returns>Bool indicating success of call</returns>
             internal bool StopResearchPlan(CelestialBody cb)
             {
                 try
                 {
-                    StopResearchPlanMethod.Invoke(APIactualRBSC, new System.Object[] { cb });
+                    StopResearchPlanMethod.Invoke(APIactualRBSC, new Object[] { cb });
                     return true;
                 }
                 catch (Exception ex)
@@ -386,10 +388,9 @@ namespace TarsierSpaceTech
             private MethodInfo LoadBodyLookMethod;
 
             /// <summary>
-            /// Gets the signal delay
+            /// Load Body Look
             /// </summary>
-            /// <param name="id">The vessel id reference</param>
-            /// <returns>A double indicating the signaldelay time</returns>
+            /// <returns>Bool indicating success of call</returns>
             internal bool LoadBodyLook()
             {
                 try
@@ -426,19 +427,19 @@ namespace TarsierSpaceTech
 
                 LogFormatted("Getting enabled field");
                 FLenabledField = RBFLAPIType.GetField("enable", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-                LogFormatted_DebugOnly("Success: " + (FLenabledField != null).ToString());
+                LogFormatted_DebugOnly("Success: " + (FLenabledField != null));
 
                 LogFormatted("Getting TrackedBodies field");
                 FLTrackedBodiesField = RBFLAPIType.GetField("TrackedBodies", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-                LogFormatted_DebugOnly("Success: " + (FLTrackedBodiesField != null).ToString());
+                LogFormatted_DebugOnly("Success: " + (FLTrackedBodiesField != null));
 
                 LogFormatted("Getting TrackedBodies field");
                 FLResearchStateField = RBFLAPIType.GetField("ResearchState", BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic);
-                LogFormatted_DebugOnly("Success: " + (FLResearchStateField != null).ToString());
+                LogFormatted_DebugOnly("Success: " + (FLResearchStateField != null));
 
                 LogFormatted("Getting TrackedBodies field");
                 FLScienceRewardField = RBFLAPIType.GetField("scienceReward", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-                LogFormatted_DebugOnly("Success: " + (FLScienceRewardField != null).ToString());
+                LogFormatted_DebugOnly("Success: " + (FLScienceRewardField != null));
 
 
             }
@@ -450,6 +451,7 @@ namespace TarsierSpaceTech
             /// <summary>
             /// Whether the enabled field is set
             /// </summary>
+            /// <returns>Bool value of enabled field</returns>
             public Boolean enabled
             {
                 get
@@ -464,8 +466,9 @@ namespace TarsierSpaceTech
             private FieldInfo FLTrackedBodiesField;
 
             /// <summary>
-            /// Whether the enabled field is set
+            /// Get the TrackedBodies dictionary
             /// </summary>
+            /// <returns>TrackedBodies dictionary</returns>
             public Dictionary<CelestialBody, bool> TrackedBodies
             {
                 get
@@ -480,8 +483,9 @@ namespace TarsierSpaceTech
             private FieldInfo FLResearchStateField;
 
             /// <summary>
-            /// Whether the enabled field is set
+            /// Get the ResearchState Dictionary
             /// </summary>
+            /// <returns>ResearchState dictionary</returns>
             public Dictionary<CelestialBody, int> ResearchState
             {
                 get
@@ -496,8 +500,9 @@ namespace TarsierSpaceTech
             private FieldInfo FLScienceRewardField;
 
             /// <summary>
-            /// Whether the enabled field is set
+            /// The Science Reward field
             /// </summary>
+            /// <returns>int value of ScienceReward field or 0</returns>
             public int ScienceReward
             {
                 get
@@ -528,11 +533,11 @@ namespace TarsierSpaceTech
 
                 LogFormatted_DebugOnly("Getting enableInSandbox field");
                 DBenableInSandboxField = RBDBAPIType.GetField("enableInSandbox", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-                LogFormatted_DebugOnly("Success: " + (DBenableInSandboxField != null).ToString());
+                LogFormatted_DebugOnly("Success: " + (DBenableInSandboxField != null));
 
                 LogFormatted_DebugOnly("Getting DiscoveryMessage field");
                 DBDiscoveryMessageField = RBDBAPIType.GetField("DiscoveryMessage", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-                LogFormatted_DebugOnly("Success: " + (DBDiscoveryMessageField != null).ToString());
+                LogFormatted_DebugOnly("Success: " + (DBDiscoveryMessageField != null));
                                 
             }
 
@@ -541,8 +546,9 @@ namespace TarsierSpaceTech
             private FieldInfo DBenableInSandboxField;
 
             /// <summary>
-            /// Whether the enabled field is set
+            /// If ResearchBodies is enabled in sandbox mode
             /// </summary>
+            /// <returns>bool value of enableInSandbox field</returns>
             public Boolean enableInSandbox
             {
                 get
@@ -557,8 +563,9 @@ namespace TarsierSpaceTech
             private FieldInfo DBDiscoveryMessageField;
 
             /// <summary>
-            /// Whether the enabled field is set
+            /// DiscoveryMessage dictionary
             /// </summary>
+            /// <returns>the DiscoveryMessage dictionary</returns>
             public Dictionary<string, string> DiscoveryMessage
             {
                 get
@@ -595,9 +602,9 @@ namespace TarsierSpaceTech
         {
             Message = String.Format(Message, strParams);
             String strMessageLine = String.Format("{0},{2}-{3},{1}",
-                DateTime.Now, Message, System.Reflection.Assembly.GetExecutingAssembly().GetName().Name,
-                System.Reflection.MethodBase.GetCurrentMethod().DeclaringType.Name);
-            UnityEngine.Debug.Log(strMessageLine);
+                DateTime.Now, Message, Assembly.GetExecutingAssembly().GetName().Name,
+                MethodBase.GetCurrentMethod().DeclaringType.Name);
+            Debug.Log(strMessageLine);
         }
 
         #endregion Logging Stuff

@@ -24,10 +24,12 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using UnityEngine;
 using System.IO;
+using System.Linq;
+using Contracts;
 using RSTUtils;
+using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace TarsierSpaceTech
 {
@@ -36,14 +38,14 @@ namespace TarsierSpaceTech
     {
         private static TSTProgressTracker Instance;
 
-        private static bool isRSSactive = false;
-        private static bool isOPMactive = false;
-        private static bool isRBactive = false;
+        private static bool isRSSactive;
+        private static bool isOPMactive;
+        private static bool isRBactive;
 
         //ResearchBodies Mod vars
         private static int RBwindowID = 5955558;
         private Rect RBWindowPos = new Rect(Screen.width / 2 - 200, Screen.height / 2 - 200, 0, 0);
-        private bool showRBWindow = false;
+        private bool showRBWindow;
         private string RBPopupMsg = string.Empty;
         private float ScienceReward = 20;
 
@@ -62,7 +64,7 @@ namespace TarsierSpaceTech
 
         public void Start()
         {
-            RSTUtils.Utilities.Log_Debug("Starting Tarsier Progress Tracking");
+            Utilities.Log_Debug("Starting Tarsier Progress Tracking");
             Instance = this;
             isRSSactive = Utilities.IsRSSInstalled;
             isOPMactive = Utilities.IsOPMInstalled;
@@ -73,14 +75,14 @@ namespace TarsierSpaceTech
                 try
                 {
                     RBWrapper.InitRBDBWrapper();
-                    RBwindowID = RSTUtils.Utilities.getnextrandomInt();
+                    RBwindowID = Utilities.getnextrandomInt();
                     LoadRBConfig();
                     if (RBWrapper.APIDBReady)
-                        GameEvents.OnScienceRecieved.Add(this.processScience);
+                        GameEvents.OnScienceRecieved.Add(processScience);
                 }
                 catch (Exception ex)
                 {
-                    RSTUtils.Utilities.Log("Initialise of ResearchBodies interface failed unexpectedly. Interface disabled. Ex: {0}" , ex.Message);
+                    Utilities.Log("Initialise of ResearchBodies interface failed unexpectedly. Interface disabled. Ex: {0}" , ex.Message);
                     isRBactive = false;
                 }
                 
@@ -91,7 +93,7 @@ namespace TarsierSpaceTech
         {
             if (isRBactive)
             {
-                GameEvents.OnScienceRecieved.Remove(this.processScience);
+                GameEvents.OnScienceRecieved.Remove(processScience);
             }
         }
 
@@ -154,7 +156,7 @@ namespace TarsierSpaceTech
             {
                 target = TSTMstStgs.Instance.TSTrssplanets.RSSPlanetOrder.FirstOrDefault(s => !Instance.TelescopeData[s]);
                 if (target == default(string))
-                    target = TSTMstStgs.Instance.TSTrssplanets.RSSPlanetOrder[UnityEngine.Random.Range((int)0, TSTMstStgs.Instance.TSTrssplanets.RSSPlanetOrder.Length)];
+                    target = TSTMstStgs.Instance.TSTrssplanets.RSSPlanetOrder[Random.Range(0, TSTMstStgs.Instance.TSTrssplanets.RSSPlanetOrder.Length)];
             }
             else
             {
@@ -162,13 +164,13 @@ namespace TarsierSpaceTech
                 {
                     target = TSTMstStgs.Instance.TSTopmplanets.OPMPlanetOrder.FirstOrDefault(s => !Instance.TelescopeData[s]);
                     if (target == default(string))
-                        target = TSTMstStgs.Instance.TSTopmplanets.OPMPlanetOrder[UnityEngine.Random.Range((int)0, TSTMstStgs.Instance.TSTopmplanets.OPMPlanetOrder.Length)];
+                        target = TSTMstStgs.Instance.TSTopmplanets.OPMPlanetOrder[Random.Range(0, TSTMstStgs.Instance.TSTopmplanets.OPMPlanetOrder.Length)];
                 }
                 else  //Default Stock
                 {
                     target = TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder.FirstOrDefault(s => !Instance.TelescopeData[s]);
                     if (target == default(string))
-                        target = TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder[UnityEngine.Random.Range((int)0, TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder.Length)];
+                        target = TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder[Random.Range(0, TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder.Length)];
                 }
             }
             // if ResearchBodies is installed we need to check if the target body has been found. If it has not, then we set the target to default so a contract is not generated at this time.
@@ -181,15 +183,15 @@ namespace TarsierSpaceTech
                         //if (RBWrapper.RBSCactualAPI.enabled)
                         //{
                         List<KeyValuePair<CelestialBody, bool>> trackbodyentry = TSTMstStgs.Instance.TrackedBodies.Where(e => e.Key.name == target).ToList();
-                        if (trackbodyentry.Count() != 1)
+                        if (trackbodyentry.Count != 1)
                         {
-                            RSTUtils.Utilities.Log("Unable to set target {0} at this time as it is not a tracked body", target);
+                            Utilities.Log("Unable to set target {0} at this time as it is not a tracked body", target);
                             target = default(string);
                             return target;
                         }
                         if (trackbodyentry[0].Value == false)
                         {
-                            RSTUtils.Utilities.Log("Unable to set target {0} at this time as it is not discovered", target);
+                            Utilities.Log("Unable to set target {0} at this time as it is not discovered", target);
                             target = default(string);
                             return target;
                         }
@@ -197,14 +199,14 @@ namespace TarsierSpaceTech
                     
                     else
                     {
-                        RSTUtils.Utilities.Log("ResearchBodies is not Ready, cannot check Telescope target for contract generation at this time.");
+                        Utilities.Log("ResearchBodies is not Ready, cannot check Telescope target for contract generation at this time.");
                         target = default(string);
                         return target;
                     }
                 }
                 catch (Exception ex)
                 {
-                    RSTUtils.Utilities.Log("Checking ResearchBodies status for target {0}. Failed unexpectedly. Ex: {1}" , target ,  ex.Message);
+                    Utilities.Log("Checking ResearchBodies status for target {0}. Failed unexpectedly. Ex: {1}" , target ,  ex.Message);
                 }
             }
 
@@ -213,10 +215,10 @@ namespace TarsierSpaceTech
 
         public static bool HasTelescopeCompleted(TSTSpaceTelescope.TargetableObject body)
         {
-            return isActive ? Instance.TelescopeData[body.name] : true;
+            return !isActive || Instance.TelescopeData[body.name];
         }
 
-        public static Contracts.Contract.ContractPrestige getTelescopePrestige(string bodyName)
+        public static Contract.ContractPrestige getTelescopePrestige(string bodyName)
         {
             int i = 0;
             int significant = 4;
@@ -243,14 +245,13 @@ namespace TarsierSpaceTech
             }
             if (i < significant)
 
-                return Contracts.Contract.ContractPrestige.Trivial;
-            else if (i < exceptional)
-                return Contracts.Contract.ContractPrestige.Significant;
-            else
-                return Contracts.Contract.ContractPrestige.Exceptional;
+                return Contract.ContractPrestige.Trivial;
+            if (i < exceptional)
+                return Contract.ContractPrestige.Significant;
+            return Contract.ContractPrestige.Exceptional;
         }
 
-        public static Contracts.Contract.ContractPrestige getChemCamPrestige(CelestialBody body)
+        public static Contract.ContractPrestige getChemCamPrestige(CelestialBody body)
         {
             int i = 0;
             int significant = 4;
@@ -277,11 +278,10 @@ namespace TarsierSpaceTech
             }
 
             if (i < significant)
-                return Contracts.Contract.ContractPrestige.Trivial;
-            else if (i < exceptional)
-                return Contracts.Contract.ContractPrestige.Significant;
-            else
-                return Contracts.Contract.ContractPrestige.Exceptional;
+                return Contract.ContractPrestige.Trivial;
+            if (i < exceptional)
+                return Contract.ContractPrestige.Significant;
+            return Contract.ContractPrestige.Exceptional;
         }
 
         public Dictionary<string, bool> TelescopeData = new Dictionary<string, bool>();
@@ -289,7 +289,7 @@ namespace TarsierSpaceTech
 
         public override void OnLoad(ConfigNode node)
         {
-            RSTUtils.Utilities.Log_Debug("Loading Tarsier Progress Tracker");
+            Utilities.Log_Debug("Loading Tarsier Progress Tracker");
             ConfigNode telescopeNode = node.GetNode("TarsierSpaceTelescope");
             ConfigNode chemCamNode = node.GetNode("TarsierChemCam");
 
@@ -297,7 +297,7 @@ namespace TarsierSpaceTech
             {
                 if (telescopeNode != null)
                 {
-                    RSTUtils.Utilities.Log_Debug("Getting Telescope Celestial Body Status");
+                    Utilities.Log_Debug("Getting Telescope Celestial Body Status");
                     foreach (CelestialBody b in FlightGlobals.Bodies)
                     {
                         if (telescopeNode.HasValue(b.name))
@@ -308,7 +308,7 @@ namespace TarsierSpaceTech
                         }
                     }
 
-                    RSTUtils.Utilities.Log_Debug("Getting Telescope Galaxy Status");
+                    Utilities.Log_Debug("Getting Telescope Galaxy Status");
                     foreach (TSTGalaxy g in TSTGalaxies.Galaxies)
                     {
                         if (telescopeNode.HasValue(g.name))
@@ -329,11 +329,11 @@ namespace TarsierSpaceTech
             }
             catch (Exception ex)
             {
-                RSTUtils.Utilities.Log_Debug("Getting Telescope ConfigNode data Failed unexpectedly. Ex: " + ex.Message);
+                Utilities.Log_Debug("Getting Telescope ConfigNode data Failed unexpectedly. Ex: " + ex.Message);
             }
             try
             {
-                RSTUtils.Utilities.Log_Debug("Getting ChemCam Celestial Body Status");
+                Utilities.Log_Debug("Getting ChemCam Celestial Body Status");
                 if (chemCamNode != null)
                 {
                     foreach (CelestialBody b in FlightGlobals.Bodies)
@@ -355,13 +355,13 @@ namespace TarsierSpaceTech
             }
             catch (Exception ex)
             {
-                RSTUtils.Utilities.Log_Debug("Getting Telescope ConfigNode data Failed unexpectedly. Ex: " + ex.Message);
+                Utilities.Log_Debug("Getting Telescope ConfigNode data Failed unexpectedly. Ex: " + ex.Message);
             }
         }
 
         public override void OnSave(ConfigNode node)
         {
-            RSTUtils.Utilities.Log_Debug("Saving TST Progress data");
+            Utilities.Log_Debug("Saving TST Progress data");
             ConfigNode telescopeNode = node.AddNode("TarsierSpaceTelescope");
             ConfigNode chemCamNode = node.AddNode("TarsierChemCam");
             foreach (string key in TelescopeData.Keys)
@@ -432,7 +432,7 @@ namespace TarsierSpaceTech
                                         if (cbSettingNode.GetValue("body") == cb.GetName())
                                             cbNode = cbSettingNode;
                                     }
-                                    cbNode.AddValue("researchState", "0");
+                                    if (cbNode != null) cbNode.AddValue("researchState", "0");
                                     mainnode.Save("saves/" + HighLogic.SaveFolder + "/researchbodies.cfg");
                                     ResearchState[cb] = 0;
                                 }
@@ -472,13 +472,13 @@ namespace TarsierSpaceTech
                             }
                             catch (Exception ex)
                             {
-                                RSTUtils.Utilities.Log("Processing of celestial body for ResearchBodies unexpectedly. Interface disabled. Ex: {0}" , ex.Message);
+                                Utilities.Log("Processing of celestial body for ResearchBodies unexpectedly. Interface disabled. Ex: {0}" , ex.Message);
                                 isRBactive = false;
                             }
                         }
                         else
                         {
-                            RSTUtils.Utilities.Log("Failed to find ResearchBody {0} to process for ResearchBodies mod" , bodyName);
+                            Utilities.Log("Failed to find ResearchBody {0} to process for ResearchBodies mod" , bodyName);
                         }
                     }
                 }
@@ -531,7 +531,7 @@ namespace TarsierSpaceTech
                             }
                             catch { }
                         }
-                        RSTUtils.Utilities.Log_Debug("[ResearchBodies] Found body " + body.GetName() + " orbiting around " + body.referenceBody.GetName() + " !");
+                        Utilities.Log_Debug("[ResearchBodies] Found body " + body.GetName() + " orbiting around " + body.referenceBody.GetName() + " !");
                     }
                     else  //The parent body is already known, we are discovering just the one body.
                     {
@@ -544,7 +544,7 @@ namespace TarsierSpaceTech
                                 node.SetValue("isResearched", "true");
                             }
                         }
-                        RSTUtils.Utilities.Log_Debug("[ResearchBodies] Found body " + body.GetName() + " !");
+                        Utilities.Log_Debug("[ResearchBodies] Found body " + body.GetName() + " !");
                     }
                 
                 bodyFound = body.GetName();
@@ -564,7 +564,7 @@ namespace TarsierSpaceTech
                         if (node.GetValue("body") == body.GetName())
                             bodyNode = node;
                     }
-                    bodyNode.SetValue("researchState", ResearchState[body].ToString());
+                    if (bodyNode != null) bodyNode.SetValue("researchState", ResearchState[body].ToString());
                     mainnode.Save("saves/" + HighLogic.SaveFolder + "/researchbodies.cfg");
                 }
             }
@@ -608,7 +608,7 @@ namespace TarsierSpaceTech
 
         public void OnGUI()
         {
-            if (!RSTUtils.Utilities.isPauseMenuOpen)
+            if (!Utilities.isPauseMenuOpen)
             {
                 if (showRBWindow)
                     RBWindowPos = GUILayout.Window(RBwindowID, RBWindowPos, RBWindow, "Research Bodies", GUILayout.Width(200));

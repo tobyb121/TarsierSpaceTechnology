@@ -21,12 +21,15 @@
  *  along with TarsierSpaceTech.  If not, see <http://opensource.org/licenses/MIT>.
  *
  */
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using KSP.UI.Screens;
 using RSTUtils;
 using UnityEngine;
+using Random = System.Random;
 
 namespace TarsierSpaceTech
 {
@@ -35,10 +38,10 @@ namespace TarsierSpaceTech
     {
         //GUI Properties 
         private IButton _button1;
-        private ApplicationLauncherButton _stockToolbarButton = null; // Stock Toolbar Button
-        private static int TSTwindowID = new System.Random().Next();
-        private static int FTTwindowID = 0;
-        private static int SCwindowID = 0;
+        private ApplicationLauncherButton _stockToolbarButton; // Stock Toolbar Button
+        private static int TSTwindowID = new Random().Next();
+        private static int FTTwindowID;
+        private static int SCwindowID;
         private const float FWINDOW_WIDTH = 430;        
         private const float SWINDOW_WIDTH = 450;
         private const float WINDOW_BASE_HEIGHT = 320;
@@ -49,8 +52,8 @@ namespace TarsierSpaceTech
         private GUIStyle scrollStyle, resizeStyle;
         private Vector2 CamscrollViewVector = Vector2.zero;
         private Vector2 SDDscrollViewVector = Vector2.zero;
-        private bool mouseDown = false;
-        private bool stylesSet = false;
+        private bool mouseDown;
+        private bool stylesSet;
         private bool LoadConfig = true;
 
         //Settings Menu Temp Vars              
@@ -60,8 +63,8 @@ namespace TarsierSpaceTech
 
 
         //GuiVisibility
-        private bool _Visible = false;
-        private bool _FTVisible = false;
+        private bool _Visible;
+        private bool _FTVisible;
         private enum TSTWindow
         {
             FLIGHT,
@@ -74,7 +77,7 @@ namespace TarsierSpaceTech
         private List<TSTSpaceTelescope> tstSpaceTel = new List<TSTSpaceTelescope>();
         private List<TSTScienceHardDrive> tstSDD = new List<TSTScienceHardDrive>();
         private List<TSTGyroReactionWheel> tstGyroReactionWheel = new List<TSTGyroReactionWheel>();        
-        private int FTTelIndex = 0;
+        private int FTTelIndex;
 
         public Boolean GuiVisible
         {
@@ -85,14 +88,17 @@ namespace TarsierSpaceTech
             }
         }
 
-        private bool RT2Present = false;
-        private bool RT2VesselConnected = false;
-        private double RT2VesselDelay = 0f;        
+        private bool _gamePaused;
+        private bool _hideUI;
+
+        private bool RT2Present;
+        private bool RT2VesselConnected;
+        private double RT2VesselDelay;        
                 
 
         public void Awake()
         {
-            Utilities.Log("TSTMenu awake in " + HighLogic.LoadedScene.ToString());
+            Utilities.Log("TSTMenu awake in " + HighLogic.LoadedScene);
             if (HighLogic.LoadedScene != GameScenes.SPACECENTER && HighLogic.LoadedScene != GameScenes.FLIGHT)
             {
                 Utilities.Log("TSTMenu Not SpaceCenter or Flight Scene, Destroying this instance.");
@@ -109,10 +115,17 @@ namespace TarsierSpaceTech
         private void OnGUIAppLauncherReady()
         {
             Utilities.Log_Debug("OnGUIAppLauncherReady");
+            if (_stockToolbarButton != null)
+            {
+                ApplicationLauncherButton[] lstButtons = FindObjectsOfType<ApplicationLauncherButton>();
+                Utilities.Log_Debug("TSTMenu AppLauncher: Destroying Button-Button Count:" + lstButtons.Length);
+                ApplicationLauncher.Instance.RemoveModApplication(_stockToolbarButton);
+                _stockToolbarButton = null;
+            }
             if (ApplicationLauncher.Ready)
             {
                 Utilities.Log_Debug("Adding AppLauncherButton");
-                this._stockToolbarButton = ApplicationLauncher.Instance.AddModApplication(
+                _stockToolbarButton = ApplicationLauncher.Instance.AddModApplication(
                     onAppLaunchToggle, 
                     onAppLaunchToggle, 
                     DummyVoid,
@@ -122,7 +135,7 @@ namespace TarsierSpaceTech
                     ApplicationLauncher.AppScenes.SPACECENTER |
                     //ApplicationLauncher.AppScenes.VAB | ApplicationLauncher.AppScenes.SPH | | ApplicationLauncher.AppScenes.MAPVIEW
                     ApplicationLauncher.AppScenes.FLIGHT,
-                    (Texture)GameDatabase.Instance.GetTexture("TarsierSpaceTech/Icons/TSTIconOff", false));
+                    GameDatabase.Instance.GetTexture("TarsierSpaceTech/Icons/TSTIconOff", false));
             }
         }
 
@@ -133,25 +146,47 @@ namespace TarsierSpaceTech
         public void onAppLaunchToggle()
         {
             GuiVisible = !GuiVisible;
-            this._stockToolbarButton.SetTexture((Texture)GameDatabase.Instance.GetTexture(GuiVisible ? "TarsierSpaceTech/Icons/TSTIconOn" : "TarsierSpaceTech/Icons/TSTIconOff", false));            
+            if (_stockToolbarButton != null)
+                _stockToolbarButton.SetTexture(GameDatabase.Instance.GetTexture(GuiVisible ? "TarsierSpaceTech/Icons/TSTIconOn" : "TarsierSpaceTech/Icons/TSTIconOff", false));            
         }
 
         void OnGameSceneLoadRequestedForAppLauncher(GameScenes SceneToLoad)
         {
-            if (this._stockToolbarButton != null)
+            if (_stockToolbarButton != null)
             {
-                ApplicationLauncherButton[] lstButtons = TSTMenu.FindObjectsOfType<ApplicationLauncherButton>();
-                Utilities.Log_Debug("TSTMenu AppLauncher: Destroying Button-Button Count:" + lstButtons.Length.ToString());
-                ApplicationLauncher.Instance.RemoveModApplication(this._stockToolbarButton);
-                this._stockToolbarButton = null;
+                ApplicationLauncherButton[] lstButtons = FindObjectsOfType<ApplicationLauncherButton>();
+                Utilities.Log_Debug("TSTMenu AppLauncher: Destroying Button-Button Count:" + lstButtons.Length);
+                ApplicationLauncher.Instance.RemoveModApplication(_stockToolbarButton);
+                _stockToolbarButton = null;
             }
         }
 
         #endregion AppLauncher
 
+        private void GamePaused()
+        {
+            _gamePaused = true;
+        }
+
+        private void GameUnPaused()
+        {
+            _gamePaused = false;
+        }
+
+        private void onHideUI()
+        {
+            _hideUI = true;
+        }
+
+        private void onShowUI()
+        {
+            _hideUI = false;
+        }
+
+
         public void Start()
         {
-            Utilities.Log_Debug("TSTMenu Start in " + HighLogic.LoadedScene.ToString());
+            Utilities.Log_Debug("TSTMenu Start in " + HighLogic.LoadedScene);
             FwindowPos.x = TSTMstStgs.Instance.TSTsettings.FwindowPosX;
             FwindowPos.y = TSTMstStgs.Instance.TSTsettings.FwindowPosY;
             SCwindowPos.x = TSTMstStgs.Instance.TSTsettings.SCwindowPosX;
@@ -166,12 +201,17 @@ namespace TarsierSpaceTech
             }
             if (ToolbarManager.ToolbarAvailable && TSTMstStgs.Instance.TSTsettings.UseAppLauncher == false)
             {
-                
+
+                if (_button1 != null)
+                {
+                    _button1.Destroy();
+                    Utilities.Log("Toolbar Removed");
+                }
                 _button1 = ToolbarManager.Instance.add("TarsierSpaceTech", "button1");
                 _button1.TexturePath = "TarsierSpaceTech/Icons/ToolbarIcon";
                 _button1.ToolTip = "Tarsier Space Technology";
                 _button1.Visibility = new GameScenesVisibility(GameScenes.SPACECENTER, GameScenes.FLIGHT);
-                _button1.OnClick += (e) => { GuiVisible = !GuiVisible; Utilities.Log("TSTButtonClicked visible=" + GuiVisible); };
+                _button1.OnClick += e => { GuiVisible = !GuiVisible; };
                 Utilities.Log("ToolBar Set");}
             else
             {
@@ -187,8 +227,11 @@ namespace TarsierSpaceTech
 
             // add callbacks for vessel load and change
             GameEvents.onGameSceneLoadRequested.Add(OnGameSceneLoadRequestedForAppLauncher);
+            GameEvents.onGamePause.Add(GamePaused);
+            GameEvents.onGameUnpause.Add(GameUnPaused);
+            GameEvents.onHideUI.Add(onHideUI);
+            GameEvents.onShowUI.Add(onShowUI);
             Utilities.setScaledScreen();
-            RenderingManager.AddToPostDrawQueue(5, this.onDraw);
             Utilities.Log_Debug("TSTMenu Start complete");
         }
 
@@ -203,15 +246,18 @@ namespace TarsierSpaceTech
             // Stock toolbar
             Utilities.Log_Debug("Removing onGUIAppLauncher callbacks");
             GameEvents.onGUIApplicationLauncherReady.Remove(OnGUIAppLauncherReady);
-            if (this._stockToolbarButton != null)
+            if (_stockToolbarButton != null)
             {
-                ApplicationLauncher.Instance.RemoveModApplication(this._stockToolbarButton);
-                this._stockToolbarButton = null;
+                ApplicationLauncher.Instance.RemoveModApplication(_stockToolbarButton);
+                _stockToolbarButton = null;
             }
             
             if (GuiVisible) GuiVisible = !GuiVisible;
-            RenderingManager.RemoveFromPostDrawQueue(5, this.onDraw);
             GameEvents.onGameSceneLoadRequested.Remove(OnGameSceneLoadRequestedForAppLauncher);
+            GameEvents.onGamePause.Remove(GamePaused);
+            GameEvents.onGameUnpause.Remove(GameUnPaused);
+            GameEvents.onHideUI.Remove(onHideUI);
+            GameEvents.onShowUI.Remove(onShowUI);
             TSTMstStgs.Instance.TSTsettings.FwindowPosX = FwindowPos.x;
             TSTMstStgs.Instance.TSTsettings.FwindowPosY = FwindowPos.y;
             TSTMstStgs.Instance.TSTsettings.SCwindowPosX = SCwindowPos.x;
@@ -249,7 +295,7 @@ namespace TarsierSpaceTech
                     }
                     else
                     {
-                        this._stockToolbarButton.VisibleInScenes = ApplicationLauncher.AppScenes.SPACECENTER;
+                        _stockToolbarButton.VisibleInScenes = ApplicationLauncher.AppScenes.SPACECENTER;
                     }
                     GuiVisible = false;
                 }  
@@ -261,7 +307,7 @@ namespace TarsierSpaceTech
                     }
                     else
                     {
-                        this._stockToolbarButton.VisibleInScenes = ApplicationLauncher.AppScenes.SPACECENTER | ApplicationLauncher.AppScenes.FLIGHT;
+                        _stockToolbarButton.VisibleInScenes = ApplicationLauncher.AppScenes.SPACECENTER | ApplicationLauncher.AppScenes.FLIGHT;
                     }
                 }
             }
@@ -270,10 +316,9 @@ namespace TarsierSpaceTech
 
         //GUI Functions Follow
 
-        private void onDraw()
+        private void OnGUI()
         {
-            //if (Utilities.GameModeisEVA || !GuiVisible || Utilities.isPauseMenuOpen)  // EVA kerbal, GUI not set to visible or pause menu is open :- do nothing
-            if (Utilities.GameModeisEVA || !GuiVisible)
+            if (Utilities.GameModeisEVA || !GuiVisible || _gamePaused || _hideUI)
             {
                 return;
             }
@@ -336,7 +381,7 @@ namespace TarsierSpaceTech
             CamscrollViewVector = GUILayout.BeginScrollView(CamscrollViewVector, GUILayout.Height(100));
             GUILayout.BeginVertical();
                       
-            if (tstchemcam.Count() == 0 && tstSpaceTel.Count() == 0)
+            if (!tstchemcam.Any() && !tstSpaceTel.Any())
             {                
                 GUILayout.Label("Active Vessel has no TST Cameras installed", statusStyle);                
             }
@@ -453,7 +498,7 @@ namespace TarsierSpaceTech
             // Begin the ScrollView                        
             SDDscrollViewVector = GUILayout.BeginScrollView(SDDscrollViewVector);
             GUILayout.BeginVertical();
-            if (tstSDD.Count() == 0)
+            if (!tstSDD.Any())
             {
                 GUILayout.Label("Active Vessel has no TST SDDs installed", PartListPartStyle);
             }
@@ -474,7 +519,7 @@ namespace TarsierSpaceTech
                     GUILayout.Label(string.Format("{0}Mits",drive.Capacity), PartListPartStyle, GUILayout.Width(65));
                     GUILayout.Label(string.Format("{0}%", drive.PercentageFull), PartListPartStyle, GUILayout.Width(40));
                     GUILayout.BeginHorizontal();
-                    GUILayout.Label(string.Format("{0}", drive.scienceData.Count()), PartListPartStyle, GUILayout.Width(10));
+                    GUILayout.Label(string.Format("{0}", drive.scienceData.Count), PartListPartStyle, GUILayout.Width(10));
                     if (!RT2Present || (RT2Present && RT2VesselConnected))
                     {
                         if (drive.PercentageFull >= 100f)
@@ -484,7 +529,7 @@ namespace TarsierSpaceTech
                         if (GUILayout.Button(new GUIContent("Fill", "FillDrive with Science"), GUILayout.Width(35f), GUILayout.Height(28f)))
                             drive.fillDrive();
                         GUI.enabled = true;
-                        if (drive.scienceData.Count() > 0)
+                        if (drive.scienceData.Any())
                         {
                             if (GUILayout.Button(new GUIContent("View", "View Science"), GUILayout.Width(35f), GUILayout.Height(28f)))
                                 drive.ReviewData();
@@ -568,7 +613,7 @@ namespace TarsierSpaceTech
             }
 
             GUILayout.BeginHorizontal();
-            GUILayout.Box(new GUIContent("Large Size setting of ChemCam Window in pixels", "Large Size setting of ChemCam Window in pixels"), statusStyle, GUILayout.Width(300));
+            GUILayout.Box(new GUIContent("Large Size setting of Telescope Window in pixels", "Large Size setting of Telescope Window in pixels"), statusStyle, GUILayout.Width(300));
             InputSTelewinLge = Regex.Replace(GUILayout.TextField(InputSTelewinLge, 4, GUILayout.MinWidth(30.0F)), "[^.0-9]", "");  //you can play with the width of the text box
             GUILayout.EndHorizontal();
             if (!int.TryParse(InputSTelewinLge, out InputVTelewinLge))
@@ -661,9 +706,6 @@ namespace TarsierSpaceTech
                             case TSTWindow.SETTINGS:
                                 SCwindowPos.width = Mathf.Clamp(Input.mousePosition.x - SCwindowPos.x + (resizeRect.width / 2), 50, Screen.width - SCwindowPos.x);
                                 SCwindowPos.height = Mathf.Clamp(mouseY - SCwindowPos.y + (resizeRect.height / 2), 50, Screen.height - SCwindowPos.y);
-                                break;
-
-                            default:
                                 break;
                         }                        
                     }
@@ -774,8 +816,8 @@ namespace TarsierSpaceTech
                 RT2VesselConnected = (RTWrapper.RTactualAPI.HasLocalControl(FlightGlobals.ActiveVessel.id) || RTWrapper.RTactualAPI.HasLocalControl(FlightGlobals.ActiveVessel.id));
                 RT2VesselDelay = RTWrapper.RTactualAPI.GetShortestSignalDelay(FlightGlobals.ActiveVessel.id);
             }
-            Utilities.Log_Debug("RT2VesselConnected = " + RT2VesselConnected.ToString());
-            Utilities.Log_Debug("RT2VesselDelay = " + RT2VesselDelay.ToString());
+            Utilities.Log_Debug("RT2VesselConnected = " + RT2VesselConnected);
+            Utilities.Log_Debug("RT2VesselDelay = " + RT2VesselDelay);
         }
 
     }

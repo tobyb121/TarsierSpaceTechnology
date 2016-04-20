@@ -21,11 +21,10 @@
  *  along with TarsierSpaceTech.  If not, see <http://opensource.org/licenses/MIT>.
  *
  */
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+
+using RSTUtils;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace TarsierSpaceTech
 {
@@ -35,7 +34,7 @@ namespace TarsierSpaceTech
         private Orbit _galaxy_orbit = null;
         private OrbitDriver _galaxy_orbitdriver = null;
         private VesselTargetModes _galaxy_targetmodes = VesselTargetModes.Direction;
-        private static Mesh mesh = null;
+        private static Mesh mesh;
         private Material mat = new Material(Shader.Find("Unlit/Transparent"));        
         public string theName;
         private ConfigNode config;
@@ -55,22 +54,22 @@ namespace TarsierSpaceTech
         {
             if (mesh == null)
             {
-                RSTUtils.Utilities.Log_Debug("Generating GalaxyMesh");
+                Utilities.Log_Debug("Generating GalaxyMesh");
                 mesh = new Mesh();
-                mesh.vertices = new Vector3[]{
+                mesh.vertices = new[]{
                     new Vector3(-1,0.75f,0),
                     new Vector3(-1,-0.75f,0),
                     new Vector3(1,0.75f,0),
                     new Vector3(1,-0.75f,0)
                 };
-                mesh.uv = new Vector2[]{
+                mesh.uv = new[]{
                     new Vector2(0, 1),
                     new Vector2(0, 0),
                     new Vector2(1, 1),
                     new Vector2(1, 0)
                 };
 
-                mesh.triangles = new int[]{
+                mesh.triangles = new[]{
                     0,1,2,
                     3,2,1
                     };
@@ -78,11 +77,11 @@ namespace TarsierSpaceTech
                 
             }                              
             gameObject.GetComponent<MeshFilter>().mesh = mesh;                          
-            renderer.material = mat;
+            gameObject.GetComponent<Renderer>().material = mat;
             gameObject.layer = 10;
-            renderer.castShadows = false;
-            renderer.receiveShadows = false;
-            renderer.enabled = true;
+            gameObject.GetComponent<Renderer>().shadowCastingMode = ShadowCastingMode.Off;
+            gameObject.GetComponent<Renderer>().receiveShadows = false;
+            gameObject.GetComponent<Renderer>().enabled = true;
         }
         
         public void Update()
@@ -98,17 +97,17 @@ namespace TarsierSpaceTech
             Vector3 pos = ConfigNode.ParseVector3(config.GetValue("location"));            
             textureURL = config.GetValue("textureURL");
             float size = float.Parse(config.GetValue("size"));
-            RSTUtils.Utilities.Log_Debug("Creating Galaxy: {0} : {1} : {2}" , name , pos.ToString() , textureURL);
-            RSTUtils.Utilities.Log_Debug("Setting Name");
+            Utilities.Log_Debug("Creating Galaxy: {0} : {1} : {2}" , name , pos.ToString() , textureURL);
+            Utilities.Log_Debug("Setting Name");
             this.name = name;
             this.theName = theName;            
             this.size = 1e3f * size * ScaledSpace.ScaleFactor;                       
-            this.scaledPosition = -130e6f * pos.normalized;
-            RSTUtils.Utilities.Log_Debug("Setting Scaled Position= {0}" , this.scaledPosition.ToString());
-            RSTUtils.Utilities.Log_Debug("Position= {0}" , this.position.ToString());            
-            this.setTexture(GameDatabase.Instance.GetTexture(textureURL, false));
-            RSTUtils.Utilities.Log_Debug("Tex= {0}" , this.mat.mainTexture.name);
-            RSTUtils.Utilities.Log_Debug("Finished creating galaxy");
+            scaledPosition = -130e6f * pos.normalized;
+            Utilities.Log_Debug("Setting Scaled Position= {0}" , scaledPosition.ToString());
+            Utilities.Log_Debug("Position= {0}" , position.ToString());            
+            setTexture(GameDatabase.Instance.GetTexture(textureURL, false));
+            Utilities.Log_Debug("Tex= {0}" , mat.mainTexture.name);
+            Utilities.Log_Debug("Finished creating galaxy");
         }
 
         public void attach(GameObject parent)
@@ -151,7 +150,7 @@ namespace TarsierSpaceTech
         
         public string GetName()
         {
-            return this.name;
+            return name;
         }
 
         public Vector3 GetObtVelocity()
@@ -180,7 +179,7 @@ namespace TarsierSpaceTech
         
         public Transform GetTransform()
         {
-            return this.transform;
+            return transform;
         }
         
         public Vessel GetVessel()

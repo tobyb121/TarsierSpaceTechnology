@@ -25,6 +25,8 @@
 using System;
 using System.Linq;
 using System.Reflection;
+using UnityEngine;
+using Object = System.Object;
 
 namespace TarsierSpaceTech
 {
@@ -33,15 +35,15 @@ namespace TarsierSpaceTech
     /// </summary>
     public class RTWrapper
     {
-        protected static System.Type RTAPIType;
-        protected static Object actualRTAPI = null;
+        protected static Type RTAPIType;
+        protected static Object actualRTAPI;
 
         /// <summary>
         /// This is the Remote Tech API object
         ///
         /// SET AFTER INIT
         /// </summary>
-        public static RTAPI RTactualAPI = null;
+        public static RTAPI RTactualAPI;
 
         /// <summary>
         /// Whether we found the Remote Tech API assembly in the loadedassemblies.
@@ -62,7 +64,7 @@ namespace TarsierSpaceTech
         ///
         /// SET AFTER INIT
         /// </summary>
-        private static Boolean _RTWrapped = false;
+        private static Boolean _RTWrapped;
 
         /// <summary>
         /// Whether the object has been wrapped
@@ -72,8 +74,7 @@ namespace TarsierSpaceTech
         /// <summary>
         /// This method will set up the Remote Tech object and wrap all the methods/functions
         /// </summary>
-        /// <param name="Force">This option will force the Init function to rebind everything</param>
-        /// <returns></returns>
+        /// <returns>bool success of method call</returns>
         public static Boolean InitTRWrapper()
         {
             //reset the internal objects
@@ -137,15 +138,15 @@ namespace TarsierSpaceTech
                 //Methods
                 LogFormatted_DebugOnly("Getting HasLocalControl Method");
                 HasLocalControlMethod = RTAPIType.GetMethod("HasLocalControl", BindingFlags.Public | BindingFlags.Static);
-                LogFormatted_DebugOnly("Success: " + (HasLocalControlMethod != null).ToString());
+                LogFormatted_DebugOnly("Success: " + (HasLocalControlMethod != null));
 
                 LogFormatted_DebugOnly("Getting HasAnyConnection Method");
                 HasAnyConnectionMethod = RTAPIType.GetMethod("HasAnyConnection", BindingFlags.Public | BindingFlags.Static);
-                LogFormatted_DebugOnly("Success: " + (HasAnyConnectionMethod != null).ToString());
+                LogFormatted_DebugOnly("Success: " + (HasAnyConnectionMethod != null));
 
                 LogFormatted_DebugOnly("Getting GetShortestSignalDelay Method");
                 GetShortestSignalDelayMethod = RTAPIType.GetMethod("GetShortestSignalDelay", BindingFlags.Public | BindingFlags.Static);
-                LogFormatted_DebugOnly("Success: " + (GetShortestSignalDelayMethod != null).ToString());
+                LogFormatted_DebugOnly("Success: " + (GetShortestSignalDelayMethod != null));
             }
 
             private Object APIactualRT;
@@ -163,7 +164,7 @@ namespace TarsierSpaceTech
             {
                 try
                 {
-                    return (bool)HasLocalControlMethod.Invoke(APIactualRT, new System.Object[] { id });
+                    return (bool)HasLocalControlMethod.Invoke(APIactualRT, new Object[] { id });
                 }
                 catch (Exception ex)
                 {
@@ -185,7 +186,7 @@ namespace TarsierSpaceTech
             {
                 try
                 {
-                    return (bool)HasAnyConnectionMethod.Invoke(APIactualRT, new System.Object[] { id });
+                    return (bool)HasAnyConnectionMethod.Invoke(APIactualRT, new Object[] { id });
                 }
                 catch (Exception ex)
                 {
@@ -207,7 +208,7 @@ namespace TarsierSpaceTech
             {
                 try
                 {
-                    return (double)GetShortestSignalDelayMethod.Invoke(APIactualRT, new System.Object[] { id });
+                    return (double)GetShortestSignalDelayMethod.Invoke(APIactualRT, new Object[] { id });
                 }
                 catch (Exception ex)
                 {
@@ -244,9 +245,9 @@ namespace TarsierSpaceTech
         {
             Message = String.Format(Message, strParams);
             String strMessageLine = String.Format("{0},{2}-{3},{1}",
-                DateTime.Now, Message, System.Reflection.Assembly.GetExecutingAssembly().GetName().Name,
-                System.Reflection.MethodBase.GetCurrentMethod().DeclaringType.Name);
-            UnityEngine.Debug.Log(strMessageLine);
+                DateTime.Now, Message, Assembly.GetExecutingAssembly().GetName().Name,
+                MethodBase.GetCurrentMethod().DeclaringType.Name);
+            Debug.Log(strMessageLine);
         }
 
         #endregion Logging Stuff
