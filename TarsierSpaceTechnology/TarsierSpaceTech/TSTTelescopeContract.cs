@@ -21,17 +21,16 @@
  *  along with TarsierSpaceTech.  If not, see <http://opensource.org/licenses/MIT>.
  *
  */
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
-using UnityEngine;
+using System.Linq;
 using Contracts;
+using Contracts.Agents;
+using RSTUtils;
+using UnityEngine;
 
 namespace TarsierSpaceTech
 {
-    class TSTTelescopeContract : Contracts.Contract
+    class TSTTelescopeContract : Contract
     {
         public override bool CanBeCancelled()
         {
@@ -50,7 +49,7 @@ namespace TarsierSpaceTech
 
         protected override string GetDescription()
         {
-            return Contracts.TextGen.GenerateBackStories(agent.Name, agent.GetMindsetString(), "Space Telescope", target.name, "test", MissionSeed);
+            return TextGen.GenerateBackStories(agent.Name, agent.GetMindsetString(), "Space Telescope", target.name, "test", MissionSeed);
         }
 
         protected override string GetTitle()
@@ -109,61 +108,61 @@ namespace TarsierSpaceTech
                 else if (m.ContractState == State.Active)
                     active++;
             }
-            RSTUtils.Utilities.Log_Debug("Telescope Contracts check offers= {0} active= {1}" , offers.ToString(), active.ToString());
+            Utilities.Log_Debug("Telescope Contracts check offers= {0} active= {1}" , offers.ToString(), active.ToString());
             if (offers >= 1)
                 return false;
             if (active >= 1)
                 return false;
-            RSTUtils.Utilities.Log_Debug("Generating Telescope Contract");
+            Utilities.Log_Debug("Generating Telescope Contract");
 
-            agent = Contracts.Agents.AgentList.Instance.GetAgent("Tarsier Space Technology");
-            base.SetExpiry();
-            base.expiryType = DeadlineType.None;
-            base.deadlineType = DeadlineType.None;
+            agent = AgentList.Instance.GetAgent("Tarsier Space Technology");
+            SetExpiry();
+            expiryType = DeadlineType.None;
+            deadlineType = DeadlineType.None;
 
-            RSTUtils.Utilities.Log_Debug("Creating Parameter");
+            Utilities.Log_Debug("Creating Parameter");
             TSTTelescopeContractParam param = new TSTTelescopeContractParam();
-            this.AddParameter(param);
+            AddParameter(param);
             string target_name = TSTProgressTracker.GetNextTelescopeTarget();
             if (target_name == default(string))
             {
-                RSTUtils.Utilities.Log_Debug("target body is default (not set), cannot generate");
+                Utilities.Log_Debug("target body is default (not set), cannot generate");
                 return false;
             }
-            RSTUtils.Utilities.Log_Debug("Target: {0}" , target_name);
+            Utilities.Log_Debug("Target: {0}" , target_name);
             AvailablePart ap2 = PartLoader.getPartInfoByName("tarsierAdvSpaceTelescope");
             if (!ResearchAndDevelopment.PartTechAvailable(ap2) && !ResearchAndDevelopment.PartModelPurchased(ap2) && target_name == "Galaxy1")
             {
-                RSTUtils.Utilities.Log_Debug("Contracts for Planets completed and Galaxy contracts require advanced space telescope");
+                Utilities.Log_Debug("Contracts for Planets completed and Galaxy contracts require advanced space telescope");
                 return false;
             }
-            RSTUtils.Utilities.Log_Debug("Checking Celestial Bodies");
-            this.target = FlightGlobals.Bodies.Find(b => b.name == target_name);
+            Utilities.Log_Debug("Checking Celestial Bodies");
+            target = FlightGlobals.Bodies.Find(b => b.name == target_name);
             if (target == null)
             {
-                RSTUtils.Utilities.Log_Debug("Checking Galaxies");
-                this.target = TSTGalaxies.Galaxies.Find(g => g.name == target_name);
+                Utilities.Log_Debug("Checking Galaxies");
+                target = TSTGalaxies.Galaxies.Find(g => g.name == target_name);
             }
-            RSTUtils.Utilities.Log_Debug("Using target: {0}" , this.target.ToString());
+            Utilities.Log_Debug("Using target: {0}" , target.ToString());
             param.target = target;
-            RSTUtils.Utilities.Log_Debug("Creating Science Param");
+            Utilities.Log_Debug("Creating Science Param");
             TSTScienceParam param2 = new TSTScienceParam();
             param2.matchFields.Add("TarsierSpaceTech.SpaceTelescope");
             param2.matchFields.Add("LookingAt" + target.name);
-            this.AddParameter(param2);
-            RSTUtils.Utilities.Log_Debug("Created Science Param");
-            base.prestige = TSTProgressTracker.getTelescopePrestige(target.name);
+            AddParameter(param2);
+            Utilities.Log_Debug("Created Science Param");
+            prestige = TSTProgressTracker.getTelescopePrestige(target.name);
             if (TSTProgressTracker.HasTelescopeCompleted(target))
             {
-                base.SetFunds(10, 15, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
-                base.SetReputation(5, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
-                base.SetReputation(5, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
+                SetFunds(10, 15, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
+                SetReputation(5, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
+                SetReputation(5, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
             }
             else
             {
-                base.SetScience(30, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
-                base.SetFunds(75, 150, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
-                base.SetReputation(20, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
+                SetScience(30, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
+                SetFunds(75, 150, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
+                SetReputation(20, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
             }
             return true;
         }

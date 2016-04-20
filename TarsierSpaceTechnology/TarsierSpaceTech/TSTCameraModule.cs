@@ -21,10 +21,11 @@
  *  along with TarsierSpaceTech.  If not, see <http://opensource.org/licenses/MIT>.
  *
  */
-using System;
+
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+using KSP.IO;
+using RSTUtils;
 using UnityEngine;
 
 namespace TarsierSpaceTech
@@ -56,7 +57,7 @@ namespace TarsierSpaceTech
             get { return _texture2D; }
         }
 
-        private float _zoomLevel = 0;
+        private float _zoomLevel;
         public float ZoomLevel
         {
             get { return _zoomLevel; }
@@ -82,7 +83,7 @@ namespace TarsierSpaceTech
             }
         }
 
-        private bool _enabled = false;
+        private bool _enabled;
         public bool Enabled
         {
             get { return _enabled; }
@@ -93,7 +94,7 @@ namespace TarsierSpaceTech
                 _skyBoxCam.enabled = value;
                 _farCam.enabled = value;
                 _nearCam.enabled = value;                
-                skyboxRenderers = (from Renderer r in (FindObjectsOfType(typeof(Renderer)) as IEnumerable<Renderer>) where (r.name == "XP" || r.name == "XN" || r.name == "YP" || r.name == "YN" || r.name == "ZP" || r.name == "ZN") select r).ToArray<Renderer>();
+                skyboxRenderers = (from Renderer r in (FindObjectsOfType(typeof(Renderer)) as IEnumerable<Renderer>) where (r.name == "XP" || r.name == "XN" || r.name == "YP" || r.name == "YN" || r.name == "ZP" || r.name == "ZN") select r).ToArray();
                 scaledSpaceFaders = FindObjectsOfType(typeof(ScaledSpaceFader)) as ScaledSpaceFader[];                                            
             }
         }
@@ -107,16 +108,16 @@ namespace TarsierSpaceTech
 
         public void Start()
         {
-            RSTUtils.Utilities.Log_Debug("{0}:Setting up cameras" , this.GetType().Name);
-            RSTUtils.Utilities.DumpCameras();
-            _galaxyCam = new CameraHelper(gameObject, RSTUtils.Utilities.findCameraByName("GalaxyCamera"), _renderTexture, 17, false);
-            _skyBoxCam = new CameraHelper(gameObject, RSTUtils.Utilities.findCameraByName("Camera ScaledSpace"), _renderTexture, 18, false);
-            _farCam = new CameraHelper(gameObject, RSTUtils.Utilities.findCameraByName("Camera 01"), _renderTexture, 19, true);
-            _nearCam = new CameraHelper(gameObject, RSTUtils.Utilities.findCameraByName("Camera 00"), _renderTexture, 20, true);
-            _galaxyCamFS = new CameraHelper(gameObject, RSTUtils.Utilities.findCameraByName("GalaxyCamera"), _renderTextureFS, 21, false);
-            _skyBoxCamFS = new CameraHelper(gameObject, RSTUtils.Utilities.findCameraByName("Camera ScaledSpace"), _renderTextureFS, 22, false);
-            _farCamFS = new CameraHelper(gameObject, RSTUtils.Utilities.findCameraByName("Camera 01"), _renderTextureFS, 23, true);
-            _nearCamFS = new CameraHelper(gameObject, RSTUtils.Utilities.findCameraByName("Camera 00"), _renderTextureFS, 24, true);
+            Utilities.Log_Debug("{0}:Setting up cameras" , GetType().Name);
+            //Utilities.DumpCameras();
+            _galaxyCam = new CameraHelper(gameObject, Utilities.findCameraByName("GalaxyCamera"), _renderTexture, 17, false);
+            _skyBoxCam = new CameraHelper(gameObject, Utilities.findCameraByName("Camera ScaledSpace"), _renderTexture, 18, false);
+            _farCam = new CameraHelper(gameObject, Utilities.findCameraByName("Camera 01"), _renderTexture, 19, true);
+            _nearCam = new CameraHelper(gameObject, Utilities.findCameraByName("Camera 00"), _renderTexture, 20, true);
+            _galaxyCamFS = new CameraHelper(gameObject, Utilities.findCameraByName("GalaxyCamera"), _renderTextureFS, 21, false);
+            _skyBoxCamFS = new CameraHelper(gameObject, Utilities.findCameraByName("Camera ScaledSpace"), _renderTextureFS, 22, false);
+            _farCamFS = new CameraHelper(gameObject, Utilities.findCameraByName("Camera 01"), _renderTextureFS, 23, true);
+            _nearCamFS = new CameraHelper(gameObject, Utilities.findCameraByName("Camera 00"), _renderTextureFS, 24, true);
             setupRenderTexture();
             _galaxyCam.reset();
             _skyBoxCam.reset();
@@ -126,10 +127,10 @@ namespace TarsierSpaceTech
             _skyBoxCamFS.reset();
             _farCamFS.reset();
             _nearCamFS.reset();
-            RSTUtils.Utilities.Log_Debug("{0}: skyBoxCam CullingMask = {1}, camera.nearClipPlane = {2}, camera.farClipPlane = {3}" , this.GetType().Name , _skyBoxCam.camera.cullingMask , _skyBoxCam.camera.nearClipPlane , _skyBoxCam.camera.farClipPlane);
-            RSTUtils.Utilities.Log_Debug("{0}: farCam CullingMask = {1}, camera.farClipPlane = {2}", this.GetType().Name, _farCam.camera.cullingMask , _farCam.camera.farClipPlane);
-            RSTUtils.Utilities.Log_Debug("{0}: nearCam CullingMask = {1}, camera.farClipPlane = {2}", this.GetType().Name, _nearCam.camera.cullingMask , _nearCam.camera.farClipPlane);
-            RSTUtils.Utilities.Log_Debug("{0}: Camera setup complete", this.GetType().Name);    
+            Utilities.Log_Debug("{0}: skyBoxCam CullingMask = {1}, camera.nearClipPlane = {2}, camera.farClipPlane = {3}" , GetType().Name , _skyBoxCam.camera.cullingMask , _skyBoxCam.camera.nearClipPlane , _skyBoxCam.camera.farClipPlane);
+            Utilities.Log_Debug("{0}: farCam CullingMask = {1}, camera.farClipPlane = {2}", GetType().Name, _farCam.camera.cullingMask , _farCam.camera.farClipPlane);
+            Utilities.Log_Debug("{0}: nearCam CullingMask = {1}, camera.farClipPlane = {2}", GetType().Name, _nearCam.camera.cullingMask , _nearCam.camera.farClipPlane);
+            Utilities.Log_Debug("{0}: Camera setup complete", GetType().Name);    
             
         }
         
@@ -174,7 +175,7 @@ namespace TarsierSpaceTech
 
         private void setupRenderTexture()
         {
-            RSTUtils.Utilities.Log_Debug("{0}:Setting Up Render Texture", this.GetType().Name);
+            Utilities.Log_Debug("{0}:Setting Up Render Texture", GetType().Name);
             if(_renderTexture)
                 _renderTexture.Release();            
             _renderTexture = new RenderTexture(textureWidth, textureHeight, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
@@ -193,7 +194,7 @@ namespace TarsierSpaceTech
             _skyBoxCamFS.renderTarget = _renderTextureFS;
             _farCamFS.renderTarget = _renderTextureFS;
             _nearCamFS.renderTarget = _renderTextureFS;
-            RSTUtils.Utilities.Log_Debug("{0}:Finish Setting Up Render Texture", this.GetType().Name);
+            Utilities.Log_Debug("{0}:Finish Setting Up Render Texture", GetType().Name);
         }
 
         internal Texture2D draw()
@@ -201,8 +202,8 @@ namespace TarsierSpaceTech
             RenderTexture activeRT = RenderTexture.active;
             RenderTexture.active = _renderTexture;
             
-            RSTUtils.Utilities.Log_Debug("{0}:about to draw: vessel.position = {1}, vessel.worldpos3d = {2}", this.GetType().Name, FlightGlobals.ActiveVessel.GetTransform().position , FlightGlobals.ActiveVessel.GetWorldPos3D());            
-            RSTUtils.Utilities.Log_Debug("{0}:skyBoxCam.position = {1}, farcamposition = {2},nearcamposition = {3}", this.GetType().Name, _skyBoxCam.position , _farCam.position , _nearCam.position);
+            Utilities.Log_Debug("{0}:about to draw: vessel.position = {1}, vessel.worldpos3d = {2}", GetType().Name, FlightGlobals.ActiveVessel.GetTransform().position , FlightGlobals.ActiveVessel.GetWorldPos3D());            
+            Utilities.Log_Debug("{0}:skyBoxCam.position = {1}, farcamposition = {2},nearcamposition = {3}", GetType().Name, _skyBoxCam.position , _farCam.position , _nearCam.position);
             //set camera clearflags to the skybox and clear/render the skybox only
             _galaxyCam.camera.clearFlags = CameraClearFlags.Skybox;
             _galaxyCam.camera.Render();
@@ -266,22 +267,22 @@ namespace TarsierSpaceTech
 
             if (devtype == "ChemCam")
             {
-                using (KSP.IO.FileStream file = KSP.IO.File.Open<TSTChemCam>(fileName, KSP.IO.FileMode.Create, null))
+                using (FileStream file = File.Open<TSTChemCam>(fileName, FileMode.Create))
                 {
                     file.Write(data, 0, data.Length);
                 }                
-                using (KSP.IO.FileStream file = KSP.IO.File.Open<TSTChemCam>(lgefileName, KSP.IO.FileMode.Create, null))
+                using (FileStream file = File.Open<TSTChemCam>(lgefileName, FileMode.Create))
                 {
                     file.Write(dataFS, 0, dataFS.Length);
                 }   
             }
             if (devtype == "TeleScope")
             {
-                using (KSP.IO.FileStream file = KSP.IO.File.Open<TSTSpaceTelescope>(fileName, KSP.IO.FileMode.Create, null))
+                using (FileStream file = File.Open<TSTSpaceTelescope>(fileName, FileMode.Create))
                 {
                     file.Write(data, 0, data.Length);
                 }                
-                using (KSP.IO.FileStream file = KSP.IO.File.Open<TSTSpaceTelescope>(lgefileName, KSP.IO.FileMode.Create, null))
+                using (FileStream file = File.Open<TSTSpaceTelescope>(lgefileName, FileMode.Create))
                 {
                     file.Write(dataFS, 0, dataFS.Length);
                 }   
@@ -331,7 +332,7 @@ namespace TarsierSpaceTech
             }
         }
 
-        private float _fov = CameraHelper.DEFAULT_FOV;
+        private float _fov = DEFAULT_FOV;
         public float fov
         {
             get { return _fov; }

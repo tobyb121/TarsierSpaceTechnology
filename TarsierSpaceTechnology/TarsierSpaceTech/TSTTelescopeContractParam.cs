@@ -21,13 +21,9 @@
  *  along with TarsierSpaceTech.  If not, see <http://opensource.org/licenses/MIT>.
  *
  */
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
-using UnityEngine;
 using Contracts;
+using RSTUtils;
 
 namespace TarsierSpaceTech
 {
@@ -61,7 +57,7 @@ namespace TarsierSpaceTech
                 target = FlightGlobals.Bodies.Find(b => b.name == t);
                 if (target == null)
                 {
-                    RSTUtils.Utilities.Log_Debug("Checking Galaxies");
+                    Utilities.Log_Debug("Checking Galaxies");
                     target = TSTGalaxies.Galaxies.Find(g => g.name == t);
                 }
             }

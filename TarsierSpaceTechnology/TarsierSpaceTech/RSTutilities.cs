@@ -18,6 +18,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using UnityEngine;
+using Object = UnityEngine.Object;
 using Random = System.Random;
 
 namespace RSTUtils
@@ -48,7 +49,7 @@ namespace RSTUtils
 			{
 				GameState state = SetModeFlag();
 				if (state == GameState.FLIGHT) return true;
-				else return false;
+			    return false;
 			}
 		}
 
@@ -58,7 +59,7 @@ namespace RSTUtils
 			{
 				GameState state = SetModeFlag();
 				if (state == GameState.EDITOR) return true;
-				else return false;
+			    return false;
 			}
 		}
 
@@ -68,7 +69,7 @@ namespace RSTUtils
 			{
 				GameState state = SetModeFlag();
 				if (state == GameState.EVA) return true;
-				else return false;
+			    return false;
 			}
 		}
 
@@ -78,8 +79,7 @@ namespace RSTUtils
 			{
 				GameState state = SetModeFlag();
 				if (state == GameState.SPACECENTER) return true;
-				else return false;
-
+			    return false;
 			}
 		}
 
@@ -144,7 +144,7 @@ namespace RSTUtils
 		{
 			// Iterate through all of the properties
 			Log_Debug("--------- " + title + " ------------");
-			foreach (PropertyInfo property in o.GetType().GetProperties())
+			foreach (PropertyInfo property in o.GetType().GetProperties(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Public))
 			{
 				if (property.CanRead)
 					Log_Debug(property.Name + " = " + property.GetValue(o, null));
@@ -157,7 +157,7 @@ namespace RSTUtils
 		{
 			// Dump (by reflection)
 			Debug.Log("---------" + title + "------------");
-			foreach (FieldInfo field in o.GetType().GetFields())
+			foreach (FieldInfo field in o.GetType().GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Public))
 			{
 				if (!field.IsStatic)
 				{
@@ -172,7 +172,7 @@ namespace RSTUtils
 		{
 			object outputObj = new object();
 			bool foundObj = false;
-			foreach (FieldInfo field in o.GetType().GetFields())
+			foreach (FieldInfo field in o.GetType().GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Public))
 			{
 				if (!field.IsStatic)
 				{
@@ -291,8 +291,8 @@ namespace RSTUtils
 					if (tr != null)
 					{
 						// We both change the shader and backup the original shader so we can undo it later.
-						Shader backupShader = tr.renderer.material.shader;
-						tr.renderer.material.shader = transparentShader;
+						Shader backupShader = tr.GetComponent<Renderer>().material.shader;
+						tr.GetComponent<Renderer>().material.shader = transparentShader;
 					}
 				}
 				catch (Exception e)
@@ -302,8 +302,7 @@ namespace RSTUtils
 				}
 			}
 		}
-
-
+		
 		#endregion ObjectsandTransforms
 
 		#region Cameras
@@ -322,6 +321,7 @@ namespace RSTUtils
 			{
 				Debug.Log("Camera " + c.name + " cullingmask " + c.cullingMask + " depth " + c.depth + " farClipPlane " + c.farClipPlane + " nearClipPlane " + c.nearClipPlane);
 			}
+
 			Debug.Log("--------------------------------------");
 		}
 
@@ -330,67 +330,58 @@ namespace RSTUtils
 			return Camera.allCameras.FirstOrDefault(cam => cam.name == camera);
 		}
 
-		internal static void CheckPortraitCams(Vessel vessel)
-		{
-			// Only the pods in the active vessel should be doing it since the list refers to them.
-			//Log_Debug("DeepFreeze CheckPortraitCams vessel " + vessel.name + "(" + vessel.id + ") activevessel " + FlightGlobals.ActiveVessel.name + "(" + FlightGlobals.ActiveVessel.id + ")");
+        public static bool StockOverlayCamIsOn
+        {
+            get
+            {
+                Camera StockOverlayCamera = findCameraByName("InternalSpaceOverlay Host");
+                if (StockOverlayCamera != null) return true;
+                return false;
+            }
+        }
 
-			// First, We check through the list of portaits and remove everyone who is from some other vessel, or NO vessel.
-			var stowaways = new List<Kerbal>();
-			foreach (Kerbal thatKerbal in KerbalGUIManager.ActiveCrew)
-			{
-				if (thatKerbal.InPart == null)
-				{
-					Log_Debug("kerbal " + thatKerbal.name + " Invessel = null add stowaway");
-					stowaways.Add(thatKerbal);
-				}
-				else
-				{
-					Log_Debug("kerbal " + thatKerbal.name + " Invessel = " + thatKerbal.InVessel + " InvesselID = " + thatKerbal.InVessel.id);
-					if (thatKerbal.InVessel.id != FlightGlobals.ActiveVessel.id)
-					{
-						Log_Debug("Adding stowaway");
-						stowaways.Add(thatKerbal);
-					}
-				}
-			}
-			foreach (Kerbal thatKerbal in stowaways)
-			{
-				KerbalGUIManager.RemoveActiveCrew(thatKerbal);
-			}
+        private static Shader DepthMaskShader;
+        private static string DepthMaskShaderName = "DepthMask";
 
-			if (FlightGlobals.ActiveVessel.id == vessel.id)
-			{
-				// Then, Check the list of seats in every crewable part in the vessel and see if anyone is missing who should be present.
-				List<Part> crewparts = (from p in vessel.parts where p.CrewCapacity > 0 && p.internalModel != null select p).ToList();
-				foreach (Part part in crewparts)
-				{
-					Log_Debug("Check Portraits for part " + part.name);
-					foreach (InternalSeat seat in part.internalModel.seats)
-					{
-						Log_Debug("checking Seat " + seat.seatTransformName);
-						if (seat.kerbalRef != null) Log_Debug("kerbalref=" + seat.kerbalRef.crewMemberName);
-						else Log_Debug("Seat kerbalref is null");
-						if (seat.kerbalRef != null && !KerbalGUIManager.ActiveCrew.Contains(seat.kerbalRef))
-						{
-							Log_Debug("Checking crewstatus " + seat.kerbalRef.protoCrewMember.rosterStatus + " " + seat.kerbalRef.protoCrewMember.type);
-							if (seat.kerbalRef.protoCrewMember.rosterStatus != ProtoCrewMember.RosterStatus.Dead || seat.kerbalRef.protoCrewMember.type != ProtoCrewMember.KerbalType.Unowned)
-							{
-								Log_Debug("Adding missing Portrait for " + seat.kerbalRef.crewMemberName);
-								KerbalGUIManager.AddActiveCrew(seat.kerbalRef);
-							}
-						}
-					}
-				}
-			}
-			else Log_Debug("Vessel is not active vessel");
-		}
+        internal static void SetInternalDepthMask(Part part, bool SetVisible, bool ExtWindow = false)
+        {
+            if (DepthMaskShader == null) DepthMaskShader = Shader.Find(DepthMaskShaderName);
+            if (part.internalModel != null)
+            {
+                if (ExtWindow)
+                {
+                    MeshRenderer renderer = part.internalModel.FindModelComponent<MeshRenderer>("External_Window_Occluder");
+                    if (renderer != null)
+                    {
+                        renderer.enabled = SetVisible;
+                    }
+                }
+                else
+                {
+                    MeshRenderer[] meshRenderers = part.GetComponentsInChildren<MeshRenderer>();
+                    for (int i = 0; i < meshRenderers.Length; i++)
+                    {
+                        MeshRenderer meshRenderer = meshRenderers[i];
+                        if (meshRenderer.material.shader == DepthMaskShader)
+                            meshRenderer.enabled = SetVisible;
+                    }
+                    SkinnedMeshRenderer[] skinnedMeshRenderers = part.GetComponentsInChildren<SkinnedMeshRenderer>();
+                    for (int j = 0; j < skinnedMeshRenderers.Length; j++)
+                    {
+                        SkinnedMeshRenderer skinnedMeshRenderer = skinnedMeshRenderers[j];
+                        if (skinnedMeshRenderer.material.shader == DepthMaskShader)
+                            skinnedMeshRenderer.enabled = SetVisible;
+                    }
+                }
 
+                
+            }
+        }
 
-		#endregion Cameras
+        #endregion Cameras
 
-		#region Animations
-		public static IEnumerator WaitForAnimation(Animation animation, string name)
+        #region Animations
+        public static IEnumerator WaitForAnimation(Animation animation, string name)
 		{
 			do
 			{
@@ -528,34 +519,24 @@ namespace RSTUtils
 		}
 
 		// Sets the kerbal layers to make them visible (Thawed) or not (Frozen), setVisible = true sets layers to visible, false turns them off.
-		// If bodyOnly is true only the "body01" mesh is changed (to be replaced by placeholder mesh lying down as kerbals in IVA are always in sitting position).
-		internal static void setFrznKerbalLayer(ProtoCrewMember kerbal, bool setVisible, bool bodyOnly)
+		internal static void setFrznKerbalLayer(Part part, ProtoCrewMember kerbal, bool setVisible)
 		{
-			//Log_Debug("setFrznKerbalLayer " + kerbal.name + " visible " + setVisible);
-			int layer = 16;
-			if (!setVisible)
-			{
-				layer = 21;
-			}
+		    if (!setVisible)
+		    {
+                kerbal.KerbalRef.SetVisibleInPortrait(setVisible);
+		        kerbal.KerbalRef.InPart = null;
+		    }
+                
+            kerbal.KerbalRef.gameObject.SetActive(setVisible);
+		    if (setVisible)
+		    {
+                kerbal.KerbalRef.SetVisibleInPortrait(setVisible);
+		        kerbal.KerbalRef.InPart = part;
+		    }
+                
+        }
 
-			foreach (Renderer renderer in kerbal.KerbalRef.GetComponentsInChildren<Renderer>(true))
-			{
-				if ((bodyOnly && renderer.name == "body01") || !bodyOnly)
-				{
-					if (renderer.gameObject.layer == layer)
-					{
-						//Log_Debug("Layers already set");
-						break;
-					}
-					//Log_Debug("Renderer: " + renderer.name + " set to layer " + layer);
-					renderer.gameObject.layer = layer;
-					if (setVisible) renderer.enabled = true;
-					else renderer.enabled = false;
-				}
-			}
-		}
-
-		internal static RuntimeAnimatorController kerbalIVAController;
+        internal static RuntimeAnimatorController kerbalIVAController;
 
 		internal static void subdueIVAKerbalAnimations(Kerbal kerbal)
 		{
@@ -610,28 +591,6 @@ namespace RSTUtils
 			}
 		}
 		
-		// The following method is taken from RasterPropMonitor as-is. Which is covered by GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007
-		internal static Kerbal FindCurrentKerbal(this Part thisPart)
-		{
-			if (thisPart.internalModel == null || !VesselIsInIVA(thisPart.vessel))
-				return null;
-			// InternalCamera instance does not contain a reference to the kerbal it's looking from.
-			// So we have to search through all of them...
-			Kerbal thatKerbal = null;
-			foreach (InternalSeat thatSeat in thisPart.internalModel.seats)
-			{
-				if (thatSeat.kerbalRef != null)
-				{
-					if (thatSeat.kerbalRef.eyeTransform == InternalCamera.Instance.transform.parent)
-					{
-						thatKerbal = thatSeat.kerbalRef;
-						break;
-					}
-				}
-			}
-			return thatKerbal;
-		}
-
 		#endregion Kerbals
 
 		#region Vessels
@@ -690,12 +649,12 @@ namespace RSTUtils
 			}
 			return -1;
 		}
+        
+        #endregion Vessels
 
-		#endregion Vessels
-
-		#region Temperature
-		//Temperature
-		internal static float KelvintoCelsius(float kelvin)
+        #region Temperature
+        //Temperature
+        internal static float KelvintoCelsius(float kelvin)
 		{
 			return kelvin - 273.15f;
 		}
@@ -714,12 +673,7 @@ namespace RSTUtils
 		{
 			var resources = new List<PartResource>();
 			part.GetConnectedResources(PartResourceLibrary.Instance.GetDefinition(resourceName).id, ResourceFlowMode.ALL_VESSEL, resources);
-			double total = 0;
-			foreach (PartResource pr in resources)
-			{
-				total += pr.amount;
-			}
-			return total;
+			return resources.Sum(pr => pr.amount);
 		}
 
 		public const int MAX_TRANSFER_ATTEMPTS = 4;
@@ -733,12 +687,12 @@ namespace RSTUtils
 			for (int attempts = 0; (attempts < MAX_TRANSFER_ATTEMPTS) && (amount > 0.000000000001); attempts++)
 			{
 				double received = cvp.RequestResource(name, requestAmount, ResourceFlowMode.ALL_VESSEL);
-				RSTUtils.Utilities.Log_Debug("requestResource attempt " + attempts.ToString());
-				RSTUtils.Utilities.Log_Debug("requested power = " + requestAmount.ToString("0.0000000000000000000000"));
-				RSTUtils.Utilities.Log_Debug("received power = " + received.ToString("0.0000000000000000000000"));
+				Log_Debug("requestResource attempt " + attempts);
+				Log_Debug("requested power = " + requestAmount.ToString("0.0000000000000000000000"));
+				Log_Debug("received power = " + received.ToString("0.0000000000000000000000"));
 				totalReceived += received;
 				amount -= received;
-				RSTUtils.Utilities.Log_Debug("amount = " + amount.ToString("0.0000000000000000000000"));
+				Log_Debug("amount = " + amount.ToString("0.0000000000000000000000"));
 				if (received <= 0.0)
 					requestAmount = amount * 0.5;
 				else
@@ -810,12 +764,12 @@ namespace RSTUtils
 		internal static String strToolTipText = "";
 		internal static String strLastTooltipText = "";
 		//is it displayed and where
-		internal static Boolean blnToolTipDisplayed = false;
+		internal static Boolean blnToolTipDisplayed;
 		internal static Rect rectToolTipPosition;
 		internal static Int32 intTooltipVertOffset = 12;
 		internal static Int32 intTooltipMaxWidth = 250;
 		//timer so it only displays for a preriod of time
-		internal static float fltTooltipTime = 0f;
+		internal static float fltTooltipTime;
 		internal static float fltMaxToolTipTime = 15f;
 		internal static GUIStyle _TooltipStyle;
 		
@@ -941,60 +895,60 @@ namespace RSTUtils
 				}
 			}
 		}
+		/// <summary>
+		///Will delete Screen Messages. If you pass in messagetext it will only delete messages that contain that text string.
+		///If you pass in a messagearea it will only delete messages in that area. Values are: UC,UL,UR,LC,ALL
+		/// </summary>
+		/// <param name="messagetext">Specify a string that is part of a message that you want to remove, or pass in empty string to delete all messages</param>
+		/// <param name="messagearea">Specify a string representing the message area of the screen that you want messages removed from, 
+		/// or pass in "ALL" string to delete from all message areas. 
+		/// messagearea accepts the values of "UC" - UpperCenter, "UL" - UpperLeft, "UR" - UpperRight, "LC" - LowerCenter, "ALL" - All Message Areas</param>
+		internal static void DeleteScreenMessages(string messagetext, string messagearea)
+		{
+			//Get the ScreenMessages Instance
+			var messages = ScreenMessages.Instance;
+			List<ScreenMessagesText> messagetexts = new List<ScreenMessagesText>();
+			//Get the message Area messages based on the value of messagearea parameter.
+			switch (messagearea)
+			{
+				case "UC":
+					messagetexts = messages.upperCenter.gameObject.GetComponentsInChildren<ScreenMessagesText>().ToList();
+					break;
+				case "UL":
+					messagetexts = messages.upperLeft.gameObject.GetComponentsInChildren<ScreenMessagesText>().ToList();
+					break;
+				case "UR":
+					messagetexts = messages.upperRight.gameObject.GetComponentsInChildren<ScreenMessagesText>().ToList();
+					break;
+				case "LC":
+					messagetexts = messages.lowerCenter.gameObject.GetComponentsInChildren<ScreenMessagesText>().ToList();
+					break;
+				case "ALL":
+					messagetexts = messages.gameObject.GetComponentsInChildren<ScreenMessagesText>().ToList();
+					break;
+			}
+			//Loop through all the mesages we found.
+			foreach (var msgtext in messagetexts)
+			{
+				//If the user specified text to search for only delete messages that contain that text.
+				if (messagetext != "")
+				{
+					if (msgtext != null && msgtext.text.text.Contains(messagetext))
+					{
+						Object.Destroy(msgtext.gameObject);
+					}
+				}
+				else  //If the user did not specific a message text to search for we DELETE ALL messages!!
+				{
+					Object.Destroy(msgtext.gameObject);
+				}
+			}
+		}
 
 		#endregion GUI&Window
 
 		#region ConfigNodes
 		// Get Config Node Values out of a config node Methods
-
-		internal static bool GetNodeValue(ConfigNode confignode, string fieldname, bool defaultValue)
-		{
-			bool newValue;
-			if (confignode.HasValue(fieldname) && Boolean.TryParse(confignode.GetValue(fieldname), out newValue))
-			{
-				return newValue;
-			}
-			return defaultValue;
-		}
-
-		internal static int GetNodeValue(ConfigNode confignode, string fieldname, int defaultValue)
-		{
-			int newValue;
-			if (confignode.HasValue(fieldname) && Int32.TryParse(confignode.GetValue(fieldname), out newValue))
-			{
-				return newValue;
-			}
-			return defaultValue;
-		}
-
-		internal static float GetNodeValue(ConfigNode confignode, string fieldname, float defaultValue)
-		{
-			float newValue;
-			if (confignode.HasValue(fieldname) && Single.TryParse(confignode.GetValue(fieldname), out newValue))
-			{
-				return newValue;
-			}
-			return defaultValue;
-		}
-
-		internal static double GetNodeValue(ConfigNode confignode, string fieldname, double defaultValue)
-		{
-			double newValue;
-			if (confignode.HasValue(fieldname) && Double.TryParse(confignode.GetValue(fieldname), out newValue))
-			{
-				return newValue;
-			}
-			return defaultValue;
-		}
-
-		internal static string GetNodeValue(ConfigNode confignode, string fieldname, string defaultValue)
-		{
-			if (confignode.HasValue(fieldname))
-			{
-				return confignode.GetValue(fieldname);
-			}
-			return defaultValue;
-		}
 
 		internal static Guid GetNodeValue(ConfigNode confignode, string fieldname)
 		{
@@ -1134,6 +1088,30 @@ namespace RSTUtils
 			b.Replace(A, String.Empty);
 			return b.ToString();
 		}
+
+		public enum ISRUStatus
+		{
+			Inactive,
+			Active,
+			MissingResource,
+			OutputFull
+		}
+
+		/// <summary>
+		/// Returns a Status Indicating the Status of a ISRU ModuleResourceConverter, given that it's actual status can be active, but not actually doing anything.
+		/// </summary>
+		internal static ISRUStatus GetModResConverterStatus(ModuleResourceConverter tmpRegRc)
+		{
+			ISRUStatus returnStatus = ISRUStatus.Inactive;
+			if (!tmpRegRc.IsActivated) return ISRUStatus.Inactive; //If it's not Activated, it must be inactive.
+			// Otherwise it's Activated, but is it really working and using EC? Get it's real status.
+			if (tmpRegRc.status.ToLower().Contains("inactive")) returnStatus = ISRUStatus.Inactive; //Status is inactive, it's inactive.. Not sure how but sometimes this remains on load even when it's inactive? Hence the test above.
+			if (tmpRegRc.status.ToLower().Contains("missing")) returnStatus = ISRUStatus.MissingResource; //Missing an Input resource makes this appear in the status.
+			if (tmpRegRc.status.ToLower().Contains("full")) returnStatus = ISRUStatus.OutputFull; //If the vessel has nowhere to store the output, full appears in the status.
+			if (tmpRegRc.status.ToLower().Contains("load")) returnStatus = ISRUStatus.Active; //a Percentage Load indicates it is active and actually processing... except when it gets stuck on this.
+			return returnStatus;
+		}
+
 		#endregion Strings
 
 		#region ModsInstalled
@@ -1181,10 +1159,7 @@ namespace RSTUtils
 				{
 					return true;
 				}
-				else
-				{
-					return false;
-				}
+			    return false;
 			}
 		}
 

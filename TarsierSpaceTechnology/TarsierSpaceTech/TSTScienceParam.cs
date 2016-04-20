@@ -21,12 +21,10 @@
  *  along with TarsierSpaceTech.  If not, see <http://opensource.org/licenses/MIT>.
  *
  */
-using System;
+
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using UnityEngine;
 using Contracts;
+using RSTUtils;
 
 namespace TarsierSpaceTech
 {
@@ -44,16 +42,16 @@ namespace TarsierSpaceTech
 
         protected override void OnRegister()
         {
-            RSTUtils.Utilities.Log_Debug("Adding Callback for science data received on contract");
-            GameEvents.OnScienceRecieved.Add(new EventData<float,ScienceSubject,ProtoVessel,bool>.OnEvent(OnScienceData));
+            Utilities.Log_Debug("Adding Callback for science data received on contract");
+            GameEvents.OnScienceRecieved.Add(OnScienceData);
             //GameEvents.OnScienceRecieved.Add(OnScienceData);            
             
         }
 
         protected override void OnUnregister()
         {
-            RSTUtils.Utilities.Log_Debug("Removing Callback for science data received on contract");
-            GameEvents.OnScienceRecieved.Remove(new EventData<float, ScienceSubject,ProtoVessel,bool>.OnEvent(OnScienceData));
+            Utilities.Log_Debug("Removing Callback for science data received on contract");
+            GameEvents.OnScienceRecieved.Remove(OnScienceData);
             //GameEvents.OnScienceRecieved.Remove(OnScienceData);
             
         }
@@ -83,17 +81,17 @@ namespace TarsierSpaceTech
 
         private void OnScienceData(float amount, ScienceSubject subject, ProtoVessel vessel, bool notsure)        
         {
-            RSTUtils.Utilities.Log_Debug("Received Science Data from " + vessel.vesselName + " subject=" + subject.id + " amount=" + amount.ToString("000.00") + " bool=" + notsure);
+            Utilities.Log_Debug("Received Science Data from " + vessel.vesselName + " subject=" + subject.id + " amount=" + amount.ToString("000.00") + " bool=" + notsure);
             bool match=true;
             foreach (string f in matchFields)
             {
-                RSTUtils.Utilities.Log_Debug("matchFields=" + f);
+                Utilities.Log_Debug("matchFields=" + f);
                 match &= subject.HasPartialIDstring(f);
             }
-            RSTUtils.Utilities.Log_Debug("Match result?=" + match.ToString());
+            Utilities.Log_Debug("Match result?=" + match);
             if (match)
             {
-                base.SetComplete();
+                SetComplete();
             }
         }
     }
