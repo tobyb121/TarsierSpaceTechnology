@@ -100,7 +100,7 @@ namespace TarsierSpaceTech
 			_lazerObj = _lazerTransform.gameObject.AddComponent<LineRenderer>();
 			_lazerObj.enabled = false;
 			//_lazerObj.castShadows = false;
-            _lazerObj.shadowCastingMode = ShadowCastingMode.Off;
+			_lazerObj.shadowCastingMode = ShadowCastingMode.Off;
 			_lazerObj.receiveShadows = false;
 			_lazerObj.SetWidth(0.01f, 0.01f);
 			_lazerObj.SetPosition(0, new Vector3(0, 0, 0));
@@ -194,6 +194,8 @@ namespace TarsierSpaceTech
 		{
 			if (!_inEditor && _camera.Enabled && vessel.isActiveVessel && FlightUIModeController.Instance.Mode != FlightUIMode.ORBITAL && !Utilities.isPauseMenuOpen)
 			{
+				if (!Textures.StylesSet) Textures.SetupStyles();
+
 				_windowRect = GUILayout.Window(CHMCwindowID, _windowRect, drawWindow, "ChemCam - Use I,J,K,L to move camera", GUILayout.Width(GUI_WIDTH_SMALL));
 				if (TSTMstStgs.Instance.TSTsettings.Tooltips)
 					Utilities.DrawToolTip();
@@ -514,8 +516,8 @@ namespace TarsierSpaceTech
 
 		public void ReviewDataItem(ScienceData data)
 		{
-            ScienceLabSearch labSearch = new ScienceLabSearch(FlightGlobals.ActiveVessel, data);
-            ExperimentResultDialogPage page = new ExperimentResultDialogPage(
+			ScienceLabSearch labSearch = new ScienceLabSearch(FlightGlobals.ActiveVessel, data);
+			ExperimentResultDialogPage page = new ExperimentResultDialogPage(
 					part,
 					data,
 					xmitDataScalar,
@@ -523,7 +525,7 @@ namespace TarsierSpaceTech
 					false,
 					"",
 					true,
-                    labSearch,
+					labSearch,
 					_onPageDiscard,
 					_onPageKeep,
 					_onPageTransmit,

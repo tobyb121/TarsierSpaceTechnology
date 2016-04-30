@@ -829,6 +829,8 @@ namespace TarsierSpaceTech
             {
                 if (!_inEditor && _camera != null)
                 {
+                    if (!Textures.StylesSet) Textures.SetupStyles();
+
                     if (FlightUIModeController.Instance.Mode != FlightUIMode.ORBITAL && _camera.Enabled &&
                         windowState != WindowState.Hidden
                         && vessel.isActiveVessel && !Utilities.isPauseMenuOpen)

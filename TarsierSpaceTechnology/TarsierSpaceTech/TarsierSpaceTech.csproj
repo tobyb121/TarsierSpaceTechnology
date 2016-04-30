@@ -161,7 +161,7 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Changelog.txt" />
+    <Content Include="Distribution\GameData\TarsierSpaceTech\Changelog.txt" />
     <Content Include="Distribution\GameData\TarsierSpaceTech\Icons\ToolbarIcon.png" />
     <Content Include="Distribution\GameData\TarsierSpaceTech\Icons\TSTbtnRedCross.png" />
     <Content Include="Distribution\GameData\TarsierSpaceTech\Icons\TSTbtnResize.png" />
@@ -181,7 +181,19 @@
     <Content Include="LocalDev\pdb2mdb_exe.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Target Name="PostBuildMacros">
+    <GetAssemblyIdentity AssemblyFiles="$(TargetPath)">
+      <Output TaskParameter="Assemblies" ItemName="Targets" />
+    </GetAssemblyIdentity>
+    <ItemGroup>
+      <VersionNumber Include="@(Targets->'%(Version)')" />
+    </ItemGroup>
+  </Target>
   <PropertyGroup>
+    <PostBuildEventDependsOn>
+    $(PostBuildEventDependsOn);
+    PostBuildMacros;
+  </PostBuildEventDependsOn>
     <PostBuildEvent>set /p KSP_DIR=&lt;"$(ProjectDir)LocalDev\ksp_dir.txt"
 
 set /p MONO_EXE_DIR=&lt;"$(ProjectDir)LocalDev\mono_exe.txt"
@@ -204,10 +216,10 @@ if %25ERRORLEVEL%25 == 1 (
 ) else (
    echo Packaging build
   ) 
-if exist "$(SolutionDir)$(ProjectName).zip" del "$(SolutionDir)$(ProjectName).zip"
+if exist "$(SolutionDir)$(ProjectName)_V@(VersionNumber).zip" del "$(SolutionDir)$(ProjectName)_V@(VersionNumber).zip"
    
-%25ZA_DIR%257za.exe a -tzip -r  "$(SolutionDir)$(ProjectName).zip" "$(SolutionDir)$(ProjectName)\Distribution\GameData"
-c:\7za\7za d -r  -x!REPOSoftTech.png -x!ToolbarIcon.png -x!TSTbtnResize.png -x!TSTbtnRedCross.png -x!TSTToolTipBox.png -x!TSTIconOff.png -x!TSTIconOn.png "$(SolutionDir)$(ProjectName).zip" "*.ddsified" "*.pdb" "*.mdb" "*.png"
+%25ZA_DIR%257za.exe a -tzip -r  "$(SolutionDir)$(ProjectName)_V@(VersionNumber).zip" "$(SolutionDir)$(ProjectName)\Distribution\GameData"
+c:\7za\7za d -r  -x!REPOSoftTech.png -x!ToolbarIcon.png -x!TSTbtnResize.png -x!TSTbtnRedCross.png -x!TSTToolTipBox.png -x!TSTIconOff.png -x!TSTIconOn.png "$(SolutionDir)$(ProjectName)_V@(VersionNumber).zip" "*.ddsified" "*.pdb" "*.mdb" "*.png"
 xcopy /E /Y "$(SolutionDir)$(ProjectName)\Distribution\GameData" "%25KSP_DIR%25\GameData"
 </PostBuildEvent>
   </PropertyGroup>
