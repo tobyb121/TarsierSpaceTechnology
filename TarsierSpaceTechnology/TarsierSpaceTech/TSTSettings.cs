@@ -323,7 +323,7 @@ namespace TarsierSpaceTech
                 ConfigNode TSTGasPlanetsNode = new ConfigNode();
                 node.TryGetNode(configNodeName, ref TSTGasPlanetsNode);
                 string tmpPlanetOrderString = "";
-                TSTGasPlanetsNode.TryGetValue("planets", ref TarsierPlanetOrder);
+                TSTGasPlanetsNode.TryGetValue("planets", ref tmpPlanetOrderString);
                 string[] tmpPlanetOrder = tmpPlanetOrderString.Split(',');
                 TarsierPlanetOrder = new string[tmpPlanetOrder.Length];
                 if (tmpPlanetOrder.Length > 0)
