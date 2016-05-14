@@ -189,7 +189,7 @@ namespace TarsierSpaceTech
 
             if (subtree.science.Subtree.Count > 0)
             {
-                Debug.LogWarning("Multiple science subtree nodes for " + bodyName + " -- investigate");
+                //Debug.LogWarning("Multiple science subtree nodes for " + bodyName + " -- investigate");
                 return;
             }
 

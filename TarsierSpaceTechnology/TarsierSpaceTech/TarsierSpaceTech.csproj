@@ -38,6 +38,7 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\KSPDLLs\Assembly-CSharp.dll</HintPath>
     </Reference>
+    <Reference Include="Assembly-CSharp-firstpass, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" />
     <Reference Include="KSPUtil">
       <HintPath>..\..\..\KSPDLLs\KSPUtil.dll</HintPath>
     </Reference>

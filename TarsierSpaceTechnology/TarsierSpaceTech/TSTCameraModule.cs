@@ -176,12 +176,25 @@ namespace TarsierSpaceTech
         private void setupRenderTexture()
         {
             Utilities.Log_Debug("{0}:Setting Up Render Texture", GetType().Name);
-            if(_renderTexture)
-                _renderTexture.Release();            
+            if (_renderTexture)
+            {
+                _galaxyCam.renderTarget.Release();
+                _skyBoxCam.renderTarget.Release();
+                _farCam.renderTarget.Release();
+                _nearCam.renderTarget.Release();
+                _renderTexture.Release();
+            }
+                            
             _renderTexture = new RenderTexture(textureWidth, textureHeight, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
             _renderTexture.Create();
             if (_renderTextureFS)
-                _renderTextureFS.Release();  
+            {
+                _galaxyCamFS.renderTarget.Release();
+                _skyBoxCamFS.renderTarget.Release();
+                _farCamFS.renderTarget.Release();
+                _nearCamFS.renderTarget.Release();
+                _renderTextureFS.Release();
+            }
             _renderTextureFS = new RenderTexture(Screen.width, Screen.height, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
             _renderTextureFS.Create();
             _texture2D = new Texture2D(textureWidth, textureHeight, TextureFormat.RGB24, false, false);

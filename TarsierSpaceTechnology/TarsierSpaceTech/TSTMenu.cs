@@ -266,6 +266,8 @@ namespace TarsierSpaceTech
 
         public void Update()
         {
+            if (Time.timeSinceLevelLoad < 2f)
+                return;
             if (RT2Present)
             {
                 try
@@ -570,7 +572,7 @@ namespace TarsierSpaceTech
             //Settings Menu                     
             GUILayout.BeginVertical(); 
             // Begin the ScrollView                        
-            CamscrollViewVector = GUILayout.BeginScrollView(CamscrollViewVector, GUILayout.Height(250));
+            CamscrollViewVector = GUILayout.BeginScrollView(CamscrollViewVector);
             GUILayout.BeginVertical();
 
             GUILayout.BeginHorizontal();
