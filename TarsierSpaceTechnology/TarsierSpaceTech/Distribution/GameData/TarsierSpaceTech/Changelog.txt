@@ -1,12 +1,31 @@
-﻿V6.1 "Bug Fixes"
-Compiled against KSP 1.1.2.
-Fixed potential issue with ToolTip log spam.
-Fixed V6.0 bug where gas planets and the sun were eligible for ChemCam contracts.
-V6.0 KSP 1.1 "Turbo Charged Edition" - Release for the full release of KSP 1.1.
-This version is NOT backwardly compatible with KSP 1.0.5 or earlier versions. If you are still using KSP 1.0.5 download V5.9 of TST.
-This version has NOT been tested and does not work with ResearchBodies mod (as that mod has to be updated to KSP 1.1 first).
-Fixed the Settings Menu settings for the Telescope large GUI size.
-Added new Editor search tags: 'tarsier tst advanced telescope science'
+﻿V6.2 "Kopernicus & other fixes"
+	Changed Telescope Cameras to now show the SkyBox and Atmosphere shading.
+	Fixed scroll window in the TST settings menu.
+	More robust Science checking when taking pictures - capture failures and better logging in error situations.
+	Fixed Remote Tech integration - Requires V 1.7 and up of Remote Tech.
+	Sigma Binary internal Bodies (not the actual bodies) should no longer appear in the Targets list for the Telescopes.
+	Fixed Contracts system for when Kopernicus is installed but NOT OPM (will just use a list of the bodies in order to generate contracts).
+	Made sure ChemCam contracts won't generate for ANY Gas Giants, or for Water Biomes. (Removed Gas Giants from Config file, can now determine this in-game).
+	Fixed typo in Module Manager files for OPM and RSS science definitions.
+	Added KSPedia pages for TST.
+	Added ability to send science directly from the Space Telescopes, ChemCam and SSD's to an attached Science Lab.
+	Improved screen messages when moving and deleting science data.
+	Optional Module Manager config file included to convert DMagic Orbital Science (DMOS) Little Brother and Big Brother Surveillance Camera parts into TST Telescopes.
+	If activated these parts from DMOS will function as both TST Telescopes and DMOS Surveillance Camera's.
+	This file is supplied de-activated. To activate, remove the ".optional" from the end of the filename of the file /GameData/TarsierSpaceTech/DmagicOrbitalScienceScopes.cfg.optional.
+	Optional Module Manager config file included to turn off Kopernicus OnDemand texture loading. If you are experiencing extreme lag when using TST with Kopernicus mod and planet packs
+	then please activate this file until a more permanent solution can be found.
+	This file is supplied de-activated. To activate, remove the ".optional" from the end of the filename of the file /GameData/TarsierSpaceTech/KopernicusOnDemandOff.cfg.optional. 
+
+V6.1 "Bug Fixes"
+	Compiled against KSP 1.1.2.
+	Fixed potential issue with ToolTip log spam.
+	Fixed V6.0 bug where gas planets and the sun were eligible for ChemCam contracts.
+	V6.0 KSP 1.1 "Turbo Charged Edition" - Release for the full release of KSP 1.1.
+	This version is NOT backwardly compatible with KSP 1.0.5 or earlier versions. If you are still using KSP 1.0.5 download V5.9 of TST.
+	This version has NOT been tested and does not work with ResearchBodies mod (as that mod has to be updated to KSP 1.1 first).
+	Fixed the Settings Menu settings for the Telescope large GUI size.
+	Added new Editor search tags: 'tarsier tst advanced telescope science'
 V5.9.1/2 Ksp 1.1 Experimentals. 
 V5.9 Fixed TST AppLauncher Icon appearing in map view even when active vessel has no TST parts.    
 	Fixed error on start-up for integration with Kopernicus mod.
@@ -26,14 +45,14 @@ V5.9 Fixed TST AppLauncher Icon appearing in map view even when active vessel ha
 		some problems with TST, then turning it on and capturing your log and sending to me greatly helps me to help you.
 		ToolTips - Yes the GUI windows now have Tooltips - you can turn them on and off here.
 V5.8 Added support for ResearchBodies mod (MUST HAVE ResearchBodies V1.6 or above). 
-    If ResearchBodies mod is installed then:-   
+	If ResearchBodies mod is installed then:-   
 	Telescope and ChemCam contracts will NOT generate for bodies that have yet to be discovered.   
 	If you take a picture with a Telescope of a body that is yet to be discovered AND transmit/recovery it, it will become discovered.    
 	Subsequent pictures taken and transmitted/recovered of a already discovered body will add 20 research to that body.   
 	The TST Telescopes act the same as the ResearchBodies telescope, IE:they have the Research button in their right click menu and will discover bodies they are pointed at in the same way as the ResearchBodies telescope does.   
 	The TST GUI camera-window "Show Bodies" list will NOT show un-discovered bodies or galaxies.
 ﻿V5.7 Completing TST telescope picture contracts will no longer register in a career game as having Reached that body. This was interfering with KSP generating the default
-    flyby and explore contracts for the bodies.
+	flyby and explore contracts for the bodies.
 V5.6 Updated for KSP 1.0.5 including adding support for new Science transmission failure feature to put science back into telescopes and drives when transmissions fail.     	   
 V5.5 Amended support for Distant Object Enhancement mod and Remote Tech mod so that TST no longer is bound to a specific version of these mods.
 	 From now on TST should work with any version of DOE and RT. Reminder: DOE support for flares should now work. RemoteTech : TST parts and menu only works if you have

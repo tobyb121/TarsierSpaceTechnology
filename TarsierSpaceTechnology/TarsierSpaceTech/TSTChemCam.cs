@@ -322,16 +322,27 @@ namespace TarsierSpaceTech
 		[KSPEvent(active = true, externalToEVAOnly = true, guiActiveUnfocused = true, guiName = "Collect Data", unfocusedRange = 2)]
 		public void eventCollectDataExternal()
 		{
-			List<ModuleScienceContainer> containers = FlightGlobals.ActiveVessel.FindPartModulesImplementing<ModuleScienceContainer>();
-			foreach (ModuleScienceContainer container in containers)
-			{
-				if (_scienceData.Count > 0)
-				{
-					if (container.StoreData(new List<IScienceDataContainer> { this }, false))
-						ScreenMessages.PostScreenMessage("Transferred Data to " + vessel.vesselName, 3f, ScreenMessageStyle.UPPER_CENTER);
-				}
-			}
-			updateAvailableEvents();
+            List<ModuleScienceContainer> containers = FlightGlobals.ActiveVessel.FindPartModulesImplementing<ModuleScienceContainer>();
+            foreach (ModuleScienceContainer container in containers)
+            {
+                if (_scienceData.Count > 0)
+                {
+                    if (container.StoreData(new List<IScienceDataContainer> { this }, false))
+                    {
+                        //ScreenMessages.PostScreenMessage("Transferred Data to " + vessel.vesselName, 3f, ScreenMessageStyle.UPPER_CENTER);
+                        ScreenMessages.PostScreenMessage("<color=#99ff00ff>[" + base.part.partInfo.title + "]: All Items Collected.</color>", 5f, ScreenMessageStyle.UPPER_LEFT);
+                    }
+                    else
+                    {
+                        ScreenMessages.PostScreenMessage("<color=orange>[" + base.part.partInfo.title + "]: Not all items could be Collected.</color>", 5f, ScreenMessageStyle.UPPER_LEFT);
+                    }
+                }
+                else
+                {
+                    ScreenMessages.PostScreenMessage("<color=#99ff00ff>[" + base.part.partInfo.title + "]: Nothing to Collect.</color>", 3f, ScreenMessageStyle.UPPER_CENTER);
+                }
+            }
+            updateAvailableEvents();
 		}
 
 		private IEnumerator fireCamera(bool saveToFile)
@@ -445,8 +456,17 @@ namespace TarsierSpaceTech
 
 		private void _onPageSendToLab(ScienceData data)
 		{
-			Utilities.Log_Debug("Sent to lab");
-		}
+            ScienceLabSearch scienceLabSearch = new ScienceLabSearch(base.vessel, data);
+            if (scienceLabSearch.NextLabForDataFound)
+            {
+                StartCoroutine(scienceLabSearch.NextLabForData.ProcessData(data, new Callback<ScienceData>(DumpData)));
+            }
+            else
+            {
+                scienceLabSearch.PostErrorToScreen();
+            }
+            updateAvailableEvents();
+        }
 
 		public override void OnSave(ConfigNode node)
 		{
@@ -482,7 +502,8 @@ namespace TarsierSpaceTech
 		public void DumpData(ScienceData data)
 		{
 			_scienceData.Remove(data);
-		}
+            updateAvailableEvents();
+        }
 
 		public ScienceData[] GetData()
 		{
@@ -522,9 +543,9 @@ namespace TarsierSpaceTech
 					data,
 					xmitDataScalar,
 					data.labBoost,
-					false,
-					"",
 					true,
+                    "If you transmit this data it will only be worth: " + Mathf.Round(data.transmitValue * 100) + "% of the full science value",
+                    true,
 					labSearch,
 					_onPageDiscard,
 					_onPageKeep,
