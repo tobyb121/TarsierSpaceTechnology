@@ -22,6 +22,7 @@
  *
  */
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using KSP.IO;
@@ -58,6 +59,10 @@ namespace TarsierSpaceTech
         private float exposure;
         private Color origColor;
         private Renderer skyboxRenderer;
+        private float tmpZoom;
+        private float tmpfov;
+        private bool zoomSkyBox = true;
+        private float TanRadDfltFOV;
 
         //Const - but we don't use constants for Garbage collector
         private double KPtoAtms = 0.009869232;
@@ -139,6 +144,12 @@ namespace TarsierSpaceTech
             _scaledSpaceCamFS.reset();
             _farCamFS.reset();
             _nearCamFS.reset();
+            if (TSTMstStgs.Instance != null)
+            {
+                zoomSkyBox = TSTMstStgs.Instance.TSTsettings.ZoomSkyBox;
+            }
+            TanRadDfltFOV = Mathf.Tan(Mathf.Deg2Rad*CameraHelper.DEFAULT_FOV);
+            
             Utilities.Log_Debug("{0}: skyBoxCam CullingMask = {1}, camera.nearClipPlane = {2}, camera.farClipPlane = {3}" , GetType().Name , _scaledSpaceCam.camera.cullingMask , _scaledSpaceCam.camera.nearClipPlane , _scaledSpaceCam.camera.farClipPlane);
             Utilities.Log_Debug("{0}: farCam CullingMask = {1}, camera.farClipPlane = {2}", GetType().Name, _farCam.camera.cullingMask , _farCam.camera.farClipPlane);
             Utilities.Log_Debug("{0}: nearCam CullingMask = {1}, camera.farClipPlane = {2}", GetType().Name, _nearCam.camera.cullingMask , _nearCam.camera.farClipPlane);
@@ -165,17 +176,24 @@ namespace TarsierSpaceTech
 
         private void updateZoom()
         {
-            float z = Mathf.Pow(10, -_zoomLevel);
-            float fov = Mathf.Rad2Deg * Mathf.Atan(z * Mathf.Tan(Mathf.Deg2Rad * CameraHelper.DEFAULT_FOV));
-            _galaxyCam.fov = fov;
-            _scaledSpaceCam.fov = fov;
-            _farCam.fov = fov;
-            _nearCam.fov = fov;
-
-            _galaxyCamFS.fov = fov;
-            _scaledSpaceCamFS.fov = fov;
-            _farCamFS.fov = fov;
-            _nearCamFS.fov = fov;    
+            
+            if (zoomSkyBox)
+            {
+                tmpZoom = Mathf.Pow(10, -_zoomLevel / 10);
+                tmpfov = Mathf.Rad2Deg * Mathf.Atan(tmpZoom * TanRadDfltFOV);
+                _galaxyCam.fov = tmpfov;
+                _galaxyCamFS.fov = tmpfov;
+            }
+                
+            tmpZoom = Mathf.Pow(10, -_zoomLevel);
+            tmpfov = Mathf.Rad2Deg * Mathf.Atan(tmpZoom * TanRadDfltFOV);
+            _scaledSpaceCam.fov = tmpfov;
+            _farCam.fov = tmpfov;
+            _nearCam.fov = tmpfov;
+            
+            _scaledSpaceCamFS.fov = tmpfov;
+            _farCamFS.fov = tmpfov;
+            _nearCamFS.fov = tmpfov;    
         }
 
         internal void changeSize(int width, int height)

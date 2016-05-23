@@ -216,6 +216,7 @@ namespace TarsierSpaceTech
         public bool Tooltips ;
         public int maxChemCamContracts ;
         public bool photoOnlyChemCamContracts ;
+        public bool ZoomSkyBox;
 
         public TSTSettings()
         {
@@ -238,6 +239,7 @@ namespace TarsierSpaceTech
             Tooltips = true;
             maxChemCamContracts = 3;
             photoOnlyChemCamContracts = true;
+            ZoomSkyBox = true;
         }
 
         //Settings Functions Follow
@@ -268,6 +270,7 @@ namespace TarsierSpaceTech
                 Utilities.debuggingOn = debugging;
                 TSTsettingsNode.TryGetValue( "maxChemCamContracts", ref maxChemCamContracts);
                 TSTsettingsNode.TryGetValue( "photoOnlyChemCamContracts", ref photoOnlyChemCamContracts);
+                TSTsettingsNode.TryGetValue("ZoomSkyBox", ref ZoomSkyBox);
                 Utilities.Log_Debug("TSTSettings load complete");
             }
         }
@@ -302,7 +305,7 @@ namespace TarsierSpaceTech
             settingsNode.AddValue("debugging", debugging);
             settingsNode.AddValue("Tooltips", Tooltips);
             settingsNode.AddValue("maxChemCamContracts", maxChemCamContracts);
-            settingsNode.AddValue("photoOnlyChemCamContracts", photoOnlyChemCamContracts);
+            settingsNode.AddValue("ZoomSkyBox", ZoomSkyBox);
             Utilities.Log_Debug("TSTSettings save complete");
         }
     }
