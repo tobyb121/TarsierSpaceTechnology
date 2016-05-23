@@ -22,6 +22,7 @@
  *
  */
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using KSP.IO;
@@ -36,12 +37,12 @@ namespace TarsierSpaceTech
         private int textureHeight = 256;
         // Standard Cameras  
         public CameraHelper _galaxyCam;
-        public CameraHelper _skyBoxCam;
+        public CameraHelper _scaledSpaceCam;
         public CameraHelper _farCam;
         public CameraHelper _nearCam;
         // FullScreen Cameras  
         public CameraHelper _galaxyCamFS;
-        public CameraHelper _skyBoxCamFS;
+        public CameraHelper _scaledSpaceCamFS;
         public CameraHelper _farCamFS;
         public CameraHelper _nearCamFS;        
         // Render Textures
@@ -51,7 +52,22 @@ namespace TarsierSpaceTech
         private Texture2D _texture2DFullSze;
         private Renderer[] skyboxRenderers;
         private ScaledSpaceFader[] scaledSpaceFaders;
-        
+        private AtmosphereFromGround[] atmospheres;
+        //camera rendering info cache
+        Dictionary<AtmosphereFromGround, Vector4> atmoInfo = new Dictionary<AtmosphereFromGround, Vector4>();
+        //TempVars
+        private float exposure;
+        private Color origColor;
+        private Renderer skyboxRenderer;
+        private float tmpZoom;
+        private float tmpfov;
+        private bool zoomSkyBox = true;
+        private float TanRadDfltFOV;
+
+        //Const - but we don't use constants for Garbage collector
+        private double KPtoAtms = 0.009869232;
+        public float SkyboxExposure = 1;
+
         public Texture2D Texture2D
         {
             get { return _texture2D; }
@@ -73,12 +89,12 @@ namespace TarsierSpaceTech
                 _zoomLevel = -Mathf.Log10(z);
                 _nearCam.fov = value;
                 _farCam.fov = value;
-                _skyBoxCam.fov = value;
+                _scaledSpaceCam.fov = value;
                 _galaxyCam.fov = value;
 
                 _nearCamFS.fov = value;
                 _farCamFS.fov = value;
-                _skyBoxCamFS.fov = value;
+                _scaledSpaceCamFS.fov = value;
                 _galaxyCamFS.fov = value;
             }
         }
@@ -90,12 +106,13 @@ namespace TarsierSpaceTech
             set
             {
                 _enabled = value;
-                //_galaxyCam.enabled = value;
-                _skyBoxCam.enabled = value;
+                _galaxyCam.enabled = value;
+                _scaledSpaceCam.enabled = value;
                 _farCam.enabled = value;
                 _nearCam.enabled = value;                
                 skyboxRenderers = (from Renderer r in (FindObjectsOfType(typeof(Renderer)) as IEnumerable<Renderer>) where (r.name == "XP" || r.name == "XN" || r.name == "YP" || r.name == "YN" || r.name == "ZP" || r.name == "ZN") select r).ToArray();
-                scaledSpaceFaders = FindObjectsOfType(typeof(ScaledSpaceFader)) as ScaledSpaceFader[];                                            
+                scaledSpaceFaders = FindObjectsOfType<ScaledSpaceFader>();
+                atmospheres = FindObjectsOfType<AtmosphereFromGround>();
             }
         }
 
@@ -111,23 +128,29 @@ namespace TarsierSpaceTech
             Utilities.Log_Debug("{0}:Setting up cameras" , GetType().Name);
             //Utilities.DumpCameras();
             _galaxyCam = new CameraHelper(gameObject, Utilities.findCameraByName("GalaxyCamera"), _renderTexture, 17, false);
-            _skyBoxCam = new CameraHelper(gameObject, Utilities.findCameraByName("Camera ScaledSpace"), _renderTexture, 18, false);
+            _scaledSpaceCam = new CameraHelper(gameObject, Utilities.findCameraByName("Camera ScaledSpace"), _renderTexture, 18, false);
             _farCam = new CameraHelper(gameObject, Utilities.findCameraByName("Camera 01"), _renderTexture, 19, true);
             _nearCam = new CameraHelper(gameObject, Utilities.findCameraByName("Camera 00"), _renderTexture, 20, true);
             _galaxyCamFS = new CameraHelper(gameObject, Utilities.findCameraByName("GalaxyCamera"), _renderTextureFS, 21, false);
-            _skyBoxCamFS = new CameraHelper(gameObject, Utilities.findCameraByName("Camera ScaledSpace"), _renderTextureFS, 22, false);
+            _scaledSpaceCamFS = new CameraHelper(gameObject, Utilities.findCameraByName("Camera ScaledSpace"), _renderTextureFS, 22, false);
             _farCamFS = new CameraHelper(gameObject, Utilities.findCameraByName("Camera 01"), _renderTextureFS, 23, true);
             _nearCamFS = new CameraHelper(gameObject, Utilities.findCameraByName("Camera 00"), _renderTextureFS, 24, true);
             setupRenderTexture();
             _galaxyCam.reset();
-            _skyBoxCam.reset();
+            _scaledSpaceCam.reset();
             _farCam.reset();
             _nearCam.reset();
             _galaxyCamFS.reset();
-            _skyBoxCamFS.reset();
+            _scaledSpaceCamFS.reset();
             _farCamFS.reset();
             _nearCamFS.reset();
-            Utilities.Log_Debug("{0}: skyBoxCam CullingMask = {1}, camera.nearClipPlane = {2}, camera.farClipPlane = {3}" , GetType().Name , _skyBoxCam.camera.cullingMask , _skyBoxCam.camera.nearClipPlane , _skyBoxCam.camera.farClipPlane);
+            if (TSTMstStgs.Instance != null)
+            {
+                zoomSkyBox = TSTMstStgs.Instance.TSTsettings.ZoomSkyBox;
+            }
+            TanRadDfltFOV = Mathf.Tan(Mathf.Deg2Rad*CameraHelper.DEFAULT_FOV);
+            
+            Utilities.Log_Debug("{0}: skyBoxCam CullingMask = {1}, camera.nearClipPlane = {2}, camera.farClipPlane = {3}" , GetType().Name , _scaledSpaceCam.camera.cullingMask , _scaledSpaceCam.camera.nearClipPlane , _scaledSpaceCam.camera.farClipPlane);
             Utilities.Log_Debug("{0}: farCam CullingMask = {1}, camera.farClipPlane = {2}", GetType().Name, _farCam.camera.cullingMask , _farCam.camera.farClipPlane);
             Utilities.Log_Debug("{0}: nearCam CullingMask = {1}, camera.farClipPlane = {2}", GetType().Name, _nearCam.camera.cullingMask , _nearCam.camera.farClipPlane);
             Utilities.Log_Debug("{0}: Camera setup complete", GetType().Name);    
@@ -139,12 +162,12 @@ namespace TarsierSpaceTech
             if (_enabled) 
             {
                 _galaxyCam.reset();
-                _skyBoxCam.reset();
+                _scaledSpaceCam.reset();
                 _farCam.reset();
                 _nearCam.reset();
 
                 _galaxyCamFS.reset();
-                _skyBoxCamFS.reset();                               
+                _scaledSpaceCamFS.reset();                               
                 _farCamFS.reset();                
                 _nearCamFS.reset();
                 draw();
@@ -153,17 +176,24 @@ namespace TarsierSpaceTech
 
         private void updateZoom()
         {
-            float z = Mathf.Pow(10, -_zoomLevel);
-            float fov = Mathf.Rad2Deg * Mathf.Atan(z * Mathf.Tan(Mathf.Deg2Rad * CameraHelper.DEFAULT_FOV));
-            _galaxyCam.fov = fov;
-            _skyBoxCam.fov = fov;
-            _farCam.fov = fov;
-            _nearCam.fov = fov;
-
-            _galaxyCamFS.fov = fov;
-            _skyBoxCamFS.fov = fov;
-            _farCamFS.fov = fov;
-            _nearCamFS.fov = fov;    
+            
+            if (zoomSkyBox)
+            {
+                tmpZoom = Mathf.Pow(10, -_zoomLevel / 10);
+                tmpfov = Mathf.Rad2Deg * Mathf.Atan(tmpZoom * TanRadDfltFOV);
+                _galaxyCam.fov = tmpfov;
+                _galaxyCamFS.fov = tmpfov;
+            }
+                
+            tmpZoom = Mathf.Pow(10, -_zoomLevel);
+            tmpfov = Mathf.Rad2Deg * Mathf.Atan(tmpZoom * TanRadDfltFOV);
+            _scaledSpaceCam.fov = tmpfov;
+            _farCam.fov = tmpfov;
+            _nearCam.fov = tmpfov;
+            
+            _scaledSpaceCamFS.fov = tmpfov;
+            _farCamFS.fov = tmpfov;
+            _nearCamFS.fov = tmpfov;    
         }
 
         internal void changeSize(int width, int height)
@@ -176,22 +206,36 @@ namespace TarsierSpaceTech
         private void setupRenderTexture()
         {
             Utilities.Log_Debug("{0}:Setting Up Render Texture", GetType().Name);
-            if(_renderTexture)
-                _renderTexture.Release();            
+            if (_renderTexture)
+            {
+                _galaxyCam.renderTarget.Release();
+                _scaledSpaceCam.renderTarget.Release();
+                _farCam.renderTarget.Release();
+                _nearCam.renderTarget.Release();
+                _renderTexture.Release();
+            }
+                            
             _renderTexture = new RenderTexture(textureWidth, textureHeight, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
             _renderTexture.Create();
             if (_renderTextureFS)
-                _renderTextureFS.Release();  
+            {
+                _galaxyCamFS.renderTarget.Release();
+                _scaledSpaceCamFS.renderTarget.Release();
+                _farCamFS.renderTarget.Release();
+                _nearCamFS.renderTarget.Release();
+                _renderTextureFS.Release();
+            }
             _renderTextureFS = new RenderTexture(Screen.width, Screen.height, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+            _renderTextureFS.antiAliasing = GameSettings.ANTI_ALIASING;
             _renderTextureFS.Create();
             _texture2D = new Texture2D(textureWidth, textureHeight, TextureFormat.RGB24, false, false);
             _texture2DFullSze = new Texture2D(Screen.width, Screen.height, TextureFormat.RGB24, false, false);
             _galaxyCam.renderTarget = _renderTexture;
-            _skyBoxCam.renderTarget = _renderTexture;
+            _scaledSpaceCam.renderTarget = _renderTexture;
             _farCam.renderTarget = _renderTexture;
             _nearCam.renderTarget = _renderTexture;
             _galaxyCamFS.renderTarget = _renderTextureFS;
-            _skyBoxCamFS.renderTarget = _renderTextureFS;
+            _scaledSpaceCamFS.renderTarget = _renderTextureFS;
             _farCamFS.renderTarget = _renderTextureFS;
             _nearCamFS.renderTarget = _renderTextureFS;
             Utilities.Log_Debug("{0}:Finish Setting Up Render Texture", GetType().Name);
@@ -202,24 +246,64 @@ namespace TarsierSpaceTech
             RenderTexture activeRT = RenderTexture.active;
             RenderTexture.active = _renderTexture;
             
-            Utilities.Log_Debug("{0}:about to draw: vessel.position = {1}, vessel.worldpos3d = {2}", GetType().Name, FlightGlobals.ActiveVessel.GetTransform().position , FlightGlobals.ActiveVessel.GetWorldPos3D());            
-            Utilities.Log_Debug("{0}:skyBoxCam.position = {1}, farcamposition = {2},nearcamposition = {3}", GetType().Name, _skyBoxCam.position , _farCam.position , _nearCam.position);
-            //set camera clearflags to the skybox and clear/render the skybox only
-            _galaxyCam.camera.clearFlags = CameraClearFlags.Skybox;
+            //Render the Skybox
+            //Calculate exposure setting for skybox
+            exposure = CalculateExposure(ScaledSpace.ScaledToLocalSpace(_scaledSpaceCam.position));
+            origColor = skyboxRenderers[0].sharedMaterial.GetColor(PropertyIDs._Color);
+            for (int i = 0; i < skyboxRenderers.Length; i++)
+            {
+                skyboxRenderer = skyboxRenderers[i];
+                Color color = Color.Lerp(GalaxyCubeControl.Instance.minGalaxyColor, GalaxyCubeControl.Instance.maxGalaxyColor, exposure);
+                skyboxRenderer.material.SetColor(PropertyIDs._Color, color);
+            }
+
             _galaxyCam.camera.Render();
-            _skyBoxCam.camera.clearFlags = CameraClearFlags.Skybox;            
-            _skyBoxCam.camera.Render();
-            //turn off the skybox renderers - XP, XN, YP, YN, ZP, ZN which are used to draw the KSP skybox. We don't want to see them in the camera
-            foreach (Renderer r in skyboxRenderers)
-                r.enabled = false;
+            
+            //set exposure back to what it was
+            for (int i = 0; i < skyboxRenderers.Length; i++)
+            {
+                var sr = skyboxRenderers[i];
+                sr.material.SetColor(PropertyIDs._Color, origColor);
+            }
+
+            //Render ScaledSpace
+            //Render Atmospheres
+            foreach (var afg in atmospheres)
+            {
+                //cache the atmosphere info
+                if (!atmoInfo.ContainsKey(afg))
+                    atmoInfo.Add(afg, new Vector4(afg.cameraPos.x, afg.cameraPos.y, afg.cameraPos.z, afg.cameraHeight));
+                else
+                    atmoInfo[afg] = new Vector4(afg.cameraPos.x, afg.cameraPos.y, afg.cameraPos.z, afg.cameraHeight);
+
+                //set the atmosphere's camera to the scaled camera
+                afg.cameraPos = _scaledSpaceCam.position;
+                afg.cameraHeight = (float)_scaledSpaceCam.position.magnitude;
+                afg.cameraHeight2 = afg.cameraHeight * afg.cameraHeight;
+                afg.SetMaterial(false);
+            }
+
             // KSP/Scaled Space/Planet Fader turn on the renderers for the planet faders
             foreach (ScaledSpaceFader s in scaledSpaceFaders) 
                 s.r.enabled = true;            
-            _skyBoxCam.camera.clearFlags = CameraClearFlags.Depth; //clear only the depth buffer
-            _skyBoxCam.camera.farClipPlane = 3e15f; //set clipping plane distance            
-            _skyBoxCam.camera.Render(); // render the skyboxcam
-            foreach (Renderer r in skyboxRenderers) // turn the skybox renderers back on
-                r.enabled = true;
+            _scaledSpaceCam.camera.clearFlags = CameraClearFlags.Depth; //clear only the depth buffer
+            _scaledSpaceCam.camera.farClipPlane = 3e15f; //set clipping plane distance            
+            _scaledSpaceCam.camera.Render(); // render the ScaledSpaceCam
+
+            //reset atmoInfo
+            foreach (var afg in atmospheres)
+            {
+                //reset the atmosphere info from the cache
+                if (atmoInfo.ContainsKey(afg))
+                {
+                    var info = atmoInfo[afg];
+                    afg.cameraPos = new Vector3(info.x, info.y, info.z);
+                    afg.cameraHeight = info.z;
+                    afg.cameraHeight2 = info.z * info.z;
+                    afg.SetMaterial(false);
+                }
+            }
+
             _farCam.camera.Render(); // render camera 01
             _nearCam.camera.Render(); // render camera 00
             _texture2D.ReadPixels(new Rect(0, 0, textureWidth, textureHeight), 0, 0); // read the camera pixels into the texture2D
@@ -233,24 +317,74 @@ namespace TarsierSpaceTech
             RenderTexture activeRT = RenderTexture.active;
             RenderTexture.active = _renderTextureFS;
             _galaxyCamFS.reset();
-            _skyBoxCamFS.reset();              
+            _scaledSpaceCamFS.reset();              
             _farCamFS.reset();            
             _nearCamFS.reset();
-            _galaxyCamFS.camera.clearFlags = CameraClearFlags.Skybox;
+
+
+            //Render the Skybox
+            //Calculate exposure setting for skybox
+            exposure = CalculateExposure(ScaledSpace.ScaledToLocalSpace(_scaledSpaceCam.position));
+            origColor = skyboxRenderers[0].sharedMaterial.GetColor(PropertyIDs._Color);
+            for (int i = 0; i < skyboxRenderers.Length; i++)
+            {
+                skyboxRenderer = skyboxRenderers[i];
+                Color color = Color.Lerp(GalaxyCubeControl.Instance.minGalaxyColor, GalaxyCubeControl.Instance.maxGalaxyColor, exposure);
+                skyboxRenderer.material.SetColor(PropertyIDs._Color, color);
+            }
+
             _galaxyCamFS.camera.Render();
-            _skyBoxCamFS.camera.clearFlags = CameraClearFlags.Skybox;
-            _skyBoxCamFS.camera.Render();
-            foreach (Renderer r in skyboxRenderers)
-                r.enabled = false;
+
+            //set exposure back to what it was
+            for (int i = 0; i < skyboxRenderers.Length; i++)
+            {
+                var sr = skyboxRenderers[i];
+                sr.material.SetColor(PropertyIDs._Color, origColor);
+            }
+
+            //Render ScaledSpace
+            //Render Atmospheres
+            foreach (var afg in atmospheres)
+            {
+                //cache the atmosphere info
+                if (!atmoInfo.ContainsKey(afg))
+                    atmoInfo.Add(afg, new Vector4(afg.cameraPos.x, afg.cameraPos.y, afg.cameraPos.z, afg.cameraHeight));
+                else
+                    atmoInfo[afg] = new Vector4(afg.cameraPos.x, afg.cameraPos.y, afg.cameraPos.z, afg.cameraHeight);
+
+                //set the atmosphere's camera to the scaled camera
+                afg.cameraPos = _scaledSpaceCam.position;
+                afg.cameraHeight = (float)_scaledSpaceCam.position.magnitude;
+                afg.cameraHeight2 = afg.cameraHeight * afg.cameraHeight;
+                afg.SetMaterial(false);
+            }
+
+            // KSP/Scaled Space/Planet Fader turn on the renderers for the planet faders
             foreach (ScaledSpaceFader s in scaledSpaceFaders)
                 s.r.enabled = true;
-            _skyBoxCamFS.camera.clearFlags = CameraClearFlags.Depth;
-            _skyBoxCamFS.camera.farClipPlane = 3e15f;
-            _skyBoxCamFS.camera.Render();
-            foreach (Renderer r in skyboxRenderers)
-                r.enabled = true;
-            _farCamFS.camera.Render();
-            _nearCamFS.camera.Render();            
+            _scaledSpaceCamFS.camera.clearFlags = CameraClearFlags.Depth; //clear only the depth buffer
+            _scaledSpaceCamFS.camera.farClipPlane = 3e15f; //set clipping plane distance            
+            _scaledSpaceCamFS.camera.Render(); // render the ScaledSpaceCam
+
+            //reset atmoInfo
+            foreach (var afg in atmospheres)
+            {
+                //reset the atmosphere info from the cache
+                if (atmoInfo.ContainsKey(afg))
+                {
+                    var info = atmoInfo[afg];
+                    afg.cameraPos = new Vector3(info.x, info.y, info.z);
+                    afg.cameraHeight = info.z;
+                    afg.cameraHeight2 = info.z * info.z;
+                    afg.SetMaterial(false);
+                }
+            }
+
+            _farCamFS.camera.Render(); // render camera 01
+            _nearCamFS.camera.Render(); // render camera 00
+
+
+
             _texture2DFullSze.ReadPixels(new Rect(0, 0, Screen.width, Screen.height), 0, 0);
             _texture2DFullSze.Apply();
             RenderTexture.active = activeRT;
@@ -288,6 +422,12 @@ namespace TarsierSpaceTech
                 }   
             }                                         
         }
+
+        private float CalculateExposure(Vector3d cameraWorldPos)
+        {
+            float pressure = (float)(FlightGlobals.getStaticPressure(cameraWorldPos) * KPtoAtms);
+            return Mathf.Lerp(SkyboxExposure, 0f, pressure);
+        }
     }
 
     internal class CameraHelper
@@ -296,15 +436,11 @@ namespace TarsierSpaceTech
         {
             _copyFrom = copyFrom;
             _renderTarget = renderTarget;
-            
-            //if (_camera.name != "GalaxyCamera")
-            //{
-                _parent = parent;
-                _go = new GameObject();
-                _camera = _go.AddComponent<Camera>();
-                _depth = depth;
-                _attachToParent = attachToParent;
-            //}  
+            _parent = parent;
+            _go = new GameObject();
+            _camera = _go.AddComponent<Camera>();
+            _depth = depth;
+            _attachToParent = attachToParent;
             _camera.enabled = false;
             _camera.targetTexture = _renderTarget;
         }
@@ -342,7 +478,6 @@ namespace TarsierSpaceTech
                 _camera.fieldOfView = _fov;
             }
         }
-
         
         public bool enabled
         {
@@ -355,31 +490,25 @@ namespace TarsierSpaceTech
             get { return _go.transform.position; }
             set { _go.transform.position = position;  }
         }
-              
 
         public void reset()
         {
             _camera.CopyFrom(_copyFrom);
-            
-            //if (_camera.name != "GalaxyCamera")
-            //{
-                if (_attachToParent)
-                {
-                    _go.transform.parent = _parent.transform;
-                    _go.transform.localPosition = Vector3.zero;
-                    _go.transform.localEulerAngles = Vector3.zero;                    
-                }
-                else
-                {
-                    _go.transform.rotation = _parent.transform.rotation;                    
-                }
-                _camera.rect = new Rect(0, 0, 1, 1);
-                _camera.depth = _depth;
-                _camera.fieldOfView = _fov;
+            if (_attachToParent)
+            {
+                _go.transform.parent = _parent.transform;
+                _go.transform.localPosition = Vector3.zero;
+                _go.transform.localEulerAngles = Vector3.zero;                    
+            }
+            else
+            {
+                _go.transform.rotation = _parent.transform.rotation;                    
+            }
+            _camera.rect = new Rect(0, 0, 1, 1);
+            _camera.depth = _depth;
+            _camera.fieldOfView = _fov;
             _camera.targetTexture = _renderTarget;
             _camera.enabled = enabled;
-            //}          
-
         }
     }
 }

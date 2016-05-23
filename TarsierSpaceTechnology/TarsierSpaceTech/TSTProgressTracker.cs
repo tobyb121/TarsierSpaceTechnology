@@ -52,6 +52,7 @@ namespace TarsierSpaceTech
         public Dictionary<CelestialBody, bool> TrackedBodies = new Dictionary<CelestialBody, bool>();
         public Dictionary<CelestialBody, int> ResearchState = new Dictionary<CelestialBody, int>();
         private List<CelestialBody> BodyList = new List<CelestialBody>();
+        private List<string> bodyNames = new List<string>(); 
 
 
         public static bool isActive
@@ -69,6 +70,7 @@ namespace TarsierSpaceTech
             isRSSactive = Utilities.IsRSSInstalled;
             isOPMactive = Utilities.IsOPMInstalled;
             isRBactive = Utilities.IsResearchBodiesInstalled;
+            bodyNames = FlightGlobals.Bodies.Where(p => p.Radius > 100).Select(p => p.name).ToList();  //List of CBs where radius > 100m (exclude Sigma Binaries)
 
             if (isRBactive)
             {
@@ -166,11 +168,21 @@ namespace TarsierSpaceTech
                     if (target == default(string))
                         target = TSTMstStgs.Instance.TSTopmplanets.OPMPlanetOrder[Random.Range(0, TSTMstStgs.Instance.TSTopmplanets.OPMPlanetOrder.Length)];
                 }
-                else  //Default Stock
+                else
                 {
-                    target = TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder.FirstOrDefault(s => !Instance.TelescopeData[s]);
-                    if (target == default(string))
-                        target = TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder[Random.Range(0, TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder.Length)];
+                    if (Utilities.IsKopInstalled)  // If Kopernicus is installed, but not RSS or OPM use a list of the planets in order
+                    {
+                        
+                        target = Instance.bodyNames.FirstOrDefault(s => !Instance.TelescopeData[s]);
+                        if (target == default(string))
+                            target = Instance.bodyNames[Random.Range(0, Instance.bodyNames.Count)];
+                    }
+                    else  //Default Stock
+                    {
+                        target = TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder.FirstOrDefault(s => !Instance.TelescopeData[s]);
+                        if (target == default(string))
+                            target = TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder[Random.Range(0, TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder.Length)];
+                    }
                 }
             }
             // if ResearchBodies is installed we need to check if the target body has been found. If it has not, then we set the target to default so a contract is not generated at this time.
@@ -238,13 +250,19 @@ namespace TarsierSpaceTech
                     significant = 7;
                     exceptional = 17;
                 }
-                else  //Default Stock
+                else
                 {
-                    i = Array.IndexOf(TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder, bodyName);
+                    if (Utilities.IsKopInstalled)
+                    {
+                        i = Array.IndexOf(Instance.bodyNames.ToArray(), bodyName);
+                    }
+                    else  //Default Stock
+                    {
+                        i = Array.IndexOf(TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder, bodyName);
+                    }
                 }
             }
             if (i < significant)
-
                 return Contract.ContractPrestige.Trivial;
             if (i < exceptional)
                 return Contract.ContractPrestige.Significant;
@@ -271,9 +289,16 @@ namespace TarsierSpaceTech
                     significant = 7;
                     exceptional = 17;
                 }
-                else  //Default Stock
+                else
                 {
-                    i = Array.IndexOf(TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder, body.name);
+                    if (Utilities.IsKopInstalled)
+                    {
+                        i = Array.IndexOf(Instance.bodyNames.ToArray(), body.name);
+                    }
+                    else  //Default Stock
+                    {
+                        i = Array.IndexOf(TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder, body.name);
+                    }
                 }
             }
 
@@ -298,7 +323,7 @@ namespace TarsierSpaceTech
                 if (telescopeNode != null)
                 {
                     Utilities.Log_Debug("Getting Telescope Celestial Body Status");
-                    foreach (CelestialBody b in FlightGlobals.Bodies)
+                    foreach (CelestialBody b in FlightGlobals.Bodies.Where(p => p.Radius > 100))
                     {
                         if (telescopeNode.HasValue(b.name))
                             TelescopeData[b.name] = telescopeNode.GetValue(b.name) == "true";
@@ -321,7 +346,7 @@ namespace TarsierSpaceTech
                 }
                 else
                 {
-                    foreach (CelestialBody b in FlightGlobals.Bodies)
+                    foreach (CelestialBody b in FlightGlobals.Bodies.Where(p => p.Radius > 100))
                         TelescopeData[b.name] = false;
                     foreach (TSTGalaxy g in TSTGalaxies.Galaxies)
                         TelescopeData[g.name] = false;
@@ -336,7 +361,7 @@ namespace TarsierSpaceTech
                 Utilities.Log_Debug("Getting ChemCam Celestial Body Status");
                 if (chemCamNode != null)
                 {
-                    foreach (CelestialBody b in FlightGlobals.Bodies)
+                    foreach (CelestialBody b in FlightGlobals.Bodies.Where(p => p.Radius > 100 && p.pqsController != null))
                     {
                         if (chemCamNode.HasValue(b.name))
                             ChemCamData[b.name] = chemCamNode.GetValue(b.name) == "true";
@@ -349,7 +374,7 @@ namespace TarsierSpaceTech
                 }
                 else
                 {
-                    foreach (CelestialBody b in FlightGlobals.Bodies)
+                    foreach (CelestialBody b in FlightGlobals.Bodies.Where(p => p.Radius > 100 && p.pqsController != null))
                         ChemCamData[b.name] = false;
                 }
             }

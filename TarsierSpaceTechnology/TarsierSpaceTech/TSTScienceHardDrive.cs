@@ -169,6 +169,7 @@ namespace TarsierSpaceTech
         }
 
         // Results Dialog Page Callbacks
+        
         private void _onPageDiscard(ScienceData data)
         {
             DumpData(data);
@@ -188,16 +189,29 @@ namespace TarsierSpaceTech
                 if (transmitter != null)
                 {
                     transmitter.TransmitData(new List<ScienceData> { data });
+                    _DataAmount -= data.dataAmount;
                     scienceData.Remove(data);
                 }
+            }
+            else
+            {
+                ScreenMessages.PostScreenMessage("No Comms Devices on this vessel. Cannot Transmit Data.", 3f, ScreenMessageStyle.UPPER_CENTER);
             }
         }
 
         private void _onPageSendToLab(ScienceData data)
         {
-
+            ScienceLabSearch scienceLabSearch = new ScienceLabSearch(base.vessel, data);
+            if (scienceLabSearch.NextLabForDataFound)
+            {
+                StartCoroutine(scienceLabSearch.NextLabForData.ProcessData(data, new Callback<ScienceData>(DumpData)));
+            }
+            else
+            {
+                scienceLabSearch.PostErrorToScreen();
+            }
         }
-
+        
         [KSPEvent(active = true, externalToEVAOnly = true, guiActiveUnfocused = true, guiName = "Collect Data", unfocusedRange = 2)]
         public void CollectScience()
         {
@@ -206,8 +220,19 @@ namespace TarsierSpaceTech
             {
                 if (scienceData.Count > 0)
                 {
-                    if (container.StoreData(new List<IScienceDataContainer> { this },false))
-                        ScreenMessages.PostScreenMessage("Transferred Data to " + vessel.vesselName, 3f, ScreenMessageStyle.UPPER_CENTER);
+                    if (container.StoreData(new List<IScienceDataContainer> {this}, false))
+                    {
+                        //ScreenMessages.PostScreenMessage("Transferred Data to " + vessel.vesselName, 3f, ScreenMessageStyle.UPPER_CENTER);
+                        ScreenMessages.PostScreenMessage("<color=#99ff00ff>[" + base.part.partInfo.title + "]: All Items Collected.</color>", 5f, ScreenMessageStyle.UPPER_LEFT);
+                    }
+                    else
+                    {
+                        ScreenMessages.PostScreenMessage("<color=orange>[" + base.part.partInfo.title + "]: Not all items could be Collected.</color>", 5f, ScreenMessageStyle.UPPER_LEFT);
+                    }
+                }
+                else
+                {
+                    ScreenMessages.PostScreenMessage("<color=#99ff00ff>[" + base.part.partInfo.title + "]: Nothing to Collect.</color>", 3f, ScreenMessageStyle.UPPER_CENTER);
                 }
             }
         }
@@ -215,6 +240,7 @@ namespace TarsierSpaceTech
         // IScienceDataContainer
         public void DumpData(ScienceData data)
         {
+            ScreenMessages.PostScreenMessage(string.Concat(new string[]{"<color=#ff9900ff>[",base.part.partInfo.title,"]: ",data.title," Removed.</color>"}), 5f, ScreenMessageStyle.UPPER_LEFT);
             _DataAmount -= data.dataAmount;
             scienceData.Remove(data);
             Events["reviewScience"].guiActive = scienceData.Count > 0;
@@ -251,20 +277,6 @@ namespace TarsierSpaceTech
                 ExperimentsResultDialog.DisplayResult(page);
             }
         }
-        
-        public void ReturnData(ScienceData data)
-        {
-            if (data == null)
-            {
-                return;
-            }
-            scienceData.Add(data);
-        }
-        
-        public bool IsRerunnable()
-        {
-            return false;
-        }
 
         public void ReviewDataItem(ScienceData data)
         {
@@ -283,6 +295,20 @@ namespace TarsierSpaceTech
                     _onPageTransmit,
                     _onPageSendToLab);
             ExperimentsResultDialog.DisplayResult(page);
+        }
+
+        public void ReturnData(ScienceData data)
+        {
+            if (data == null)
+            {
+                return;
+            }
+            scienceData.Add(data);
+        }
+        
+        public bool IsRerunnable()
+        {
+            return false;
         }
     }
 }

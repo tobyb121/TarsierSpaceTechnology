@@ -49,7 +49,7 @@ namespace TarsierSpaceTech
         internal static Texture2D BtnRedCross = new Texture2D(16, 16, TextureFormat.ARGB32, false);
         internal static Texture2D BtnResize = new Texture2D(16, 16, TextureFormat.ARGB32, false);
 
-        internal static String PathIconsPath = Path.Combine(TSTMstStgs._AssemblyFolder.Substring(0, TSTMstStgs._AssemblyFolder.IndexOf("\\TarsierSpaceTech\\") + 17), "Icons").Replace("\\", "/");
+        internal static String PathIconsPath = Path.Combine(TSTMstStgs._AssemblyFolder.Substring(0, TSTMstStgs._AssemblyFolder.IndexOf("/TarsierSpaceTech/") + 18), "Icons").Replace("\\", "/");
         internal static String PathToolbarIconsPath = PathIconsPath.Substring(PathIconsPath.ToLower().IndexOf("/gamedata/") + 10);
 
 

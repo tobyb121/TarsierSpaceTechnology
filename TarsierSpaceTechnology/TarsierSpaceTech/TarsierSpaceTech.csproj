@@ -38,6 +38,7 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\KSPDLLs\Assembly-CSharp.dll</HintPath>
     </Reference>
+    <Reference Include="Assembly-CSharp-firstpass, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" />
     <Reference Include="KSPUtil">
       <HintPath>..\..\..\KSPDLLs\KSPUtil.dll</HintPath>
     </Reference>
@@ -56,8 +57,14 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\..\..\REPOSoftTechKSPUtils\AppLauncherToolBarExtension.cs">
+      <Link>AppLauncherToolBarExtension.cs</Link>
+    </Compile>
     <Compile Include="..\..\..\REPOSoftTechKSPUtils\RSTutilities.cs">
       <Link>RSTutilities.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\REPOSoftTechKSPUtils\ToolBarManager.cs">
+      <Link>ToolBarManager.cs</Link>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <None Include="Distribution\GameData\TarsierSpaceTech\Agencies\Agents.cfg" />
@@ -136,12 +143,12 @@
     <Compile Include="RBWrapper.cs" />
     <Compile Include="RTWrapper.cs" />
     <Compile Include="Textures.cs" />
-    <Compile Include="ToolBarManager.cs" />
     <Compile Include="TSTDOE.cs" />
     <Compile Include="TSTGyroReactionWheel.cs" />
     <Compile Include="TSTMenu.cs" />
     <Compile Include="TSTScienceParam.cs" />
     <Compile Include="TSTChemCamContract.cs" />
+    <Compile Include="TSTScienceProgressionBlocker.cs" />
     <Compile Include="TSTSettings.cs" />
     <Compile Include="TSTTelescopeContract.cs" />
     <Compile Include="TSTTelescopeContractParam.cs" />

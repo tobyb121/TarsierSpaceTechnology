@@ -27,6 +27,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using RSTUtils;
+using UniLinq;
 using UnityEngine;
 
 namespace TarsierSpaceTech
@@ -37,7 +38,6 @@ namespace TarsierSpaceTech
         public static TSTMstStgs Instance { get; private set; }               
         internal ConfigNode globalNode = new ConfigNode();
         public TSTSettings TSTsettings { get; }
-        public TSTGasPlanets TSTgasplanets { get; }
         public TSTStockPlanets TSTstockplanets { get; }
         public TSTRSSPlanets TSTrssplanets { get; }
         public TSTOPMPlanets TSTopmplanets { get; }         
@@ -53,11 +53,10 @@ namespace TarsierSpaceTech
             Utilities.Log("TSTMstStgs Constructor");
             Instance = this;
             TSTsettings = new TSTSettings();
-            TSTgasplanets = new TSTGasPlanets();
             TSTstockplanets = new TSTStockPlanets();
             TSTrssplanets = new TSTRSSPlanets();
             TSTopmplanets = new TSTOPMPlanets();
-            globalConfigFilename = Path.Combine(_AssemblyFolder, "Config.cfg").Replace("\\", "/");
+            globalConfigFilename = Path.Combine(_AssemblyFolder, "PluginData/Config.cfg").Replace("\\", "/");
             Utilities.Log("TSTMstStgs globalConfigFilename = " + globalConfigFilename);
         }
 
@@ -68,7 +67,6 @@ namespace TarsierSpaceTech
             {
                 globalNode = ConfigNode.Load(globalConfigFilename);
                 TSTsettings.Load(globalNode);
-                TSTgasplanets.Load(globalNode);
                 TSTstockplanets.Load(globalNode);
                 TSTrssplanets.Load(globalNode);
                 TSTopmplanets.Load(globalNode);
@@ -165,7 +163,6 @@ namespace TarsierSpaceTech
         public void OnDestroy()
         {
             TSTsettings.Save(globalNode);
-            TSTgasplanets.Save(globalNode);
             TSTstockplanets.Save(globalNode);
             TSTrssplanets.Save(globalNode);
             TSTopmplanets.Save(globalNode);
@@ -185,13 +182,13 @@ namespace TarsierSpaceTech
         /// Full Path of the executing Assembly
         /// </summary>
         internal static String _AssemblyLocation
-        { get { return Assembly.GetExecutingAssembly().Location; } }
+        { get { return Assembly.GetExecutingAssembly().Location.Replace("\\", "/"); } }
 
         /// <summary>
         /// Folder containing the executing Assembly
         /// </summary>
         internal static String _AssemblyFolder
-        { get { return Path.GetDirectoryName(_AssemblyLocation); } }
+        { get { return Path.GetDirectoryName(_AssemblyLocation).Replace("\\", "/"); } }
 
         #endregion Assembly/Class Information
     }
@@ -219,6 +216,7 @@ namespace TarsierSpaceTech
         public bool Tooltips ;
         public int maxChemCamContracts ;
         public bool photoOnlyChemCamContracts ;
+        public bool ZoomSkyBox;
 
         public TSTSettings()
         {
@@ -241,6 +239,7 @@ namespace TarsierSpaceTech
             Tooltips = true;
             maxChemCamContracts = 3;
             photoOnlyChemCamContracts = true;
+            ZoomSkyBox = true;
         }
 
         //Settings Functions Follow
@@ -271,6 +270,7 @@ namespace TarsierSpaceTech
                 Utilities.debuggingOn = debugging;
                 TSTsettingsNode.TryGetValue( "maxChemCamContracts", ref maxChemCamContracts);
                 TSTsettingsNode.TryGetValue( "photoOnlyChemCamContracts", ref photoOnlyChemCamContracts);
+                TSTsettingsNode.TryGetValue("ZoomSkyBox", ref ZoomSkyBox);
                 Utilities.Log_Debug("TSTSettings load complete");
             }
         }
@@ -305,56 +305,11 @@ namespace TarsierSpaceTech
             settingsNode.AddValue("debugging", debugging);
             settingsNode.AddValue("Tooltips", Tooltips);
             settingsNode.AddValue("maxChemCamContracts", maxChemCamContracts);
-            settingsNode.AddValue("photoOnlyChemCamContracts", photoOnlyChemCamContracts);
+            settingsNode.AddValue("ZoomSkyBox", ZoomSkyBox);
             Utilities.Log_Debug("TSTSettings save complete");
         }
     }
-
-    public class TSTGasPlanets
-    {
-        private const string configNodeName = "TSTGasPlanets";
-
-        public string[] TarsierPlanetOrder ;
-
-        public void Load(ConfigNode node)
-        {
-            if (node.HasNode(configNodeName))
-            {
-                ConfigNode TSTGasPlanetsNode = new ConfigNode();
-                node.TryGetNode(configNodeName, ref TSTGasPlanetsNode);
-                string tmpPlanetOrderString = "";
-                TSTGasPlanetsNode.TryGetValue("planets", ref tmpPlanetOrderString);
-                string[] tmpPlanetOrder = tmpPlanetOrderString.Split(',');
-                TarsierPlanetOrder = new string[tmpPlanetOrder.Length];
-                if (tmpPlanetOrder.Length > 0)
-                {
-                    for (int i = 0; i < tmpPlanetOrder.Length; i++)
-                    {
-                        TarsierPlanetOrder[i] = tmpPlanetOrder[i];
-                    }
-                }
-            }
-            Utilities.Log_Debug("TSTGasPlanets load complete");
-        }
-
-        public void Save(ConfigNode node)
-        {
-            ConfigNode TSTGasPlanetsNode;
-            if (node.HasNode(configNodeName))
-            {
-                TSTGasPlanetsNode = node.GetNode(configNodeName);
-                TSTGasPlanetsNode.ClearData();
-            }
-            else
-            {
-                TSTGasPlanetsNode = node.AddNode(configNodeName);
-            }
-            string tmpPlanetOrder = string.Join(",", TarsierPlanetOrder);
-            TSTGasPlanetsNode.AddValue("planets", tmpPlanetOrder);
-            Utilities.Log_Debug("TSTGasPlanets save complete");
-        }
-    }
-
+    
     public class TSTStockPlanets
     {
         private const string configNodeName = "TSTStockPlanetOrder";

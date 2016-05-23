@@ -26,7 +26,7 @@ using System.Linq;
 using System.Reflection;
 using UnityEngine;
 
-namespace TarsierSpaceTech
+namespace RSTUtils
 {
     /**********************************************************\
     * --- DO NOT EDIT BELOW THIS COMMENT --- *

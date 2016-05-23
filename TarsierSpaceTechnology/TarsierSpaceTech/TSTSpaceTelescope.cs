@@ -77,28 +77,32 @@ namespace TarsierSpaceTech
         [KSPField(isPersistant = true)] public bool Active;
 
         [KSPField] public string animationClipNameClose = "close";
-
         [KSPField] public string animationClipNameOpen = "open";
-
         [KSPField] public string animationNameClose = "";
-
         [KSPField] public string animationNameOpen = "";
-
         [KSPField] public string animationTransformName = "Telescope";
-
         [KSPField] public string baseTransformName = "Telescope";
+        [KSPField] public string cameraTransformName = "CameraTransform";
+        [KSPField] public string overrideModuleName = "";
+        [KSPField] public string overrideEventNameOpen = "";
+        [KSPField] public string overrideEventNameClose = "";
+        [KSPField] public string disableModuleName = "";
+        [KSPField] public string disableEventName = "";
+
 
         private Vector2 BodscrollViewVector = Vector2.zero;
         private CelestialBody bodyTarget;
-
-        [KSPField] public string cameraTransformName = "CameraTransform";
-
         private bool filterContractTargets;
         private TSTGalaxy galaxyTarget;
         private Vector2 GalscrollViewVector = Vector2.zero;
         private int GUI_WIDTH_LARGE = 600;
         private int GUI_WIDTH_SMALL = 320;
         private bool isRBactive;
+        private bool overrideEvents, overrideEventsProcessed;
+        private bool disableEvents, disableEventsProcessed;
+        private BaseEventList overrideEventList;
+        private BaseEventList disableEventList;
+        private bool activeonStartup = false;
 
         [KSPField] public float labBoostScalar = 0f;
 
@@ -148,24 +152,27 @@ namespace TarsierSpaceTech
             cameraTransform = Utilities.FindChildRecursive(transform, cameraTransformName);
             _lookTransform = Utilities.FindChildRecursive(transform, lookTransformName);
             _animationTransform = Utilities.FindChildRecursive(transform, animationTransformName);
-            Utilities.PrintTransform(_baseTransform, "_basetransform");
-            Utilities.PrintTransform(cameraTransform, "_cameratransform");
-            Utilities.PrintTransform(_lookTransform, "_looktransform");
-            Utilities.Log_Debug("part.CoMOffset=" + part.CoMOffset);
             zeroRotation = cameraTransform.localRotation;
-            Utilities.Log_Debug("zeroRotation=" + zeroRotation);
             _camera = cameraTransform.gameObject.AddComponent<TSTCameraModule>();
+            
             //_animation = _baseTransform.animation;
-            _animationOpen = animationNameOpen == "" ? _animationTransform.GetComponent<Animation>() : Utilities.FindAnimChildRecursive(_animationTransform, animationNameOpen);
-            _animationClose = animationNameClose == "" ? _animationTransform.GetComponent<Animation>() : Utilities.FindAnimChildRecursive(_animationTransform, animationNameClose);
+            if (_animationTransform != null)
+            {
+                _animationOpen = animationNameOpen == "" ? _animationTransform.GetComponent<Animation>() : Utilities.FindAnimChildRecursive(_animationTransform, animationNameOpen);
+                _animationClose = animationNameClose == "" ? _animationTransform.GetComponent<Animation>() : Utilities.FindAnimChildRecursive(_animationTransform, animationNameClose);
+            }
+
+            //Set start-up Event state for this module.
             if (!Active) //camera is not active on startup
             {
+                activeonStartup = false;
                 Events["eventOpenCamera"].active = true;
                 Events["eventCloseCamera"].active = false;
                 Events["eventShowGUI"].active = false;
             }
             else //Camera is active on startup
             {
+                activeonStartup = true;
                 Events["eventOpenCamera"].active = false;
                 Events["eventCloseCamera"].active = true;
                 Events["eventShowGUI"].active = true;
@@ -173,18 +180,26 @@ namespace TarsierSpaceTech
             Events["eventControlFromHere"].active = false;
             Events["eventReviewScience"].active = false;
 
+            //Check if override or disable fields are supplied and if so set flags to process them in OnUpdate (have to wait for the other
+            // part modules to start first, so can't do them here).
+            if (overrideModuleName != "" && (overrideEventNameOpen != "" || overrideEventNameClose != ""))
+            {
+                overrideEvents = true;
+                overrideEventsProcessed = false;
+            }
+            if (disableModuleName != "" && disableEventName != "")
+            {
+                disableEvents = true;
+                disableEventsProcessed = false;
+            }
+
             for (var i = 0; i < targets_raw.Count; i++)
             {
                 var tex = new Texture2D(40, 40);
                 tex.LoadImage(targets_raw[i]);
                 targets.Add(tex);
             }
-            Utilities.Log_Debug("TSTTel Getting ExpIDs");
-            foreach (var expID in ResearchAndDevelopment.GetExperimentIDs())
-            {
-                Utilities.Log_Debug("TSTTel Got ExpID: " + expID);
-            }
-            Utilities.Log_Debug("TSTTel Got ExpIDs");
+            
             CAMwindowID = Utilities.getnextrandomInt();
             GALwindowID = Utilities.getnextrandomInt();
             BODwindowID = Utilities.getnextrandomInt();
@@ -197,81 +212,86 @@ namespace TarsierSpaceTech
             GameEvents.onVesselDestroy.Add(removeFlightInputHandler);
             GameEvents.OnVesselRecoveryRequested.Add(removeFlightInputHandler);
             Utilities.Log_Debug("TSTTel Added Input Callback");
-            if (Active)
-                StartCoroutine(openCamera());
+            //if (Active) //Moved to OnUpdate so we can process any override/disable event parameters correctly.
+            //    StartCoroutine(openCamera());
+
             //If ResearchBodies is installed, initialise the PartModulewrapper and get the TrackedBodies dictionary item.
             isRBactive = Utilities.IsResearchBodiesInstalled;
             if (isRBactive)
             {
-                RBWrapper.InitRBDBWrapper();
-                RBWrapper.InitRBFLWrapper();
-                if (RBWrapper.APIFLReady)
-                {
-                    foreach (PartModule module in part.Modules)
-                    {
-                        if (module.moduleName == "ModuleTrackBodies")
-                        {
-                            RBmoduleTrackBodies = new RBWrapper.ModuleTrackBodies(module);
-                            TrackedBodies = RBmoduleTrackBodies.TrackedBodies;
-                            ResearchState = RBmoduleTrackBodies.ResearchState;
+                processRBstartup();
+            }
+        }
 
-                            if (File.Exists("saves/" + HighLogic.SaveFolder + "/researchbodies.cfg"))
+        private void processRBstartup()
+        {
+            RBWrapper.InitRBDBWrapper();
+            RBWrapper.InitRBFLWrapper();
+            if (RBWrapper.APIFLReady)
+            {
+                foreach (PartModule module in part.Modules)
+                {
+                    if (module.moduleName == "ModuleTrackBodies")
+                    {
+                        RBmoduleTrackBodies = new RBWrapper.ModuleTrackBodies(module);
+                        TrackedBodies = RBmoduleTrackBodies.TrackedBodies;
+                        ResearchState = RBmoduleTrackBodies.ResearchState;
+
+                        if (File.Exists("saves/" + HighLogic.SaveFolder + "/researchbodies.cfg"))
+                        {
+                            var mainnode = ConfigNode.Load("saves/" + HighLogic.SaveFolder + "/researchbodies.cfg");
+                            foreach (var cb in TSTGalaxies.CBGalaxies)
                             {
-                                var mainnode = ConfigNode.Load("saves/" + HighLogic.SaveFolder + "/researchbodies.cfg");
-                                foreach (var cb in TSTGalaxies.CBGalaxies)
+                                var fileContainsGalaxy = false;
+                                foreach (ConfigNode node in mainnode.GetNode("RESEARCHBODIES").nodes)
                                 {
-                                    var fileContainsGalaxy = false;
-                                    foreach (ConfigNode node in mainnode.GetNode("RESEARCHBODIES").nodes)
+                                    if (cb.bodyName.Contains(node.GetValue("body")))
                                     {
-                                        if (cb.bodyName.Contains(node.GetValue("body")))
+                                        if (bool.Parse(node.GetValue("ignore")))
                                         {
-                                            if (bool.Parse(node.GetValue("ignore")))
+                                            TrackedBodies[cb] = true;
+                                            ResearchState[cb] = 100;
+                                        }
+                                        else
+                                        {
+                                            TrackedBodies[cb] = bool.Parse(node.GetValue("isResearched"));
+                                            if (node.HasValue("researchState"))
                                             {
-                                                TrackedBodies[cb] = true;
-                                                ResearchState[cb] = 100;
+                                                ResearchState[cb] = int.Parse(node.GetValue("researchState"));
                                             }
                                             else
                                             {
-                                                TrackedBodies[cb] = bool.Parse(node.GetValue("isResearched"));
-                                                if (node.HasValue("researchState"))
+                                                ConfigNode cbNode = null;
+                                                foreach (
+                                                    ConfigNode cbSettingNode in
+                                                        mainnode.GetNode("RESEARCHBODIES").nodes)
                                                 {
-                                                    ResearchState[cb] = int.Parse(node.GetValue("researchState"));
+                                                    if (cbSettingNode.GetValue("body") == cb.GetName())
+                                                        cbNode = cbSettingNode;
                                                 }
-                                                else
-                                                {
-                                                    ConfigNode cbNode = null;
-                                                    foreach (
-                                                        ConfigNode cbSettingNode in
-                                                            mainnode.GetNode("RESEARCHBODIES").nodes)
-                                                    {
-                                                        if (cbSettingNode.GetValue("body") == cb.GetName())
-                                                            cbNode = cbSettingNode;
-                                                    }
-                                                    if (cbNode != null) cbNode.AddValue("researchState", "0");
-                                                    mainnode.Save("saves/" + HighLogic.SaveFolder +
-                                                                  "/researchbodies.cfg");
-                                                    ResearchState[cb] = 0;
-                                                }
+                                                if (cbNode != null) cbNode.AddValue("researchState", "0");
+                                                mainnode.Save("saves/" + HighLogic.SaveFolder +
+                                                              "/researchbodies.cfg");
+                                                ResearchState[cb] = 0;
                                             }
-                                            fileContainsGalaxy = true;
                                         }
-                                    }
-                                    if (!fileContainsGalaxy)
-                                    {
-                                        var newNodeForCB = mainnode.GetNode("RESEARCHBODIES").AddNode("BODY");
-                                        newNodeForCB.AddValue("body", cb.GetName());
-                                        newNodeForCB.AddValue("isResearched", "false");
-                                        newNodeForCB.AddValue("researchState", "0");
-                                        newNodeForCB.AddValue("ignore", "false");
-                                        TrackedBodies[cb] = false;
-                                        ResearchState[cb] = 0;
-                                        mainnode.Save("saves/" + HighLogic.SaveFolder + "/researchbodies.cfg");
+                                        fileContainsGalaxy = true;
                                     }
                                 }
+                                if (!fileContainsGalaxy)
+                                {
+                                    var newNodeForCB = mainnode.GetNode("RESEARCHBODIES").AddNode("BODY");
+                                    newNodeForCB.AddValue("body", cb.GetName());
+                                    newNodeForCB.AddValue("isResearched", "false");
+                                    newNodeForCB.AddValue("researchState", "0");
+                                    newNodeForCB.AddValue("ignore", "false");
+                                    TrackedBodies[cb] = false;
+                                    ResearchState[cb] = 0;
+                                    mainnode.Save("saves/" + HighLogic.SaveFolder + "/researchbodies.cfg");
+                                }
                             }
-
-                            break;
                         }
+                        break;
                     }
                 }
             }
@@ -364,6 +384,79 @@ namespace TarsierSpaceTech
 
         public override void OnUpdate()
         {
+            //If there are overrideEvents and we haven't initially processed them do so now (should only run ONCE)
+            if (overrideEvents && !overrideEventsProcessed)
+            {
+                try
+                {
+                    foreach (PartModule pm in part.Modules) //should be a shorter way to do this, but a foreach cycle works
+                    {
+                        if (pm.moduleName == overrideModuleName)
+                        {
+                            overrideEventList = pm.Events;
+                            if (overrideEventNameOpen != "" && !overrideEventList.Contains(overrideEventNameOpen))
+                            {
+                                overrideEventNameOpen = "";
+                                overrideEvents = false;
+                            }
+
+                            if (overrideEventNameClose != "" && !overrideEventList.Contains(overrideEventNameClose))
+                            {
+                                overrideEventNameClose = "";
+                                overrideEvents = false;
+                            }
+                            break;
+                        }
+                    }
+                }
+                catch (Exception)
+                {
+                    //throw;
+                }
+                overrideEventsProcessed = true;
+            }
+            
+            //If there are disableEvents and we haven't initially processed them do so now (should only run ONCE)
+            if (disableEvents && !disableEventsProcessed)
+            {
+                try
+                {
+                    foreach (PartModule pm in part.Modules) //should be a shorter way to do this, but a foreach cycle works
+                    {
+                        if (pm.moduleName == disableModuleName)
+                        {
+                            disableEventList = pm.Events;
+                            if (disableEventName != "" && !disableEventList.Contains(disableEventName))
+                            {
+                                disableEventName = "";
+                                disableEvents = false;
+                            }
+                            break;
+                        }
+                    }
+                }
+                catch (Exception)
+                {
+                    //throw;
+                }
+                disableEventsProcessed = true;
+            }
+
+            //Once-OFF if camera active on startup/loading open the camera (moved from OnStart to allow for disable and override events
+            if (activeonStartup)  
+            {
+                eventOpenCamera();
+                activeonStartup = false;
+            }
+
+            //If there are overrideEvents or disableEvents process them on every OnUpdate in case their partmodule is resetting them.
+            if (overrideEvents || disableEvents)
+            {
+                processOverrideDisableEvents(!Active);
+            }
+
+            
+
             Events["eventReviewScience"].active = _scienceData.Count > 0;
             if (vessel.targetObject != _lastTarget && vessel.targetObject != null)
             {
@@ -372,10 +465,10 @@ namespace TarsierSpaceTech
                 _lastTarget = vessel.targetObject;
             }
 
-            if (vessel.targetObject != null)
-            {
-                Utilities.Log_Debug("Vessel target=" + vessel.targetObject.GetTransform().position);
-            }
+            //if (vessel.targetObject != null)
+            //{
+            //    Utilities.Log_Debug("Vessel target=" + vessel.targetObject.GetTransform().position);
+            //}
 
             //if (!_inEditor && _camera.Enabled && windowState != WindowSate.Hidden && vessel.isActiveVessel)
             //{                
@@ -388,7 +481,29 @@ namespace TarsierSpaceTech
         public void eventOpenCamera()
         {
             Events["eventOpenCamera"].active = false;
-            StartCoroutine(openCamera());
+            try
+            {
+                //If there is an override Event fire it off now (external module animation like DMagic scanners
+                if (overrideEvents && overrideEventNameOpen != "" && overrideEventList != null)
+                {
+                    try
+                    {
+                        overrideEventList[overrideEventNameOpen].Invoke();
+                    }
+                    catch (Exception ex)
+                    {
+                        Utilities.Log("An error occurred attempting to execute override Event {0}", overrideEventNameOpen);
+                        Utilities.Log("Err: " + ex);
+                        //throw;
+                    }
+                }
+                //Start the coroutine to open the camera
+                StartCoroutine(openCamera());
+            }
+            catch (Exception)
+            {
+                //throw;
+            }
         }
 
         [KSPAction("OpenCamera")]
@@ -399,6 +514,7 @@ namespace TarsierSpaceTech
 
         public IEnumerator openCamera()
         {
+            //If there is an animation defined, run it and yield until it is complete.
             if (_animationOpen != null)
             {
                 if (animationClipNameOpen == "")
@@ -414,9 +530,12 @@ namespace TarsierSpaceTech
                     while (wait.MoveNext()) yield return null;
                 }
             }
+            //Set events
+            Events["eventShowGUI"].active = true;
             Events["eventCloseCamera"].active = true;
             Events["eventControlFromHere"].active = true;
             Events["toggleServos"].active = true;
+            //Set camera active
             _camera.Enabled = true;
             Active = true;
             windowState = WindowState.Small;
@@ -427,16 +546,38 @@ namespace TarsierSpaceTech
         [KSPEvent(active = false, guiActive = true, name = "eventCloseCamera", guiName = "Close Camera")]
         public void eventCloseCamera()
         {
-            Events["eventShowGUI"].active = false;
-            Events["eventCloseCamera"].active = false;
-            Events["eventControlFromHere"].active = false;
-            Events["toggleServos"].active = false;
-            _camera.Enabled = false;
-            Active = false;
-            StartCoroutine(closeCamera());
-            if (vessel.ReferenceTransform == _lookTransform)
+            try
             {
-                vessel.FallBackReferenceTransform();
+                if (overrideEvents && overrideEventNameClose != "" && overrideEventList != null)
+                {
+                    try
+                    {
+                        overrideEventList[overrideEventNameClose].Invoke();
+                    }
+                    catch (Exception ex)
+                    {
+                        Utilities.Log("An error occurred attempting to execute override Event {0}", overrideEventNameClose);
+                        Utilities.Log("Err: " + ex);
+                        //throw;
+                    }
+                }
+                    
+                
+                Events["eventShowGUI"].active = false;
+                Events["eventCloseCamera"].active = false;
+                Events["eventControlFromHere"].active = false;
+                Events["toggleServos"].active = false;
+                _camera.Enabled = false;
+                Active = false;
+                StartCoroutine(closeCamera());
+                if (vessel.ReferenceTransform == _lookTransform)
+                {
+                    vessel.FallBackReferenceTransform();
+                }
+            }
+            catch (Exception)
+            {
+                //throw;
             }
         }
 
@@ -475,6 +616,59 @@ namespace TarsierSpaceTech
             vessel.SetReferenceTransform(part);
         }
 
+        public void processOverrideDisableEvents(bool active)
+        {
+            if (overrideEvents)
+            {
+                if (overrideEventNameOpen != "" && overrideEventList != null)
+                {
+                    try
+                    {
+                        if (overrideEventList.Contains(overrideEventNameOpen))
+                            overrideEventList[overrideEventNameOpen].guiActive = false;
+                    }
+                    catch (Exception)
+                    {
+                        //throw;
+                    }
+
+                }
+
+                if (overrideEventNameClose != "" && overrideEventList != null)
+                {
+                    try
+                    {
+                        
+                        if (overrideEventList.Contains(overrideEventNameClose))
+                            overrideEventList[overrideEventNameClose].guiActive = false;
+                    }
+                    catch (Exception)
+                    {
+                        //throw;
+                    }
+
+                }
+            }
+
+            if (disableEvents)
+            {
+                if (disableEventName != "" && disableEventList != null)
+                    //disable only if camera is active, enable if it isn't (via passed in Bool).
+                {
+                    disableEventList[disableEventName].active = true;
+                    try
+                    {
+                        disableEventList[disableEventName].guiActive = active;
+                        disableEventList[disableEventName].active = active;
+                    }
+                    catch (Exception)
+                    {
+                        //throw;
+                    }
+                }
+            }
+        }
+
         public void takePicture(bool saveToFile)
         {
             Utilities.Log_Debug("Taking Picture");
@@ -488,7 +682,7 @@ namespace TarsierSpaceTech
                 if (obj.type == typeof(CelestialBody))
                 {
                     var body = (CelestialBody) obj.BaseObject;
-                    doScience(body);
+                    doScience(null, body);
                     if (TSTProgressTracker.isActive)
                     {
                         TSTProgressTracker.OnTelescopePicture(body);
@@ -497,7 +691,7 @@ namespace TarsierSpaceTech
                 else if (obj.type == typeof(TSTGalaxy))
                 {
                     var galaxy = (TSTGalaxy) obj.BaseObject;
-                    doScience(galaxy);
+                    doScience(galaxy, null);
                     if (TSTProgressTracker.isActive)
                     {
                         TSTProgressTracker.OnTelescopePicture(galaxy);
@@ -628,7 +822,7 @@ namespace TarsierSpaceTech
                 }
                 else if (targettingMode == TargettingMode.Galaxy && galaxyTarget != null)
                 {
-                    cameraTransform = _camera._skyBoxCam.camera.transform;
+                    cameraTransform = _camera._scaledSpaceCam.camera.transform;
                     targetTransform = galaxyTarget.transform;
                 }
                 if (cameraTransform != null)
@@ -699,28 +893,28 @@ namespace TarsierSpaceTech
             var newTarget = 0;
             if (isRBactive && RBWrapper.APIDBReady && RBWrapper.APIFLReady && RBmoduleTrackBodies.enabled)
             {
-                var filterRBTargets = isRBactive;
+                //var filterRBTargets = isRBactive;
                 newTarget = FlightGlobals.Bodies.
                     FindIndex(
-                        g => TSTProgressTracker.HasTelescopeCompleted(g) ||
+                        g => g.Radius > 100 && (TSTProgressTracker.HasTelescopeCompleted(g) ||
                              (ContractSystem.Instance &&
                               ContractSystem.Instance.GetCurrentActiveContracts<TSTTelescopeContract>()
-                                  .Any(t => t.target.name == g.name))
+                                  .Any(t => t.target.name == g.name)))
                             ? GUILayout.Button(g.theName)
                             : (filterContractTargets
                                 ? false
-                                : (RBmoduleTrackBodies.TrackedBodies[g] ? GUILayout.Button(g.theName) : false)));
+                                : (RBmoduleTrackBodies.TrackedBodies[g] ? g.Radius > 100 ? GUILayout.Button(g.theName) : false : false)));
             }
             else
             {
                 newTarget = FlightGlobals.Bodies.
                     FindIndex(
-                        g => TSTProgressTracker.HasTelescopeCompleted(g) ||
+                        g => g.Radius > 100 && (TSTProgressTracker.HasTelescopeCompleted(g) ||
                              (ContractSystem.Instance &&
                               ContractSystem.Instance.GetCurrentActiveContracts<TSTTelescopeContract>()
-                                  .Any(t => t.target.name == g.name))
+                                  .Any(t => t.target.name == g.name)))
                             ? GUILayout.Button(g.theName)
-                            : (filterContractTargets ? false : GUILayout.Button(g.theName)));
+                            : (filterContractTargets ? false : g.Radius > 100 ? GUILayout.Button(g.theName) : false));
             }
 
             //RSTUtils.Utilities.Log_Debug(String.Format(" - TargettingWindow - newTarget = {0}", newTarget));
@@ -871,108 +1065,185 @@ namespace TarsierSpaceTech
 
         #region Science
 
-        private void doScience(TSTGalaxy galaxy)
+        private void updateAvailableEvents()
         {
-            Utilities.Log_Debug("Doing Science for {0}", galaxy.theName);
-            var experiment = ResearchAndDevelopment.GetExperiment("TarsierSpaceTech.SpaceTelescope");
-            Utilities.Log_Debug("Got experiment");
-            var subject = ResearchAndDevelopment.GetExperimentSubject(experiment, getExperimentSituation(),
-                Sun.Instance.sun, "LookingAt" + galaxy.name);
-            subject.title = "Space Telescope picture of " + galaxy.theName;
-            Utilities.Log_Debug("Got subject, determining science data using {0}", part.name);
-            if (experiment.IsAvailableWhile(getExperimentSituation(), vessel.mainBody))
+            if (_scienceData.Count > 0)
             {
-                if (part.name == "tarsierSpaceTelescope")
-                {
-                    var data = new ScienceData(experiment.baseValue/2*subject.dataScale, xmitDataScalar, labBoostScalar,
-                        subject.id, subject.title, false, part.flightID);
-                    Utilities.Log_Debug("Got data");
-                    data.title = "Tarsier Space Telescope: Orbiting " + vessel.mainBody.theName + " looking at " +
-                                 galaxy.theName;
-                    _scienceData.Add(data);
-                    Utilities.Log_Debug("Added Data Amt= {0}, TransmitValue= {1}, LabBoost= {2}, LabValue= {3}",
-                        data.dataAmount.ToString(), data.transmitValue.ToString(), data.labBoost.ToString(),
-                        data.labValue.ToString());
-                    ScreenMessages.PostScreenMessage("Collected Science for " + galaxy.theName, 3f,
-                        ScreenMessageStyle.UPPER_CENTER);
-                }
-                else
-                {
-                    var data = new ScienceData(experiment.baseValue*subject.dataScale, xmitDataScalar, labBoostScalar,
-                        subject.id, subject.title, false, part.flightID);
-                    Utilities.Log_Debug("Got data");
-                    data.title = "Tarsier Space Telescope: Orbiting " + vessel.mainBody.theName + " looking at " +
-                                 galaxy.theName;
-                    _scienceData.Add(data);
-                    Utilities.Log_Debug("Added Data Amt= {0}, TransmitValue= {1}, LabBoost= {2}, LabValue= {3}",
-                        data.dataAmount.ToString(), data.transmitValue.ToString(), data.labBoost.ToString(),
-                        data.labValue.ToString());
-                    ScreenMessages.PostScreenMessage("Collected Science for " + galaxy.theName, 3f,
-                        ScreenMessageStyle.UPPER_CENTER);
-                }
+                Events["eventReviewScience"].active = true;
+                Events["CollectScience"].active = true;
+            }
+            else
+            {
+                Events["eventReviewScience"].active = false;
+                Events["CollectScience"].active = false;
             }
         }
 
-        private void doScience(CelestialBody planet)
+        private void doScience(TSTGalaxy galaxy, CelestialBody planet)
         {
-            Utilities.Log_Debug("Doing Science for {0}", planet.theName);
-            var experiment = ResearchAndDevelopment.GetExperiment("TarsierSpaceTech.SpaceTelescope");
-            Utilities.Log_Debug("Got experiment");
-            var subject = ResearchAndDevelopment.GetExperimentSubject(experiment, getExperimentSituation(), planet,
-                "LookingAt" + planet.name);
-            subject.title = "Space Telescope picture of " + planet.theName;
-            Utilities.Log_Debug("Got subject");
-            if (experiment.IsAvailableWhile(getExperimentSituation(), vessel.mainBody))
+            
+            ScienceExperiment experiment;
+            ScienceSubject subject;
+            ScienceData data;
+            var experimentSituation = getExperimentSituation();
+            try
             {
-                if (part.name == "tarsierSpaceTelescope")
+                if (galaxy != null)
                 {
-                    var data = new ScienceData(experiment.baseValue*0.8f*subject.dataScale, xmitDataScalar,
-                        labBoostScalar, subject.id, subject.title, false, part.flightID);
-                    Utilities.Log_Debug("Got data");
-                    data.title = "Tarsier Space Telescope: Oriting " + vessel.mainBody.theName + " looking at " +
-                                 planet.theName;
-                    _scienceData.Add(data);
-                    Utilities.Log_Debug("Added Data Amt= {0}, TransmitValue= {1}, LabBoost= {2}, LabValue= {3}",
-                        data.dataAmount.ToString(), data.transmitValue.ToString(), data.labBoost.ToString(),
-                        data.labValue.ToString());
-                    ScreenMessages.PostScreenMessage("Collected Science for " + planet.theName, 3f,
-                        ScreenMessageStyle.UPPER_CENTER);
+                    Utilities.Log_Debug("Doing Science for {0}", galaxy.theName);
+                    experiment = ResearchAndDevelopment.GetExperiment("TarsierSpaceTech.SpaceTelescope");
+                    if (experiment == null)
+                    {
+                        Utilities.Log("Unable to find experiment TarsierSpaceTech.SpaceTelescope, Are you missing a config file? Report on forums.");
+                        ScreenMessages.PostScreenMessage("TST Unable to find Experiment - Internal Failure. See Log.", 3f,
+                            ScreenMessageStyle.UPPER_CENTER);
+                        return;
+                    }
+                    Utilities.Log_Debug("Got experiment");
+
+                    subject = ResearchAndDevelopment.GetExperimentSubject(experiment, experimentSituation,
+                    Sun.Instance.sun, "LookingAt" + galaxy.name);
+                    subject.title = "Space Telescope picture of " + galaxy.theName;
+                    Utilities.Log_Debug("Got subject, determining science data using {0}", part.name);
                 }
                 else
                 {
-                    var data = new ScienceData(experiment.baseValue*subject.dataScale, xmitDataScalar, labBoostScalar,
-                        subject.id, subject.title, false, part.flightID);
-                    Utilities.Log_Debug("Got data");
-                    data.title = "Tarsier Space Telescope: Oriting " + vessel.mainBody.theName + " looking at " +
-                                 planet.theName;
-                    _scienceData.Add(data);
-                    Utilities.Log_Debug("Added Data Amt= {0}, TransmitValue= {1}, LabBoost= {2}, LabValue= {3}",
-                        data.dataAmount.ToString(), data.transmitValue.ToString(), data.labBoost.ToString(),
-                        data.labValue.ToString());
-                    ScreenMessages.PostScreenMessage("Collected Science for " + planet.theName, 3f,
-                        ScreenMessageStyle.UPPER_CENTER);
+                    Utilities.Log_Debug("Doing Science for {0}", planet.theName);
+                    experiment = ResearchAndDevelopment.GetExperiment("TarsierSpaceTech.SpaceTelescope");
+                    if (experiment == null)
+                    {
+                        Utilities.Log("Unable to find experiment TarsierSpaceTech.SpaceTelescope, Are you missing a config file? Report on forums.");
+                        ScreenMessages.PostScreenMessage("TST Unable to find Experiment - Internal Failure. See Log.", 3f,
+                            ScreenMessageStyle.UPPER_CENTER);
+                        return;
+                    }
+                    Utilities.Log_Debug("Got experiment");
+
+                    subject = ResearchAndDevelopment.GetExperimentSubject(experiment, experimentSituation, planet,
+                    "LookingAt" + planet.name);
+                    subject.title = "Space Telescope picture of " + planet.theName;
+                    Utilities.Log_Debug("Got subject, determining science data using {0}", part.name);
+                }
+
+                
+                if (experiment.IsAvailableWhile(experimentSituation, vessel.mainBody))
+                {
+                    if (part.name == "tarsierSpaceTelescope")
+                    {
+                        if (galaxy != null)
+                        {
+                            data = new ScienceData(experiment.baseValue/2*subject.dataScale, xmitDataScalar, labBoostScalar,
+                                subject.id, subject.title, false, part.flightID);
+
+                            Utilities.Log_Debug("Got data");
+                            data.title = "Tarsier Space Telescope: Orbiting " + vessel.mainBody.theName + " looking at " +
+                                         galaxy.theName;
+                            _scienceData.Add(data);
+                            Utilities.Log_Debug("Added Data Amt= {0}, TransmitValue= {1}, LabBoost= {2}, LabValue= {3}",
+                                data.dataAmount.ToString(), data.transmitValue.ToString(), data.labBoost.ToString(),
+                                data.labValue.ToString());
+                            ScreenMessages.PostScreenMessage("Collected Science for " + galaxy.theName, 3f,
+                                ScreenMessageStyle.UPPER_CENTER);
+                        }
+                        else
+                        {
+                            data = new ScienceData(experiment.baseValue * 0.8f * subject.dataScale, xmitDataScalar,
+                            labBoostScalar, subject.id, subject.title, false, part.flightID);
+                            Utilities.Log_Debug("Got data");
+                            data.title = "Tarsier Space Telescope: Oriting " + vessel.mainBody.theName + " looking at " +
+                                         planet.theName;
+                            _scienceData.Add(data);
+                            Utilities.Log_Debug("Added Data Amt= {0}, TransmitValue= {1}, LabBoost= {2}, LabValue= {3}",
+                                data.dataAmount.ToString(), data.transmitValue.ToString(), data.labBoost.ToString(),
+                                data.labValue.ToString());
+                            ScreenMessages.PostScreenMessage("Collected Science for " + planet.theName, 3f,
+                                ScreenMessageStyle.UPPER_CENTER);
+                        }
+                    }
+                    else
+                    {
+                        if (galaxy != null)
+                        {
+                            data = new ScienceData(experiment.baseValue * subject.dataScale, xmitDataScalar, labBoostScalar,
+                             subject.id, subject.title, false, part.flightID);
+                            Utilities.Log_Debug("Got data");
+                            data.title = "Tarsier Space Telescope: Orbiting " + vessel.mainBody.theName + " looking at " +
+                                         galaxy.theName;
+                            _scienceData.Add(data);
+                            Utilities.Log_Debug("Added Data Amt= {0}, TransmitValue= {1}, LabBoost= {2}, LabValue= {3}",
+                                data.dataAmount.ToString(), data.transmitValue.ToString(), data.labBoost.ToString(),
+                                data.labValue.ToString());
+                            ScreenMessages.PostScreenMessage("Collected Science for " + galaxy.theName, 3f,
+                                ScreenMessageStyle.UPPER_CENTER);
+                        }
+                        else
+                        {
+                            data = new ScienceData(experiment.baseValue * subject.dataScale, xmitDataScalar, labBoostScalar,
+                            subject.id, subject.title, false, part.flightID);
+                            Utilities.Log_Debug("Got data");
+                            data.title = "Tarsier Space Telescope: Oriting " + vessel.mainBody.theName + " looking at " +
+                                         planet.theName;
+                            _scienceData.Add(data);
+                            Utilities.Log_Debug("Added Data Amt= {0}, TransmitValue= {1}, LabBoost= {2}, LabValue= {3}",
+                                data.dataAmount.ToString(), data.transmitValue.ToString(), data.labBoost.ToString(),
+                                data.labValue.ToString());
+                            ScreenMessages.PostScreenMessage("Collected Science for " + planet.theName, 3f,
+                                ScreenMessageStyle.UPPER_CENTER);
+                        }
+                    }
+                }
+                else
+                {
+                    ScreenMessages.PostScreenMessage("Cannot take picture whilst " + experimentSituation, 3f,
+                            ScreenMessageStyle.UPPER_CENTER);
                 }
             }
+            catch (Exception ex)
+            {
+                if (galaxy != null)
+                    Utilities.Log("An error occurred attempting to capture science of {0}", galaxy.theName);
+                else if (planet != null)
+                {
+                    Utilities.Log("An error occurred attempting to capture science of {0}", planet.theName);
+                }
+                else
+                {
+                    Utilities.Log("An error occurred attempting to capture science");
+                }
+                Utilities.Log("Err: " + ex);
+                //throw;
+            }
         }
-
+        
         private ExperimentSituations getExperimentSituation()
         {
-            switch (vessel.situation)
+            try
             {
-                case Vessel.Situations.LANDED:
-                case Vessel.Situations.PRELAUNCH:
-                    return ExperimentSituations.SrfLanded;
-                case Vessel.Situations.SPLASHED:
-                    return ExperimentSituations.SrfSplashed;
-                case Vessel.Situations.FLYING:
-                    return vessel.altitude < vessel.mainBody.scienceValues.flyingAltitudeThreshold
-                        ? ExperimentSituations.FlyingLow
-                        : ExperimentSituations.FlyingHigh;
-                default:
-                    return vessel.altitude < vessel.mainBody.scienceValues.spaceAltitudeThreshold
-                        ? ExperimentSituations.InSpaceLow
-                        : ExperimentSituations.InSpaceHigh;
+                switch (vessel.situation)
+                {
+                    case Vessel.Situations.LANDED:
+                    case Vessel.Situations.PRELAUNCH:
+                        return ExperimentSituations.SrfLanded;
+                    case Vessel.Situations.SPLASHED:
+                        return ExperimentSituations.SrfSplashed;
+                    case Vessel.Situations.FLYING:
+                        return vessel.altitude < vessel.mainBody.scienceValues.flyingAltitudeThreshold
+                            ? ExperimentSituations.FlyingLow
+                            : ExperimentSituations.FlyingHigh;
+                    default:
+                        return vessel.altitude < vessel.mainBody.scienceValues.spaceAltitudeThreshold
+                            ? ExperimentSituations.InSpaceLow
+                            : ExperimentSituations.InSpaceHigh;
+                }
             }
+            catch (Exception ex)
+            {
+                Utilities.Log("An error occurred attempting to get active vessel situation");
+                Utilities.Log("Err: " + ex);
+                return ExperimentSituations.SrfLanded;
+                //throw;
+            }
+            
         }
 
         private string getZoomString(float zoom)
@@ -1015,12 +1286,14 @@ namespace TarsierSpaceTech
             foreach (var data in _scienceData)
             {
                 ReviewDataItem(data);
+                updateAvailableEvents();
             }
         }
 
         private void _onPageDiscard(ScienceData data)
         {
             _scienceData.Remove(data);
+            updateAvailableEvents();
         }
 
         private void _onPageKeep(ScienceData data)
@@ -1035,27 +1308,48 @@ namespace TarsierSpaceTech
                 transmitters.First().TransmitData(new List<ScienceData> {data});
                 _scienceData.Remove(data);
             }
+            updateAvailableEvents();
         }
 
         [KSPEvent(active = true, externalToEVAOnly = true, guiActiveUnfocused = true, guiName = "Collect Data",
             unfocusedRange = 2)]
         public void CollectScience()
         {
-            var containers = FlightGlobals.ActiveVessel.FindPartModulesImplementing<ModuleScienceContainer>();
-            foreach (var container in containers)
+            List<ModuleScienceContainer> containers = FlightGlobals.ActiveVessel.FindPartModulesImplementing<ModuleScienceContainer>();
+            foreach (ModuleScienceContainer container in containers)
             {
                 if (_scienceData.Count > 0)
                 {
-                    if (container.StoreData(new List<IScienceDataContainer> {this}, false))
-                        ScreenMessages.PostScreenMessage("Transferred Data to " + vessel.vesselName, 3f,
-                            ScreenMessageStyle.UPPER_CENTER);
+                    if (container.StoreData(new List<IScienceDataContainer> { this }, false))
+                    {
+                        //ScreenMessages.PostScreenMessage("Transferred Data to " + vessel.vesselName, 3f, ScreenMessageStyle.UPPER_CENTER);
+                        ScreenMessages.PostScreenMessage("<color=#99ff00ff>[" + base.part.partInfo.title + "]: All Items Collected.</color>", 5f, ScreenMessageStyle.UPPER_LEFT);
+                    }
+                    else
+                    {
+                        ScreenMessages.PostScreenMessage("<color=orange>[" + base.part.partInfo.title + "]: Not all items could be Collected.</color>", 5f, ScreenMessageStyle.UPPER_LEFT);
+                    }
+                }
+                else
+                {
+                    ScreenMessages.PostScreenMessage("<color=#99ff00ff>[" + base.part.partInfo.title + "]: Nothing to Collect.</color>", 3f, ScreenMessageStyle.UPPER_CENTER);
                 }
             }
+            updateAvailableEvents();
         }
 
         private void _onPageSendToLab(ScienceData data)
         {
-            Utilities.Log_Debug("Sent to lab");
+            ScienceLabSearch scienceLabSearch = new ScienceLabSearch(base.vessel, data);
+            if (scienceLabSearch.NextLabForDataFound)
+            {
+                StartCoroutine(scienceLabSearch.NextLabForData.ProcessData(data, new Callback<ScienceData>(DumpData)));
+            }
+            else
+            {
+                scienceLabSearch.PostErrorToScreen();
+            }
+            updateAvailableEvents();
         }
 
 
@@ -1063,6 +1357,7 @@ namespace TarsierSpaceTech
         public void DumpData(ScienceData data)
         {
             _scienceData.Remove(data);
+            updateAvailableEvents();
         }
 
         public ScienceData[] GetData()
@@ -1103,8 +1398,8 @@ namespace TarsierSpaceTech
                 data,
                 xmitDataScalar,
                 data.labBoost,
-                false,
-                "",
+                true,
+                "If you transmit this data it will only be worth: " + Mathf.Round(data.transmitValue * 100) + "% of the full science value",
                 true,
                 labSearch,
                 _onPageDiscard,

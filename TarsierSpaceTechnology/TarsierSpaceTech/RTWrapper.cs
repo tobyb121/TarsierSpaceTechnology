@@ -136,6 +136,10 @@ namespace TarsierSpaceTech
 
                 //WORK OUT THE STUFF WE NEED TO HOOK FOR PEOPLE HERE
                 //Methods
+                LogFormatted_DebugOnly("Getting IsRemoteTechEnabled Method");
+                IsRemoteTechEnabledMethod = RTAPIType.GetMethod("IsRemoteTechEnabled", BindingFlags.Public | BindingFlags.Static);
+                LogFormatted_DebugOnly("Success: " + (IsRemoteTechEnabledMethod != null));
+
                 LogFormatted_DebugOnly("Getting HasLocalControl Method");
                 HasLocalControlMethod = RTAPIType.GetMethod("HasLocalControl", BindingFlags.Public | BindingFlags.Static);
                 LogFormatted_DebugOnly("Success: " + (HasLocalControlMethod != null));
@@ -152,6 +156,29 @@ namespace TarsierSpaceTech
             private Object APIactualRT;
 
             #region Methods
+            private MethodInfo IsRemoteTechEnabledMethod;
+
+            /// <summary>
+            /// Whether Remote Tech is Enabled or not.
+            /// </summary> 
+            /// <returns>True or False</returns>
+            internal bool IsRemoteTechEnabled
+            {
+                get
+                {
+                    try
+                    {
+                        return (bool)IsRemoteTechEnabledMethod.Invoke(APIactualRT, null);
+                    }
+                    catch (Exception ex)
+                    {
+                        LogFormatted("Unable to invoke Remote Tech IsRemoteTechEnabled Method");
+                        LogFormatted("Exception: {0}", ex);
+                        return false;
+                        //throw;
+                    }
+                }
+            }
 
             private MethodInfo HasLocalControlMethod;
 
