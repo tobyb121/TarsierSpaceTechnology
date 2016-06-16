@@ -60,6 +60,9 @@
     <Compile Include="..\..\..\REPOSoftTechKSPUtils\AppLauncherToolBarExtension.cs">
       <Link>AppLauncherToolBarExtension.cs</Link>
     </Compile>
+    <Compile Include="..\..\..\REPOSoftTechKSPUtils\RectExtentions.cs">
+      <Link>RectExtentions.cs</Link>
+    </Compile>
     <Compile Include="..\..\..\REPOSoftTechKSPUtils\RSTutilities.cs">
       <Link>RSTutilities.cs</Link>
     </Compile>

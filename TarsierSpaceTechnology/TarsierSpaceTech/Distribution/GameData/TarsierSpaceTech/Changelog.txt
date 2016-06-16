@@ -1,4 +1,8 @@
-﻿V6.2 "Kopernicus, Science & other Enhancements/Fixes"
+﻿V6.3 "More Kopernicus - New Horizons"
+	Added support for New Horizons Kopernicus planet mod.
+	Changed default science to be related to distance from home world, rather than the planet order from the Sun.
+	Fixed Integration settings for ResearchBodies mod to correct discovery messages for the galaxies and start-up parameters.
+V6.2 "Kopernicus, Science & other Enhancements/Fixes"
 	Changed Telescope Cameras to now show the SkyBox and Atmosphere shading. Skybox zooms proportional to the Camera zoom (no more pixelated skybox).
 	Skybox Camera Zooming can be disabled completely by manually changing the Config.cfg file field ZoomSkyBox to False.
 	Fixed scroll window in the TST settings menu.

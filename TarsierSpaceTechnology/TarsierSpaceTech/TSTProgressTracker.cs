@@ -40,6 +40,7 @@ namespace TarsierSpaceTech
 
         private static bool isRSSactive;
         private static bool isOPMactive;
+        private static bool isNHactive;
         private static bool isRBactive;
 
         //ResearchBodies Mod vars
@@ -69,6 +70,7 @@ namespace TarsierSpaceTech
             Instance = this;
             isRSSactive = Utilities.IsRSSInstalled;
             isOPMactive = Utilities.IsOPMInstalled;
+            isNHactive = Utilities.IsNHInstalled;
             isRBactive = Utilities.IsResearchBodiesInstalled;
             bodyNames = FlightGlobals.Bodies.Where(p => p.Radius > 100).Select(p => p.name).ToList();  //List of CBs where radius > 100m (exclude Sigma Binaries)
 
@@ -170,18 +172,27 @@ namespace TarsierSpaceTech
                 }
                 else
                 {
-                    if (Utilities.IsKopInstalled)  // If Kopernicus is installed, but not RSS or OPM use a list of the planets in order
+                    if (isNHactive) // If New Horizons Planets Mod is installed
                     {
-                        
-                        target = Instance.bodyNames.FirstOrDefault(s => !Instance.TelescopeData[s]);
+                        target = TSTMstStgs.Instance.TSTnhplanets.NHPlanetOrder.FirstOrDefault(s => !Instance.TelescopeData[s]);
                         if (target == default(string))
-                            target = Instance.bodyNames[Random.Range(0, Instance.bodyNames.Count)];
+                            target = TSTMstStgs.Instance.TSTnhplanets.NHPlanetOrder[Random.Range(0, TSTMstStgs.Instance.TSTnhplanets.NHPlanetOrder.Length)];
                     }
-                    else  //Default Stock
+                    else
                     {
-                        target = TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder.FirstOrDefault(s => !Instance.TelescopeData[s]);
-                        if (target == default(string))
-                            target = TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder[Random.Range(0, TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder.Length)];
+                        if (Utilities.IsKopInstalled)  // If Kopernicus is installed, but not RSS or OPM use a list of the planets in order
+                        {
+
+                            target = Instance.bodyNames.FirstOrDefault(s => !Instance.TelescopeData[s]);
+                            if (target == default(string))
+                                target = Instance.bodyNames[Random.Range(0, Instance.bodyNames.Count)];
+                        }
+                        else  //Default Stock
+                        {
+                            target = TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder.FirstOrDefault(s => !Instance.TelescopeData[s]);
+                            if (target == default(string))
+                                target = TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder[Random.Range(0, TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder.Length)];
+                        }
                     }
                 }
             }
@@ -252,13 +263,26 @@ namespace TarsierSpaceTech
                 }
                 else
                 {
-                    if (Utilities.IsKopInstalled)
+                    if (isNHactive) // If new Horizons Planets Mod is installed
                     {
-                        i = Array.IndexOf(Instance.bodyNames.ToArray(), bodyName);
+                        i = Array.IndexOf(TSTMstStgs.Instance.TSTnhplanets.NHPlanetOrder, bodyName);
+                        significant = 7;
+                        exceptional = 17;
                     }
-                    else  //Default Stock
+                    else
                     {
-                        i = Array.IndexOf(TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder, bodyName);
+                        if (Utilities.IsKopInstalled)
+                        {
+                            //i = Array.IndexOf(Instance.bodyNames.ToArray(), bodyName);
+                            double distance = Utilities.DistanceFromHomeWorld(bodyName);
+                            // We need some formula here based on distance
+                        }
+                        else  //Default Stock
+                        {
+                            //i = Array.IndexOf(TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder, bodyName);
+                            double distance = Utilities.DistanceFromHomeWorld(bodyName);
+                            // We need some formula here based on distance
+                        }
                     }
                 }
             }
@@ -291,13 +315,26 @@ namespace TarsierSpaceTech
                 }
                 else
                 {
-                    if (Utilities.IsKopInstalled)
+                    if (isNHactive) // If New Horizons Planets Mod is installed
                     {
-                        i = Array.IndexOf(Instance.bodyNames.ToArray(), body.name);
+                        i = Array.IndexOf(TSTMstStgs.Instance.TSTnhplanets.NHPlanetOrder, body.name);
+                        significant = 7;
+                        exceptional = 17;
                     }
-                    else  //Default Stock
+                    else
                     {
-                        i = Array.IndexOf(TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder, body.name);
+                        if (Utilities.IsKopInstalled)
+                        {
+                            //i = Array.IndexOf(Instance.bodyNames.ToArray(), body.name);
+                            double distance = Utilities.DistanceFromHomeWorld(body.name);
+                            // We need some formula here based on distance
+                        }
+                        else  //Default Stock
+                        {
+                            //i = Array.IndexOf(TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder, body.name);
+                            double distance = Utilities.DistanceFromHomeWorld(body.name);
+                            // We need some formula here based on distance
+                        }
                     }
                 }
             }

@@ -153,9 +153,9 @@ namespace TarsierSpaceTech
             prestige = TSTProgressTracker.getTelescopePrestige(target.name);
             if (TSTProgressTracker.HasTelescopeCompleted(target))
             {
+                SetScience(2, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
                 SetFunds(10, 15, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
-                SetReputation(5, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
-                SetReputation(5, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
+                SetReputation(2, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
             }
             else
             {
