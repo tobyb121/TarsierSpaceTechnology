@@ -34,13 +34,14 @@
     <RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Assembly-CSharp, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\KSPDLLs\Assembly-CSharp.dll</HintPath>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>..\..\..\KSPDLLs - 1.1.3\Assembly-CSharp.dll</HintPath>
     </Reference>
-    <Reference Include="Assembly-CSharp-firstpass, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" />
+    <Reference Include="Assembly-CSharp-firstpass">
+      <HintPath>..\..\..\KSPDLLs - 1.1.3\Assembly-CSharp-firstpass.dll</HintPath>
+    </Reference>
     <Reference Include="KSPUtil">
-      <HintPath>..\..\..\KSPDLLs\KSPUtil.dll</HintPath>
+      <HintPath>..\..\..\KSPDLLs - 1.1.3\KSPUtil.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
