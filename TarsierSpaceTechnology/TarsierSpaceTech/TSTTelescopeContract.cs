@@ -1,14 +1,36 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿/*
+ * TSTTelescopeContract.cs
+ * (C) Copyright 2015, Jamie Leighton
+ * Tarsier Space Technologies
+ * The original code and concept of TarsierSpaceTech rights go to Tobyb121 on the Kerbal Space Program Forums, which was covered by the MIT license.
+ * Original License is here: https://github.com/JPLRepo/TarsierSpaceTechnology/blob/master/LICENSE
+ * As such this code continues to be covered by MIT license.
+ * Kerbal Space Program is Copyright (C) 2013 Squad. See http://kerbalspaceprogram.com/. This
+ * project is in no way associated with nor endorsed by Squad.
+ *
+ *  This file is part of TarsierSpaceTech.
+ *
+ *  TarsierSpaceTech is free software: you can redistribute it and/or modify
+ *  it under the terms of the MIT License 
+ *
+ *  TarsierSpaceTech is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+ *
+ *  You should have received a copy of the MIT License
+ *  along with TarsierSpaceTech.  If not, see <http://opensource.org/licenses/MIT>.
+ *
+ */
 
-using UnityEngine;
+using System.Linq;
 using Contracts;
+using Contracts.Agents;
+using RSTUtils;
+using UnityEngine;
 
 namespace TarsierSpaceTech
 {
-    class TSTTelescopeContract : Contracts.Contract
+    class TSTTelescopeContract : Contract
     {
         public override bool CanBeCancelled()
         {
@@ -27,7 +49,7 @@ namespace TarsierSpaceTech
 
         protected override string GetDescription()
         {
-            return Contracts.TextGen.GenerateBackStories(agent.Name, agent.GetMindsetString(), "Space Telescope", target.name, "test", MissionSeed);
+            return TextGen.GenerateBackStories(agent.Name, agent.GetMindsetString(), "Space Telescope", target.name, "test", MissionSeed);
         }
 
         protected override string GetTitle()
@@ -70,38 +92,68 @@ namespace TarsierSpaceTech
         {
             TSTProgressTracker.setTelescopeContractComplete(target);
         }
-
+        
         protected override bool Generate()
         {
-            Utils.print("Generating Telescope Contract");
+            TSTTelescopeContract[] TSTTelescopeContracts = ContractSystem.Instance.GetCurrentContracts<TSTTelescopeContract>();
+            int offers = 0;
+            int active = 0;
 
-            agent = Contracts.Agents.AgentList.Instance.GetAgent("Tarsier Space Technology");
+            for (int i = 0; i < TSTTelescopeContracts.Length; i++)
+            {
+                TSTTelescopeContract m = TSTTelescopeContracts[i];
+                if (m.ContractState == State.Offered)
+                    offers++;
+                else if (m.ContractState == State.Active)
+                    active++;
+            }
+            Utilities.Log_Debug("Telescope Contracts check offers= {0} active= {1}" , offers.ToString(), active.ToString());
+            if (offers >= 1)
+                return false;
+            if (active >= 1)
+                return false;
+            Utilities.Log_Debug("Generating Telescope Contract");
+
+            agent = AgentList.Instance.GetAgent("Tarsier Space Technology");
+            SetExpiry();
             expiryType = DeadlineType.None;
             deadlineType = DeadlineType.None;
 
-            Utils.print("Creating Parameter");
+            Utilities.Log_Debug("Creating Parameter");
             TSTTelescopeContractParam param = new TSTTelescopeContractParam();
             AddParameter(param);
             string target_name = TSTProgressTracker.GetNextTelescopeTarget();
-            Utils.print("Target: "+target_name);
-            Utils.print("Checking Celestial Bodies");
+            if (target_name == default(string))
+            {
+                Utilities.Log_Debug("target body is default (not set), cannot generate");
+                return false;
+            }
+            Utilities.Log_Debug("Target: {0}" , target_name);
+            AvailablePart ap2 = PartLoader.getPartInfoByName("tarsierAdvSpaceTelescope");
+            if (!ResearchAndDevelopment.PartTechAvailable(ap2) && !ResearchAndDevelopment.PartModelPurchased(ap2) && target_name == "Galaxy1")
+            {
+                Utilities.Log_Debug("Contracts for Planets completed and Galaxy contracts require advanced space telescope");
+                return false;
+            }
+            Utilities.Log_Debug("Checking Celestial Bodies");
             target = FlightGlobals.Bodies.Find(b => b.name == target_name);
             if (target == null)
             {
-                Utils.print("Checking Galaxies");
+                Utilities.Log_Debug("Checking Galaxies");
                 target = TSTGalaxies.Galaxies.Find(g => g.name == target_name);
             }
-            Utils.print("Using target: " + target.ToString());
+            Utilities.Log_Debug("Using target: {0}" , target.ToString());
             param.target = target;
-            Utils.print("Creating Science Param");
+            Utilities.Log_Debug("Creating Science Param");
             TSTScienceParam param2 = new TSTScienceParam();
             param2.matchFields.Add("TarsierSpaceTech.SpaceTelescope");
             param2.matchFields.Add("LookingAt" + target.name);
             AddParameter(param2);
-            prestige=TSTProgressTracker.getTelescopePrestige(target.name);
+            Utilities.Log_Debug("Created Science Param");
+            prestige = TSTProgressTracker.getTelescopePrestige(target.name);
             if (TSTProgressTracker.HasTelescopeCompleted(target))
             {
-                SetFunds(10, 15, target.type==typeof(TSTGalaxy)?null:(CelestialBody)target.BaseObject);
+                SetFunds(10, 15, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
                 SetReputation(5, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
                 SetReputation(5, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
             }
@@ -113,5 +165,12 @@ namespace TarsierSpaceTech
             }
             return true;
         }
+
+        //We would activate this if we only want to block the ProgressTracker for a Contract event only. See the TSTScienceProgressionblocker.cs file.
+        //protected override void AwardCompletion()
+        //{
+        //    TSTScienceProgressionBlocker.BlockSingleEvent();
+        //    base.AwardCompletion();
+        //}
     }
 }
