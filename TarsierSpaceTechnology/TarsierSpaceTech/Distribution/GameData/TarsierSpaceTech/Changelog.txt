@@ -1,7 +1,11 @@
 ﻿V6.3 "More Kopernicus - New Horizons"
 	Added support for New Horizons Kopernicus planet mod.
-	Changed default science to be related to distance from home world, rather than the planet order from the Sun.
+	Changed Reputation for contracts to be related to distance from home world, rather than the planet order from the Sun.
+	Added Biomes to Science Reputation/Science/Funds calculations for ChemCam (previously it only used the planet).
+	The default values used to calculate contract Reputation/Science/Funds for Telescope and ChemCam contracts are now loaded via the config.cfg file.
+	These can be tweaked by changing these numbers (they are not available in game via GUI).
 	Fixed Integration settings for ResearchBodies mod to correct discovery messages for the galaxies and start-up parameters.
+	Fixes and re-compile for KSP 1.1.3 changes. - This version will only work on KSP 1.1.3 and up.
 V6.2 "Kopernicus, Science & other Enhancements/Fixes"
 	Changed Telescope Cameras to now show the SkyBox and Atmosphere shading. Skybox zooms proportional to the Camera zoom (no more pixelated skybox).
 	Skybox Camera Zooming can be disabled completely by manually changing the Config.cfg file field ZoomSkyBox to False.

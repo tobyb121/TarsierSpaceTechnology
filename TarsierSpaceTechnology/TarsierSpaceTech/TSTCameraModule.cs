@@ -63,6 +63,9 @@ namespace TarsierSpaceTech
         private float tmpfov;
         private bool zoomSkyBox = true;
         private float TanRadDfltFOV;
+        private float TanRadFOV;
+        private RenderTexture activeRT;
+        private float staticPressure;
 
         //Const - but we don't use constants for Garbage collector
         private double KPtoAtms = 0.009869232;
@@ -85,8 +88,8 @@ namespace TarsierSpaceTech
             get { return _nearCam.fov; }
             set
             {
-                float z = Mathf.Tan(value / Mathf.Rad2Deg) / Mathf.Tan(Mathf.Deg2Rad * CameraHelper.DEFAULT_FOV);
-                _zoomLevel = -Mathf.Log10(z);
+                TanRadFOV = Mathf.Tan(value / Mathf.Rad2Deg) / Mathf.Tan(Mathf.Deg2Rad * CameraHelper.DEFAULT_FOV);
+                _zoomLevel = -Mathf.Log10(TanRadFOV);
                 _nearCam.fov = value;
                 _farCam.fov = value;
                 _scaledSpaceCam.fov = value;
@@ -243,7 +246,7 @@ namespace TarsierSpaceTech
 
         internal Texture2D draw()
         {
-            RenderTexture activeRT = RenderTexture.active;
+           activeRT = RenderTexture.active;
             RenderTexture.active = _renderTexture;
             
             //Render the Skybox
@@ -314,7 +317,7 @@ namespace TarsierSpaceTech
                 
         internal Texture2D drawFS() // Same as Draw() but for fullscreencameras
         {
-            RenderTexture activeRT = RenderTexture.active;
+            activeRT = RenderTexture.active;
             RenderTexture.active = _renderTextureFS;
             _galaxyCamFS.reset();
             _scaledSpaceCamFS.reset();              
@@ -425,8 +428,8 @@ namespace TarsierSpaceTech
 
         private float CalculateExposure(Vector3d cameraWorldPos)
         {
-            float pressure = (float)(FlightGlobals.getStaticPressure(cameraWorldPos) * KPtoAtms);
-            return Mathf.Lerp(SkyboxExposure, 0f, pressure);
+            staticPressure = (float)(FlightGlobals.getStaticPressure(cameraWorldPos) * KPtoAtms);
+            return Mathf.Lerp(SkyboxExposure, 0f, staticPressure);
         }
     }
 

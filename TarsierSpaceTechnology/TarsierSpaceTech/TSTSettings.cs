@@ -221,6 +221,18 @@ namespace TarsierSpaceTech
         public int maxChemCamContracts ;
         public bool photoOnlyChemCamContracts ;
         public bool ZoomSkyBox;
+        public int scienceUndiscoveredScope;
+        public int scienceDiscoveredScope;
+        public int repUndiscoveredScope;
+        public int repDiscoveredScope;
+        public int fundsUndiscoveredScope;
+        public int fundsdiscoveredScope;
+        public int scienceUndiscoveredChem;
+        public int scienceDiscoveredChem;
+        public int repUndiscoveredChem;
+        public int repDiscoveredChem;
+        public int fundsUndiscoveredChem;
+        public int fundsdiscoveredChem;
 
         public TSTSettings()
         {
@@ -244,7 +256,19 @@ namespace TarsierSpaceTech
             maxChemCamContracts = 3;
             photoOnlyChemCamContracts = true;
             ZoomSkyBox = true;
-        }
+            scienceUndiscoveredScope = 20;
+            scienceDiscoveredScope = 2;
+            repUndiscoveredScope = 20;
+            repDiscoveredScope = 2;
+            fundsUndiscoveredScope = 150;
+            fundsdiscoveredScope = 15;
+            scienceUndiscoveredChem = 20;
+            scienceDiscoveredChem = 5;
+            repUndiscoveredChem = 35;
+            repDiscoveredChem = 5;
+            fundsUndiscoveredChem = 400;
+            fundsdiscoveredChem = 50;
+    }
 
         //Settings Functions Follow
 
@@ -275,6 +299,18 @@ namespace TarsierSpaceTech
                 TSTsettingsNode.TryGetValue( "maxChemCamContracts", ref maxChemCamContracts);
                 TSTsettingsNode.TryGetValue( "photoOnlyChemCamContracts", ref photoOnlyChemCamContracts);
                 TSTsettingsNode.TryGetValue("ZoomSkyBox", ref ZoomSkyBox);
+                TSTsettingsNode.TryGetValue("scienceUndiscoveredScope", ref scienceUndiscoveredScope);
+                TSTsettingsNode.TryGetValue("scienceDiscoveredScope", ref scienceDiscoveredScope);
+                TSTsettingsNode.TryGetValue("repUndiscoveredScope", ref repUndiscoveredScope);
+                TSTsettingsNode.TryGetValue("repDiscoveredScope", ref repDiscoveredScope);
+                TSTsettingsNode.TryGetValue("fundsUndiscoveredScope", ref fundsUndiscoveredScope);
+                TSTsettingsNode.TryGetValue("fundsdiscoveredScope", ref fundsdiscoveredScope);
+                TSTsettingsNode.TryGetValue("scienceUndiscoveredChem", ref scienceUndiscoveredChem);
+                TSTsettingsNode.TryGetValue("scienceDiscoveredChem", ref scienceDiscoveredChem);
+                TSTsettingsNode.TryGetValue("repUndiscoveredChem", ref repUndiscoveredChem);
+                TSTsettingsNode.TryGetValue("repDiscoveredChem", ref repDiscoveredChem);
+                TSTsettingsNode.TryGetValue("fundsUndiscoveredChem", ref fundsUndiscoveredChem);
+                TSTsettingsNode.TryGetValue("fundsdiscoveredChem", ref fundsdiscoveredChem);
                 Utilities.Log_Debug("TSTSettings load complete");
             }
         }
@@ -310,6 +346,18 @@ namespace TarsierSpaceTech
             settingsNode.AddValue("Tooltips", Tooltips);
             settingsNode.AddValue("maxChemCamContracts", maxChemCamContracts);
             settingsNode.AddValue("ZoomSkyBox", ZoomSkyBox);
+            settingsNode.AddValue("scienceUndiscoveredScope", scienceUndiscoveredScope);
+            settingsNode.AddValue("scienceDiscoveredScope", scienceDiscoveredScope);
+            settingsNode.AddValue("repUndiscoveredScope", repUndiscoveredScope);
+            settingsNode.AddValue("repDiscoveredScope", repDiscoveredScope);
+            settingsNode.AddValue("fundsUndiscoveredScope", fundsUndiscoveredScope);
+            settingsNode.AddValue("fundsdiscoveredScope", fundsdiscoveredScope);
+            settingsNode.AddValue("scienceUndiscoveredChem", scienceUndiscoveredChem);
+            settingsNode.AddValue("scienceDiscoveredChem", scienceDiscoveredChem);
+            settingsNode.AddValue("repUndiscoveredChem", repUndiscoveredChem);
+            settingsNode.AddValue("repDiscoveredChem", repDiscoveredChem);
+            settingsNode.AddValue("fundsUndiscoveredChem", fundsUndiscoveredChem);
+            settingsNode.AddValue("fundsdiscoveredChem", fundsdiscoveredChem);
             Utilities.Log_Debug("TSTSettings save complete");
         }
     }

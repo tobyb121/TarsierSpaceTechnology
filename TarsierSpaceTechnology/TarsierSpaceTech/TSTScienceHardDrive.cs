@@ -143,12 +143,14 @@ namespace TarsierSpaceTech
             Utilities.Log_Debug("Parts= {0}", parts.Count.ToString());
             foreach (Part p in parts)
             {
-                List<IScienceDataContainer> containers = p.FindModulesImplementing<IScienceDataContainer>().ToList();
-                Utilities.Log_Debug("Got containers: {0}", containers.Count.ToString());
-                foreach (IScienceDataContainer container in containers)
+                List<ModuleScienceExperiment> experiments = p.Modules.GetModules<ModuleScienceExperiment>();
+
+                //List<IScienceDataContainer> containers = p.FindModulesImplementing<IScienceDataContainer>().ToList();
+                Utilities.Log_Debug("Got experiments: {0}", experiments.Count.ToString());
+                foreach (ModuleScienceExperiment experiment in experiments)
                 {
                     Utilities.Log_Debug("Checking Data");
-                    ScienceData[] data = container.GetData();
+                    ScienceData[] data = experiment.GetData();
                     Utilities.Log_Debug("Got Data: {0}", data.Length.ToString());
                     foreach (ScienceData d in data)
                     {
@@ -167,7 +169,7 @@ namespace TarsierSpaceTech
                                     Utilities.Log_Debug("Incrementing stored val");
                                     _DataAmount += d.dataAmount;
                                     Utilities.Log_Debug("Removing Data from source");
-                                    container.DumpData(d);
+                                    experiment.DumpData(d);
                                     Utilities.Log_Debug("Data Added");
                                 }
                                 else
