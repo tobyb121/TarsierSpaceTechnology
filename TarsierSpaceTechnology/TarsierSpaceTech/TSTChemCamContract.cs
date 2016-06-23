@@ -204,20 +204,23 @@ namespace TarsierSpaceTech
             TSTScienceParam param2 = new TSTScienceParam();
             param2.matchFields.Add("TarsierSpaceTech.ChemCam");
             param2.matchFields.Add(target.name);
+            biome = "";
             List<string> biomes = ResearchAndDevelopment.GetBiomeTags(target);
             if (biomes.Count > 1)
             {
                 do
                 {
                     biome = biomes[r.Next(biomes.Count - 1)];
-                } while (!biome.Contains("Water"));
+                } while (biome.Contains("Water"));
                 param2.matchFields.Add(biome);
             }
             AddParameter(param2);
             ContractPrestige p = TSTProgressTracker.getChemCamPrestige(target); //Get the target prestige level
             if (p != prestige)  //If the prestige is not the required level don't generate.
                 return false;
-            string targetname = target.name + "," + biome;
+            string targetname = target.name;
+            if (biome != "")
+                    targetname += "," + biome;
             if (TSTProgressTracker.HasChemCamCompleted(targetname))
             {
                 SetFunds(TSTMstStgs.Instance.TSTsettings.fundsdiscoveredChem * 0.75f, TSTMstStgs.Instance.TSTsettings.fundsdiscoveredChem, target);

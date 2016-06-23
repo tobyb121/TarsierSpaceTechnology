@@ -118,6 +118,7 @@
     <None Include="Distribution\GameData\TarsierSpaceTech\Parts\SpaceTelescope\part.cfg" />
     <None Include="Distribution\GameData\TarsierSpaceTech\Parts\SpaceTelescope\texture.dds" />
     <None Include="Distribution\GameData\TarsierSpaceTech\Parts\SpaceTelescope\texture.png.ddsified" />
+    <None Include="Distribution\GameData\TarsierSpaceTech\Plugins\PluginData\Config.cfg" />
     <None Include="Distribution\GameData\TarsierSpaceTech\Resources\MMOPMScienceDefs.cfg" />
     <None Include="Distribution\GameData\TarsierSpaceTech\Resources\MMRSSScienceDefs.cfg" />
     <None Include="Distribution\GameData\TarsierSpaceTech\Resources\ScienceDefs.cfg" />
@@ -184,9 +185,7 @@
     <Content Include="LocalDev\mono_exe.txt" />
     <Content Include="LocalDev\pdb2mdb_exe.txt" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Distribution\GameData\TarsierSpaceTech\Plugins\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="PostBuildMacros">
     <GetAssemblyIdentity AssemblyFiles="$(TargetPath)">

@@ -260,14 +260,14 @@ namespace TarsierSpaceTech
             scienceDiscoveredScope = 2;
             repUndiscoveredScope = 20;
             repDiscoveredScope = 2;
-            fundsUndiscoveredScope = 150;
-            fundsdiscoveredScope = 15;
+            fundsUndiscoveredScope = 600;
+            fundsdiscoveredScope = 35;
             scienceUndiscoveredChem = 20;
             scienceDiscoveredChem = 5;
             repUndiscoveredChem = 35;
             repDiscoveredChem = 5;
-            fundsUndiscoveredChem = 400;
-            fundsdiscoveredChem = 50;
+            fundsUndiscoveredChem = 800;
+            fundsdiscoveredChem = 40;
     }
 
         //Settings Functions Follow
@@ -401,8 +401,11 @@ namespace TarsierSpaceTech
             {
                 TSTStockPlanetOrderNode = node.AddNode(configNodeName);
             }
-            string tmpPlanetOrder = string.Join(",", StockPlanetOrder);
-            TSTStockPlanetOrderNode.AddValue("planets", tmpPlanetOrder);
+            if (StockPlanetOrder.Length > 0)
+            {
+                string tmpPlanetOrder = string.Join(",", StockPlanetOrder);
+                TSTStockPlanetOrderNode.AddValue("planets", tmpPlanetOrder);
+            }
             Utilities.Log_Debug("TSTStockPlanetOrder save complete");
         }
     }
@@ -446,8 +449,11 @@ namespace TarsierSpaceTech
             {
                 TSTStockPlanetOrderNode = node.AddNode(configNodeName);
             }
-            string tmpPlanetOrder = string.Join(",", RSSPlanetOrder);
-            TSTStockPlanetOrderNode.AddValue("planets", tmpPlanetOrder);
+            if (RSSPlanetOrder.Length > 0)
+            {
+                string tmpPlanetOrder = string.Join(",", RSSPlanetOrder);
+                TSTStockPlanetOrderNode.AddValue("planets", tmpPlanetOrder);
+            }
             Utilities.Log_Debug("TSTRSSPlanetOrder save complete");
         }
     }
@@ -491,8 +497,11 @@ namespace TarsierSpaceTech
             {
                 TSTStockPlanetOrderNode = node.AddNode(configNodeName);
             }
-            string tmpPlanetOrder = string.Join(",", OPMPlanetOrder);
-            TSTStockPlanetOrderNode.AddValue("planets", tmpPlanetOrder);
+            if (OPMPlanetOrder.Length > 0)
+            {
+                string tmpPlanetOrder = string.Join(",", OPMPlanetOrder);
+                TSTStockPlanetOrderNode.AddValue("planets", tmpPlanetOrder);
+            }
             Utilities.Log_Debug("TSTOPMPlanetOrder save complete");
         }
     }
@@ -536,8 +545,11 @@ namespace TarsierSpaceTech
             {
                 TSTStockPlanetOrderNode = node.AddNode(configNodeName);
             }
-            string tmpPlanetOrder = string.Join(",", NHPlanetOrder);
-            TSTStockPlanetOrderNode.AddValue("planets", tmpPlanetOrder);
+            if (NHPlanetOrder.Length > 0)
+            {
+                string tmpPlanetOrder = string.Join(",", NHPlanetOrder);
+                TSTStockPlanetOrderNode.AddValue("planets", tmpPlanetOrder);
+            }
             Utilities.Log_Debug("TSTNHPlanetOrder save complete");
         }
     }

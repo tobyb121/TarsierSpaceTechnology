@@ -72,7 +72,7 @@ namespace TarsierSpaceTech
             Events["fillDrive"].unfocusedRange = EVARange;            
         }
 
-        [KSPEvent(name = "fillDrive", active = true, guiActive = true, externalToEVAOnly = false, guiName = "Move All Science to Hard Drive")]
+        [KSPEvent(name = "fillDrive", active = true, guiActive = true, externalToEVAOnly = false, guiName = "Move All Science to Drive")]
         public void fillDrive()
         {
             Utilities.Log_Debug("Filling drive with all the juicy science");
@@ -109,15 +109,16 @@ namespace TarsierSpaceTech
                                     Utilities.Log_Debug("Removing Data from source");
                                     container.DumpData(d);
                                     Utilities.Log_Debug("Data Added");
+                                    ScreenMessages.PostScreenMessage("Moved " + d.title + " to TST Drive", 10f, ScreenMessageStyle.UPPER_LEFT);
                                 }
                                 else
                                 {
-                                    ScreenMessages.PostScreenMessage("Required " + (d.dataAmount * powerUsage).ToString("00.00") + " ElectricCharge not available to store data" , 3f, ScreenMessageStyle.UPPER_CENTER);
+                                    ScreenMessages.PostScreenMessage("Required " + (d.dataAmount * powerUsage).ToString("00.00") + " ElectricCharge not available to store data" , 10f, ScreenMessageStyle.UPPER_CENTER);
                                 }
                             }
                             else
                             {
-                                ScreenMessages.PostScreenMessage("Not enough storage capacity to store data", 3f, ScreenMessageStyle.UPPER_CENTER);
+                                ScreenMessages.PostScreenMessage("Not enough storage capacity to store data", 10f, ScreenMessageStyle.UPPER_CENTER);
                             }
                         }
                     }
@@ -132,25 +133,25 @@ namespace TarsierSpaceTech
             fillDrive();
         }
 
-        [KSPEvent(name = "expfillDrive", active = true, guiActive = true, externalToEVAOnly = false, guiName = "Move Experiments to Hard Drive")]
+        [KSPEvent(name = "expfillDrive", active = true, guiActive = true, externalToEVAOnly = false, guiName = "Move Experiments to Drive")]
         public void expfillDrive()
         {
-            Utilities.Log_Debug("Filling drive with Science Experiment parts science only");
+            Utilities.Log_Debug("Filling drive with non ScienceConverter and Command parts (where crewcapacity > 0) science only");
 
             //List<Part> parts = vessel.Parts.Where(p => p.FindModulesImplementing<IScienceDataContainer>().Count > 0).ToList();
-            List<Part> parts = FlightGlobals.ActiveVessel.Parts.Where(p => p.FindModulesImplementing<ModuleScienceExperiment>().Count > 0).ToList();
+            List<Part> parts = FlightGlobals.ActiveVessel.Parts.Where(p => p.FindModulesImplementing<IScienceDataContainer>().Count > 0).ToList();
             parts.RemoveAll(p => p.FindModulesImplementing<TSTScienceHardDrive>().Count > 0);
+            parts.RemoveAll(p => p.FindModulesImplementing<ModuleScienceConverter>().Count > 0);
+            parts.RemoveAll(p => p.FindModulesImplementing<ModuleCommand>().Count > 0 && p.CrewCapacity > 0);
             Utilities.Log_Debug("Parts= {0}", parts.Count.ToString());
             foreach (Part p in parts)
             {
-                List<ModuleScienceExperiment> experiments = p.Modules.GetModules<ModuleScienceExperiment>();
-
-                //List<IScienceDataContainer> containers = p.FindModulesImplementing<IScienceDataContainer>().ToList();
-                Utilities.Log_Debug("Got experiments: {0}", experiments.Count.ToString());
-                foreach (ModuleScienceExperiment experiment in experiments)
+                List<IScienceDataContainer> containers = p.FindModulesImplementing<IScienceDataContainer>().ToList();
+                Utilities.Log_Debug("Got experiments: {0}", containers.Count.ToString());
+                foreach (IScienceDataContainer container in containers)
                 {
                     Utilities.Log_Debug("Checking Data");
-                    ScienceData[] data = experiment.GetData();
+                    ScienceData[] data = container.GetData();
                     Utilities.Log_Debug("Got Data: {0}", data.Length.ToString());
                     foreach (ScienceData d in data)
                     {
@@ -169,17 +170,18 @@ namespace TarsierSpaceTech
                                     Utilities.Log_Debug("Incrementing stored val");
                                     _DataAmount += d.dataAmount;
                                     Utilities.Log_Debug("Removing Data from source");
-                                    experiment.DumpData(d);
+                                    container.DumpData(d);
                                     Utilities.Log_Debug("Data Added");
+                                    ScreenMessages.PostScreenMessage("Moved " + d.title + " to TST Drive", 10f, ScreenMessageStyle.UPPER_LEFT);
                                 }
                                 else
                                 {
-                                    ScreenMessages.PostScreenMessage("Required " + (d.dataAmount * powerUsage).ToString("00.00") + " ElectricCharge not available to store data", 3f, ScreenMessageStyle.UPPER_CENTER);
+                                    ScreenMessages.PostScreenMessage("Required " + (d.dataAmount * powerUsage).ToString("00.00") + " ElectricCharge not available to store data", 10f, ScreenMessageStyle.UPPER_CENTER);
                                 }
                             }
                             else
                             {
-                                ScreenMessages.PostScreenMessage("Not enough storage capacity to store data", 3f, ScreenMessageStyle.UPPER_CENTER);
+                                ScreenMessages.PostScreenMessage("Not enough storage capacity to store data", 10f, ScreenMessageStyle.UPPER_CENTER);
                             }
                         }
                     }

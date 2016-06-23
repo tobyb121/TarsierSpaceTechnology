@@ -243,7 +243,7 @@ namespace TarsierSpaceTech
 
         public static bool HasChemCamCompleted(string entry)
         {
-            return !isActive || Instance.TelescopeData[entry];
+            return !isActive || Instance.ChemCamData[entry];
         }
 
         public static Contract.ContractPrestige getTelescopePrestige(TSTSpaceTelescope.TargetableObject body)
