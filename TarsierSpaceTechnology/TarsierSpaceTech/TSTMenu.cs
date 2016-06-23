@@ -28,6 +28,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using KSP.UI.Screens;
 using RSTUtils;
+using RSTUtils.Extensions;
 using UnityEngine;
 using Random = System.Random;
 
@@ -217,7 +218,7 @@ namespace TarsierSpaceTech
             if (Utilities.GameModeisFlight)
             {
                 crntWindow = TSTWindow.FLIGHT;
-                if (!Utilities.WindowVisibile(FwindowPos)) Utilities.MakeWindowVisible(FwindowPos);
+                FwindowPos.ClampToScreen();
                 FwindowPos = GUILayout.Window(TSTwindowID, FwindowPos, windowF, "Tarsier Space Technology", GUILayout.MinHeight(160), GUILayout.ExpandWidth(true),
                                 GUILayout.ExpandHeight(true));
                 if (_FTVisible)
@@ -246,7 +247,7 @@ namespace TarsierSpaceTech
                     InputphotoOnlyChemCamContracts = TSTMstStgs.Instance.TSTsettings.photoOnlyChemCamContracts;
                     LoadConfig = false;
                 }
-                if (!Utilities.WindowVisibile(SCwindowPos)) Utilities.MakeWindowVisible(SCwindowPos);
+                SCwindowPos.ClampInsideScreen();
                 SCwindowPos = GUILayout.Window(SCwindowID, SCwindowPos, windowSC, "Tarsier Space Technology", GUILayout.MinHeight(20), GUILayout.ExpandWidth(true),
                                 GUILayout.ExpandHeight(true));                
             }

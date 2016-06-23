@@ -40,7 +40,8 @@ namespace TarsierSpaceTech
         public TSTSettings TSTsettings { get; }
         public TSTStockPlanets TSTstockplanets { get; }
         public TSTRSSPlanets TSTrssplanets { get; }
-        public TSTOPMPlanets TSTopmplanets { get; }         
+        public TSTOPMPlanets TSTopmplanets { get; } 
+        public TSTNHPlanets TSTnhplanets { get; }        
         private readonly string globalConfigFilename;
         internal bool isRBactive;
         internal bool isRBloaded;
@@ -56,6 +57,7 @@ namespace TarsierSpaceTech
             TSTstockplanets = new TSTStockPlanets();
             TSTrssplanets = new TSTRSSPlanets();
             TSTopmplanets = new TSTOPMPlanets();
+            TSTnhplanets = new TSTNHPlanets();
             globalConfigFilename = Path.Combine(_AssemblyFolder, "PluginData/Config.cfg").Replace("\\", "/");
             Utilities.Log("TSTMstStgs globalConfigFilename = " + globalConfigFilename);
         }
@@ -70,6 +72,7 @@ namespace TarsierSpaceTech
                 TSTstockplanets.Load(globalNode);
                 TSTrssplanets.Load(globalNode);
                 TSTopmplanets.Load(globalNode);
+                TSTnhplanets.Load(globalNode);
             }           
             Utilities.Log("TSTMstStgs", "OnLoad: \n {0}" + globalNode);
         }
@@ -166,6 +169,7 @@ namespace TarsierSpaceTech
             TSTstockplanets.Save(globalNode);
             TSTrssplanets.Save(globalNode);
             TSTopmplanets.Save(globalNode);
+            TSTnhplanets.Save(globalNode);
             globalNode.Save(globalConfigFilename);
             Utilities.Log_Debug("TSTMstStgs OnSave: \n {0}" , globalNode.ToString());
         }
@@ -217,6 +221,18 @@ namespace TarsierSpaceTech
         public int maxChemCamContracts ;
         public bool photoOnlyChemCamContracts ;
         public bool ZoomSkyBox;
+        public int scienceUndiscoveredScope;
+        public int scienceDiscoveredScope;
+        public int repUndiscoveredScope;
+        public int repDiscoveredScope;
+        public int fundsUndiscoveredScope;
+        public int fundsdiscoveredScope;
+        public int scienceUndiscoveredChem;
+        public int scienceDiscoveredChem;
+        public int repUndiscoveredChem;
+        public int repDiscoveredChem;
+        public int fundsUndiscoveredChem;
+        public int fundsdiscoveredChem;
 
         public TSTSettings()
         {
@@ -240,7 +256,19 @@ namespace TarsierSpaceTech
             maxChemCamContracts = 3;
             photoOnlyChemCamContracts = true;
             ZoomSkyBox = true;
-        }
+            scienceUndiscoveredScope = 20;
+            scienceDiscoveredScope = 2;
+            repUndiscoveredScope = 20;
+            repDiscoveredScope = 2;
+            fundsUndiscoveredScope = 600;
+            fundsdiscoveredScope = 35;
+            scienceUndiscoveredChem = 20;
+            scienceDiscoveredChem = 5;
+            repUndiscoveredChem = 35;
+            repDiscoveredChem = 5;
+            fundsUndiscoveredChem = 800;
+            fundsdiscoveredChem = 40;
+    }
 
         //Settings Functions Follow
 
@@ -271,6 +299,18 @@ namespace TarsierSpaceTech
                 TSTsettingsNode.TryGetValue( "maxChemCamContracts", ref maxChemCamContracts);
                 TSTsettingsNode.TryGetValue( "photoOnlyChemCamContracts", ref photoOnlyChemCamContracts);
                 TSTsettingsNode.TryGetValue("ZoomSkyBox", ref ZoomSkyBox);
+                TSTsettingsNode.TryGetValue("scienceUndiscoveredScope", ref scienceUndiscoveredScope);
+                TSTsettingsNode.TryGetValue("scienceDiscoveredScope", ref scienceDiscoveredScope);
+                TSTsettingsNode.TryGetValue("repUndiscoveredScope", ref repUndiscoveredScope);
+                TSTsettingsNode.TryGetValue("repDiscoveredScope", ref repDiscoveredScope);
+                TSTsettingsNode.TryGetValue("fundsUndiscoveredScope", ref fundsUndiscoveredScope);
+                TSTsettingsNode.TryGetValue("fundsdiscoveredScope", ref fundsdiscoveredScope);
+                TSTsettingsNode.TryGetValue("scienceUndiscoveredChem", ref scienceUndiscoveredChem);
+                TSTsettingsNode.TryGetValue("scienceDiscoveredChem", ref scienceDiscoveredChem);
+                TSTsettingsNode.TryGetValue("repUndiscoveredChem", ref repUndiscoveredChem);
+                TSTsettingsNode.TryGetValue("repDiscoveredChem", ref repDiscoveredChem);
+                TSTsettingsNode.TryGetValue("fundsUndiscoveredChem", ref fundsUndiscoveredChem);
+                TSTsettingsNode.TryGetValue("fundsdiscoveredChem", ref fundsdiscoveredChem);
                 Utilities.Log_Debug("TSTSettings load complete");
             }
         }
@@ -306,6 +346,18 @@ namespace TarsierSpaceTech
             settingsNode.AddValue("Tooltips", Tooltips);
             settingsNode.AddValue("maxChemCamContracts", maxChemCamContracts);
             settingsNode.AddValue("ZoomSkyBox", ZoomSkyBox);
+            settingsNode.AddValue("scienceUndiscoveredScope", scienceUndiscoveredScope);
+            settingsNode.AddValue("scienceDiscoveredScope", scienceDiscoveredScope);
+            settingsNode.AddValue("repUndiscoveredScope", repUndiscoveredScope);
+            settingsNode.AddValue("repDiscoveredScope", repDiscoveredScope);
+            settingsNode.AddValue("fundsUndiscoveredScope", fundsUndiscoveredScope);
+            settingsNode.AddValue("fundsdiscoveredScope", fundsdiscoveredScope);
+            settingsNode.AddValue("scienceUndiscoveredChem", scienceUndiscoveredChem);
+            settingsNode.AddValue("scienceDiscoveredChem", scienceDiscoveredChem);
+            settingsNode.AddValue("repUndiscoveredChem", repUndiscoveredChem);
+            settingsNode.AddValue("repDiscoveredChem", repDiscoveredChem);
+            settingsNode.AddValue("fundsUndiscoveredChem", fundsUndiscoveredChem);
+            settingsNode.AddValue("fundsdiscoveredChem", fundsdiscoveredChem);
             Utilities.Log_Debug("TSTSettings save complete");
         }
     }
@@ -349,8 +401,11 @@ namespace TarsierSpaceTech
             {
                 TSTStockPlanetOrderNode = node.AddNode(configNodeName);
             }
-            string tmpPlanetOrder = string.Join(",", StockPlanetOrder);
-            TSTStockPlanetOrderNode.AddValue("planets", tmpPlanetOrder);
+            if (StockPlanetOrder.Length > 0)
+            {
+                string tmpPlanetOrder = string.Join(",", StockPlanetOrder);
+                TSTStockPlanetOrderNode.AddValue("planets", tmpPlanetOrder);
+            }
             Utilities.Log_Debug("TSTStockPlanetOrder save complete");
         }
     }
@@ -394,8 +449,11 @@ namespace TarsierSpaceTech
             {
                 TSTStockPlanetOrderNode = node.AddNode(configNodeName);
             }
-            string tmpPlanetOrder = string.Join(",", RSSPlanetOrder);
-            TSTStockPlanetOrderNode.AddValue("planets", tmpPlanetOrder);
+            if (RSSPlanetOrder.Length > 0)
+            {
+                string tmpPlanetOrder = string.Join(",", RSSPlanetOrder);
+                TSTStockPlanetOrderNode.AddValue("planets", tmpPlanetOrder);
+            }
             Utilities.Log_Debug("TSTRSSPlanetOrder save complete");
         }
     }
@@ -439,9 +497,60 @@ namespace TarsierSpaceTech
             {
                 TSTStockPlanetOrderNode = node.AddNode(configNodeName);
             }
-            string tmpPlanetOrder = string.Join(",", OPMPlanetOrder);
-            TSTStockPlanetOrderNode.AddValue("planets", tmpPlanetOrder);
+            if (OPMPlanetOrder.Length > 0)
+            {
+                string tmpPlanetOrder = string.Join(",", OPMPlanetOrder);
+                TSTStockPlanetOrderNode.AddValue("planets", tmpPlanetOrder);
+            }
             Utilities.Log_Debug("TSTOPMPlanetOrder save complete");
+        }
+    }
+
+    public class TSTNHPlanets
+    {
+        private const string configNodeName = "TSTNHPlanetOrder";
+
+        public string[] NHPlanetOrder;
+
+        public void Load(ConfigNode node)
+        {
+            if (node.HasNode(configNodeName))
+            {
+                ConfigNode TSTStockPlanetOrderNode = new ConfigNode();
+                node.TryGetNode(configNodeName, ref TSTStockPlanetOrderNode);
+                string tmpPlanetOrderString = "";
+                TSTStockPlanetOrderNode.TryGetValue("planets", ref tmpPlanetOrderString);
+                string[] tmpPlanetOrder = tmpPlanetOrderString.Split(',');
+                NHPlanetOrder = new string[tmpPlanetOrder.Length];
+                if (tmpPlanetOrder.Length > 0)
+                {
+                    for (int i = 0; i < tmpPlanetOrder.Length; i++)
+                    {
+                        NHPlanetOrder[i] = tmpPlanetOrder[i];
+                    }
+                }
+            }
+            Utilities.Log_Debug("TSTNHPlanetOrder load complete");
+        }
+
+        public void Save(ConfigNode node)
+        {
+            ConfigNode TSTStockPlanetOrderNode;
+            if (node.HasNode(configNodeName))
+            {
+                TSTStockPlanetOrderNode = node.GetNode(configNodeName);
+                TSTStockPlanetOrderNode.ClearData();
+            }
+            else
+            {
+                TSTStockPlanetOrderNode = node.AddNode(configNodeName);
+            }
+            if (NHPlanetOrder.Length > 0)
+            {
+                string tmpPlanetOrder = string.Join(",", NHPlanetOrder);
+                TSTStockPlanetOrderNode.AddValue("planets", tmpPlanetOrder);
+            }
+            Utilities.Log_Debug("TSTNHPlanetOrder save complete");
         }
     }
 }

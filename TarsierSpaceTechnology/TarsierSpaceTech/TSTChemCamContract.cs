@@ -80,7 +80,11 @@ namespace TarsierSpaceTech
 
         protected override void OnCompleted()
         {
-            TSTProgressTracker.setChemCamContractComplete(target);
+            string targetname = target.name;
+            if (biome != "")
+                targetname += "," + biome;
+
+            TSTProgressTracker.setChemCamContractComplete(targetname);
         }
 
         private CelestialBody target;
@@ -200,22 +204,35 @@ namespace TarsierSpaceTech
             TSTScienceParam param2 = new TSTScienceParam();
             param2.matchFields.Add("TarsierSpaceTech.ChemCam");
             param2.matchFields.Add(target.name);
+            biome = "";
             List<string> biomes = ResearchAndDevelopment.GetBiomeTags(target);
             if (biomes.Count > 1)
             {
                 do
                 {
                     biome = biomes[r.Next(biomes.Count - 1)];
-                } while (!biome.Contains("Water"));
+                } while (biome.Contains("Water"));
                 param2.matchFields.Add(biome);
             }
             AddParameter(param2);
             ContractPrestige p = TSTProgressTracker.getChemCamPrestige(target); //Get the target prestige level
             if (p != prestige)  //If the prestige is not the required level don't generate.
                 return false;
-            SetFunds(300, 400, target);
-            SetReputation(35, target);
-            SetScience(30, target);
+            string targetname = target.name;
+            if (biome != "")
+                    targetname += "," + biome;
+            if (TSTProgressTracker.HasChemCamCompleted(targetname))
+            {
+                SetFunds(TSTMstStgs.Instance.TSTsettings.fundsdiscoveredChem * 0.75f, TSTMstStgs.Instance.TSTsettings.fundsdiscoveredChem, target);
+                SetReputation(TSTMstStgs.Instance.TSTsettings.repDiscoveredChem, target);
+                SetScience(TSTMstStgs.Instance.TSTsettings.scienceDiscoveredChem, target);
+            }
+            else
+            {
+                SetFunds(TSTMstStgs.Instance.TSTsettings.fundsUndiscoveredChem * 0.75f, TSTMstStgs.Instance.TSTsettings.fundsUndiscoveredChem, target);
+                SetReputation(TSTMstStgs.Instance.TSTsettings.repUndiscoveredChem, target);
+                SetScience(TSTMstStgs.Instance.TSTsettings.scienceUndiscoveredChem, target);
+            }
             if (new Random(MissionSeed).Next(10) > 3)
             {
                 Utilities.Log_Debug("Random Seed False, not generating contract");

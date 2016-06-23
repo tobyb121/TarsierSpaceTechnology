@@ -150,18 +150,18 @@ namespace TarsierSpaceTech
             param2.matchFields.Add("LookingAt" + target.name);
             AddParameter(param2);
             Utilities.Log_Debug("Created Science Param");
-            prestige = TSTProgressTracker.getTelescopePrestige(target.name);
+            prestige = TSTProgressTracker.getTelescopePrestige(target);
             if (TSTProgressTracker.HasTelescopeCompleted(target))
             {
-                SetFunds(10, 15, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
-                SetReputation(5, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
-                SetReputation(5, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
+                SetScience(TSTMstStgs.Instance.TSTsettings.scienceDiscoveredScope, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
+                SetFunds(TSTMstStgs.Instance.TSTsettings.fundsdiscoveredScope * 0.75f, TSTMstStgs.Instance.TSTsettings.fundsdiscoveredScope, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
+                SetReputation(TSTMstStgs.Instance.TSTsettings.repDiscoveredScope, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
             }
             else
             {
-                SetScience(30, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
-                SetFunds(75, 150, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
-                SetReputation(20, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
+                SetScience(TSTMstStgs.Instance.TSTsettings.scienceUndiscoveredScope, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
+                SetFunds(TSTMstStgs.Instance.TSTsettings.fundsUndiscoveredScope * 0.75f, TSTMstStgs.Instance.TSTsettings.fundsUndiscoveredScope, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
+                SetReputation(TSTMstStgs.Instance.TSTsettings.repUndiscoveredScope, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
             }
             return true;
         }

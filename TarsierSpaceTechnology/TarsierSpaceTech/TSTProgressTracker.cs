@@ -40,6 +40,7 @@ namespace TarsierSpaceTech
 
         private static bool isRSSactive;
         private static bool isOPMactive;
+        private static bool isNHactive;
         private static bool isRBactive;
 
         //ResearchBodies Mod vars
@@ -69,6 +70,7 @@ namespace TarsierSpaceTech
             Instance = this;
             isRSSactive = Utilities.IsRSSInstalled;
             isOPMactive = Utilities.IsOPMInstalled;
+            isNHactive = Utilities.IsNHInstalled;
             isRBactive = Utilities.IsResearchBodiesInstalled;
             bodyNames = FlightGlobals.Bodies.Where(p => p.Radius > 100).Select(p => p.name).ToList();  //List of CBs where radius > 100m (exclude Sigma Binaries)
 
@@ -146,9 +148,9 @@ namespace TarsierSpaceTech
             Instance.TelescopeData[body.name] = true;
         }
 
-        public static void setChemCamContractComplete(CelestialBody body)
+        public static void setChemCamContractComplete(string targetname)
         {
-            Instance.ChemCamData[body.name] = true;
+            Instance.ChemCamData[targetname] = true;
         }
 
         public static string GetNextTelescopeTarget()
@@ -170,18 +172,27 @@ namespace TarsierSpaceTech
                 }
                 else
                 {
-                    if (Utilities.IsKopInstalled)  // If Kopernicus is installed, but not RSS or OPM use a list of the planets in order
+                    if (isNHactive) // If New Horizons Planets Mod is installed
                     {
-                        
-                        target = Instance.bodyNames.FirstOrDefault(s => !Instance.TelescopeData[s]);
+                        target = TSTMstStgs.Instance.TSTnhplanets.NHPlanetOrder.FirstOrDefault(s => !Instance.TelescopeData[s]);
                         if (target == default(string))
-                            target = Instance.bodyNames[Random.Range(0, Instance.bodyNames.Count)];
+                            target = TSTMstStgs.Instance.TSTnhplanets.NHPlanetOrder[Random.Range(0, TSTMstStgs.Instance.TSTnhplanets.NHPlanetOrder.Length)];
                     }
-                    else  //Default Stock
+                    else
                     {
-                        target = TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder.FirstOrDefault(s => !Instance.TelescopeData[s]);
-                        if (target == default(string))
-                            target = TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder[Random.Range(0, TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder.Length)];
+                        if (Utilities.IsKopInstalled)  // If Kopernicus is installed, but not RSS or OPM use a list of the planets in order
+                        {
+
+                            target = Instance.bodyNames.FirstOrDefault(s => !Instance.TelescopeData[s]);
+                            if (target == default(string))
+                                target = Instance.bodyNames[Random.Range(0, Instance.bodyNames.Count)];
+                        }
+                        else  //Default Stock
+                        {
+                            target = TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder.FirstOrDefault(s => !Instance.TelescopeData[s]);
+                            if (target == default(string))
+                                target = TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder[Random.Range(0, TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder.Length)];
+                        }
                     }
                 }
             }
@@ -230,82 +241,47 @@ namespace TarsierSpaceTech
             return !isActive || Instance.TelescopeData[body.name];
         }
 
-        public static Contract.ContractPrestige getTelescopePrestige(string bodyName)
+        public static bool HasChemCamCompleted(string entry)
         {
-            int i = 0;
-            int significant = 4;
-            int exceptional = 7;
+            return !isActive || Instance.ChemCamData[entry];
+        }
 
-            if (isRSSactive) //If Real Solar System is installed
+        public static Contract.ContractPrestige getTelescopePrestige(TSTSpaceTelescope.TargetableObject body)
+        {
+            double distance = 0f;
+            if (body.type == typeof(TSTGalaxy))
             {
-                i = Array.IndexOf(TSTMstStgs.Instance.TSTrssplanets.RSSPlanetOrder, bodyName);
-                significant = 3;
-                exceptional = 7;
+                Vector3d bodyPos = body.position;
+                CelestialBody HmePlanet = Planetarium.fetch.Home;
+                Vector3d hmeplntPos = HmePlanet.getPositionAtUT(0);
+                distance = Math.Sqrt(Math.Pow(bodyPos.x - hmeplntPos.x, 2) + Math.Pow(bodyPos.y - hmeplntPos.y, 2) + Math.Pow(bodyPos.z - hmeplntPos.z, 2));
             }
             else
             {
-                if (isOPMactive) // If Outer Planets Mod is installed
-                {
-                    i = Array.IndexOf(TSTMstStgs.Instance.TSTopmplanets.OPMPlanetOrder, bodyName);
-                    significant = 7;
-                    exceptional = 17;
-                }
-                else
-                {
-                    if (Utilities.IsKopInstalled)
-                    {
-                        i = Array.IndexOf(Instance.bodyNames.ToArray(), bodyName);
-                    }
-                    else  //Default Stock
-                    {
-                        i = Array.IndexOf(TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder, bodyName);
-                    }
-                }
+                distance = Utilities.DistanceFromHomeWorld(body.name);
             }
-            if (i < significant)
+            if (distance < 13000000000)
+            {
                 return Contract.ContractPrestige.Trivial;
-            if (i < exceptional)
+            }
+            if (distance < 20000000000)
+            {
                 return Contract.ContractPrestige.Significant;
+            }
             return Contract.ContractPrestige.Exceptional;
         }
 
         public static Contract.ContractPrestige getChemCamPrestige(CelestialBody body)
         {
-            int i = 0;
-            int significant = 4;
-            int exceptional = 7;
-
-            if (isRSSactive) //If Real Solar System is installed
+            double distance = Utilities.DistanceFromHomeWorld(body.name);
+            if (distance < 13000000000)
             {
-                i = Array.IndexOf(TSTMstStgs.Instance.TSTrssplanets.RSSPlanetOrder, body.name);
-                significant = 3;
-                exceptional = 7;
-            }
-            else
-            {
-                if (isOPMactive) // If Outer Planets Mod is installed
-                {
-                    i = Array.IndexOf(TSTMstStgs.Instance.TSTopmplanets.OPMPlanetOrder, body.name);
-                    significant = 7;
-                    exceptional = 17;
-                }
-                else
-                {
-                    if (Utilities.IsKopInstalled)
-                    {
-                        i = Array.IndexOf(Instance.bodyNames.ToArray(), body.name);
-                    }
-                    else  //Default Stock
-                    {
-                        i = Array.IndexOf(TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder, body.name);
-                    }
-                }
-            }
-
-            if (i < significant)
                 return Contract.ContractPrestige.Trivial;
-            if (i < exceptional)
+            }
+            if (distance < 20000000000)
+            {
                 return Contract.ContractPrestige.Significant;
+            }
             return Contract.ContractPrestige.Exceptional;
         }
 
@@ -363,19 +339,49 @@ namespace TarsierSpaceTech
                 {
                     foreach (CelestialBody b in FlightGlobals.Bodies.Where(p => p.Radius > 100 && p.pqsController != null))
                     {
-                        if (chemCamNode.HasValue(b.name))
-                            ChemCamData[b.name] = chemCamNode.GetValue(b.name) == "true";
+                        List<string> biomes = ResearchAndDevelopment.GetBiomeTags(b);
+                        if (biomes.Count > 1)
+                        {
+                            foreach (var biome in biomes)
+                            {
+                                string nodename = b.name + "," + biome;
+                                if (chemCamNode.HasValue(nodename))
+                                    ChemCamData[nodename] = chemCamNode.GetValue(nodename) == "true";
+                                else
+                                {
+                                    ChemCamData[nodename] = false;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if (chemCamNode.HasValue(b.name))
+                                ChemCamData[b.name] = chemCamNode.GetValue(b.name) == "true";
+                            else
+                            {
+                                ChemCamData[b.name] = false;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    foreach (CelestialBody b in FlightGlobals.Bodies.Where(p => p.Radius > 100 && p.pqsController != null))
+                    {
+                        List<string> biomes = ResearchAndDevelopment.GetBiomeTags(b);
+                        if (biomes.Count > 1)
+                        {
+                            foreach (var biome in biomes)
+                            {
+                                string nodename = b.name + "," + biome;
+                                ChemCamData[nodename] = false;
+                            }
+                        }
                         else
                         {
                             ChemCamData[b.name] = false;
                         }
                     }
-                    
-                }
-                else
-                {
-                    foreach (CelestialBody b in FlightGlobals.Bodies.Where(p => p.Radius > 100 && p.pqsController != null))
-                        ChemCamData[b.name] = false;
                 }
             }
             catch (Exception ex)

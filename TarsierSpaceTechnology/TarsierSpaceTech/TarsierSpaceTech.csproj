@@ -34,13 +34,14 @@
     <RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Assembly-CSharp, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\KSPDLLs\Assembly-CSharp.dll</HintPath>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>..\..\..\KSPDLLs - 1.1.3\Assembly-CSharp.dll</HintPath>
     </Reference>
-    <Reference Include="Assembly-CSharp-firstpass, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" />
+    <Reference Include="Assembly-CSharp-firstpass">
+      <HintPath>..\..\..\KSPDLLs - 1.1.3\Assembly-CSharp-firstpass.dll</HintPath>
+    </Reference>
     <Reference Include="KSPUtil">
-      <HintPath>..\..\..\KSPDLLs\KSPUtil.dll</HintPath>
+      <HintPath>..\..\..\KSPDLLs - 1.1.3\KSPUtil.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -48,17 +49,19 @@
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
-    <Reference Include="UnityEngine, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\KSPDLLs\UnityEngine.dll</HintPath>
+    <Reference Include="UnityEngine">
+      <HintPath>..\..\..\KSPDLLs - 1.1.3\UnityEngine.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UI">
-      <HintPath>..\..\..\KSPDLLs\UnityEngine.UI.dll</HintPath>
+      <HintPath>..\..\..\KSPDLLs - 1.1.3\UnityEngine.UI.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\..\REPOSoftTechKSPUtils\AppLauncherToolBarExtension.cs">
       <Link>AppLauncherToolBarExtension.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\REPOSoftTechKSPUtils\RectExtentions.cs">
+      <Link>RectExtentions.cs</Link>
     </Compile>
     <Compile Include="..\..\..\REPOSoftTechKSPUtils\RSTutilities.cs">
       <Link>RSTutilities.cs</Link>
@@ -115,7 +118,7 @@
     <None Include="Distribution\GameData\TarsierSpaceTech\Parts\SpaceTelescope\part.cfg" />
     <None Include="Distribution\GameData\TarsierSpaceTech\Parts\SpaceTelescope\texture.dds" />
     <None Include="Distribution\GameData\TarsierSpaceTech\Parts\SpaceTelescope\texture.png.ddsified" />
-    <None Include="Distribution\GameData\TarsierSpaceTech\Plugins\Config.cfg" />
+    <None Include="Distribution\GameData\TarsierSpaceTech\Plugins\PluginData\Config.cfg" />
     <None Include="Distribution\GameData\TarsierSpaceTech\Resources\MMOPMScienceDefs.cfg" />
     <None Include="Distribution\GameData\TarsierSpaceTech\Resources\MMRSSScienceDefs.cfg" />
     <None Include="Distribution\GameData\TarsierSpaceTech\Resources\ScienceDefs.cfg" />
@@ -177,16 +180,12 @@
     <Content Include="Distribution\GameData\TarsierSpaceTech\Icons\TSTToolTipBox.png" />
     <Content Include="Distribution\GameData\TarsierSpaceTech\MiniAVC Licence.txt" />
     <Content Include="Distribution\GameData\TarsierSpaceTech\MiniAVC.dll" />
-    <Content Include="Distribution\GameData\TarsierSpaceTech\Plugins\TarsierSpaceTech.dll" />
-    <Content Include="Distribution\GameData\TarsierSpaceTech\Plugins\TarsierSpaceTech.dll.mdb">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Distribution\GameData\TarsierSpaceTech\Plugins\TarsierSpaceTech.pdb" />
     <Content Include="LocalDev\7za_dir.txt" />
     <Content Include="LocalDev\ksp_dir.txt" />
     <Content Include="LocalDev\mono_exe.txt" />
     <Content Include="LocalDev\pdb2mdb_exe.txt" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="PostBuildMacros">
     <GetAssemblyIdentity AssemblyFiles="$(TargetPath)">
@@ -209,13 +208,13 @@ set /p PDB2MDB_EXE_DIR=&lt;"$(ProjectDir)LocalDev\pdb2mdb_exe.txt"
 
 set /p ZA_DIR=&lt;"$(ProjectDir)LocalDev\7za_dir.txt"
 
-xcopy "$(TargetPath)" "$(SolutionDir)$(ProjectName)\Distribution\GameData\$(ProjectName)\Plugins\" /Y
+xcopy "$(TargetPath)" "$(ProjectDir)Distribution\GameData\$(ProjectName)\Plugins\" /Y
 
-xcopy "$(TargetDir)$(ProjectName).pdb" "$(SolutionDir)$(ProjectName)\Distribution\GameData\$(ProjectName)\Plugins\" /Y
+xcopy "$(TargetDir)$(ProjectName).pdb" "$(ProjectDir)Distribution\GameData\$(ProjectName)\Plugins\" /Y
 
 cd "$(TargetDir)"
 "%25MONO_EXE_DIR%25" "%25PDB2MDB_EXE_DIR%25" "$(TargetFileName)"
-xcopy "$(TargetDir)$(ProjectName).dll.mdb" "$(SolutionDir)$(ProjectName)\Distribution\GameData\$(ProjectName)\Plugins\" /Y
+xcopy "$(TargetDir)$(ProjectName).dll.mdb" "$(ProjectDir)Distribution\GameData\$(ProjectName)\Plugins\" /Y
 
 where /q %25ZA_DIR%25:7za.exe
 if %25ERRORLEVEL%25 == 1 (
@@ -225,9 +224,11 @@ if %25ERRORLEVEL%25 == 1 (
   ) 
 if exist "$(SolutionDir)$(ProjectName)_V@(VersionNumber).zip" del "$(SolutionDir)$(ProjectName)_V@(VersionNumber).zip"
    
-%25ZA_DIR%257za.exe a -tzip -r  "$(SolutionDir)$(ProjectName)_V@(VersionNumber).zip" "$(SolutionDir)$(ProjectName)\Distribution\GameData"
-c:\7za\7za d -r  -x!REPOSoftTech.png -x!ToolbarIcon.png -x!TSTbtnResize.png -x!TSTbtnRedCross.png -x!TSTToolTipBox.png -x!TSTIconOff.png -x!TSTIconOn.png "$(SolutionDir)$(ProjectName)_V@(VersionNumber).zip" "*.ddsified" "*.pdb" "*.mdb" "*.png"
-xcopy /E /Y "$(SolutionDir)$(ProjectName)\Distribution\GameData" "%25KSP_DIR%25\GameData"
+%25ZA_DIR%257za.exe a -tzip -r  "$(SolutionDir)$(ProjectName)_V@(VersionNumber).zip" "$(ProjectDir)Distribution\GameData"
+cd "$(ProjectDir)Distribution\GameData\$(ProjectName)\Icons"
+dir /b &gt; "$(SolutionDir)IconsExclude.txt"
+c:\7za\7za d -r  -x@"$(SolutionDir)IconsExclude.txt" "$(SolutionDir)$(ProjectName)_V@(VersionNumber).zip" "*.ddsified" "*.pdb" "*.mdb" "*.png"
+xcopy /E /Y "$(ProjectDir)Distribution\GameData" "%25KSP_DIR%25\GameData"
 </PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

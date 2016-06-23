@@ -187,5 +187,9 @@ namespace TarsierSpaceTech
             return null;
         }
 
+        public bool GetActiveTargetable()
+        {
+            return false;   
+        }
     }
 }
