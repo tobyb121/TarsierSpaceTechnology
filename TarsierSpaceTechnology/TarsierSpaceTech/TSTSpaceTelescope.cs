@@ -97,7 +97,6 @@ namespace TarsierSpaceTech
         private Vector2 GalscrollViewVector = Vector2.zero;
         private int GUI_WIDTH_LARGE = 600;
         private int GUI_WIDTH_SMALL = 320;
-        private bool isRBactive;
         private bool overrideEvents, overrideEventsProcessed;
         private bool disableEvents, disableEventsProcessed;
         private BaseEventList overrideEventList;
@@ -113,11 +112,10 @@ namespace TarsierSpaceTech
         public float PIDKd = 0.5f;
         public float PIDKi = 6f;
         public float PIDKp = 12f;
-        private RBWrapper.ModuleTrackBodies RBmoduleTrackBodies;
-        private Dictionary<CelestialBody, int> ResearchState = new Dictionary<CelestialBody, int>();
         private int selectedTargetIndex = -1;
 
-        [KSPField] public bool servoControl = true;
+        [KSPField]
+        public bool servoControl = true;
 
         private bool showBodTargetsWindow;
         private bool showGalTargetsWindow;
@@ -127,15 +125,13 @@ namespace TarsierSpaceTech
         private int targetId;
 
         public TargettingMode targettingMode = TargettingMode.Galaxy;
-        private Dictionary<CelestialBody, bool> TrackedBodies = new Dictionary<CelestialBody, bool>();
-
         private Rect windowPos = new Rect(128, 128, 0, 0);
         public WindowState windowState = WindowState.Small;
 
-        [KSPField] public float xmitDataScalar = 0.5f;
+        [KSPField]
+        public float xmitDataScalar = 0.5f;
 
         private Quaternion zeroRotation;
-
         public Transform cameraTransform { get; private set; }
 
         public override void OnStart(StartState state)
@@ -214,89 +210,8 @@ namespace TarsierSpaceTech
             Utilities.Log_Debug("TSTTel Added Input Callback");
             //if (Active) //Moved to OnUpdate so we can process any override/disable event parameters correctly.
             //    StartCoroutine(openCamera());
-
-            //If ResearchBodies is installed, initialise the PartModulewrapper and get the TrackedBodies dictionary item.
-            isRBactive = Utilities.IsResearchBodiesInstalled;
-            if (isRBactive)
-            {
-                processRBstartup();
-            }
         }
-
-        private void processRBstartup()
-        {
-            RBWrapper.InitRBDBWrapper();
-            RBWrapper.InitRBFLWrapper();
-            if (RBWrapper.APIFLReady)
-            {
-                foreach (PartModule module in part.Modules)
-                {
-                    if (module.moduleName == "ModuleTrackBodies")
-                    {
-                        RBmoduleTrackBodies = new RBWrapper.ModuleTrackBodies(module);
-                        TrackedBodies = RBmoduleTrackBodies.TrackedBodies;
-                        ResearchState = RBmoduleTrackBodies.ResearchState;
-
-                        if (File.Exists("saves/" + HighLogic.SaveFolder + "/researchbodies.cfg"))
-                        {
-                            var mainnode = ConfigNode.Load("saves/" + HighLogic.SaveFolder + "/researchbodies.cfg");
-                            foreach (var cb in TSTGalaxies.CBGalaxies)
-                            {
-                                var fileContainsGalaxy = false;
-                                foreach (ConfigNode node in mainnode.GetNode("RESEARCHBODIES").nodes)
-                                {
-                                    if (cb.bodyName.Contains(node.GetValue("body")))
-                                    {
-                                        if (bool.Parse(node.GetValue("ignore")))
-                                        {
-                                            TrackedBodies[cb] = true;
-                                            ResearchState[cb] = 100;
-                                        }
-                                        else
-                                        {
-                                            TrackedBodies[cb] = bool.Parse(node.GetValue("isResearched"));
-                                            if (node.HasValue("researchState"))
-                                            {
-                                                ResearchState[cb] = int.Parse(node.GetValue("researchState"));
-                                            }
-                                            else
-                                            {
-                                                ConfigNode cbNode = null;
-                                                foreach (
-                                                    ConfigNode cbSettingNode in
-                                                        mainnode.GetNode("RESEARCHBODIES").nodes)
-                                                {
-                                                    if (cbSettingNode.GetValue("body") == cb.GetName())
-                                                        cbNode = cbSettingNode;
-                                                }
-                                                if (cbNode != null) cbNode.AddValue("researchState", "0");
-                                                mainnode.Save("saves/" + HighLogic.SaveFolder +
-                                                              "/researchbodies.cfg");
-                                                ResearchState[cb] = 0;
-                                            }
-                                        }
-                                        fileContainsGalaxy = true;
-                                    }
-                                }
-                                if (!fileContainsGalaxy)
-                                {
-                                    var newNodeForCB = mainnode.GetNode("RESEARCHBODIES").AddNode("BODY");
-                                    newNodeForCB.AddValue("body", cb.GetName());
-                                    newNodeForCB.AddValue("isResearched", "false");
-                                    newNodeForCB.AddValue("researchState", "0");
-                                    newNodeForCB.AddValue("ignore", "false");
-                                    TrackedBodies[cb] = false;
-                                    ResearchState[cb] = 0;
-                                    mainnode.Save("saves/" + HighLogic.SaveFolder + "/researchbodies.cfg");
-                                }
-                            }
-                        }
-                        break;
-                    }
-                }
-            }
-        }
-
+        
         private IEnumerator setSASParams()
         {
             while (FlightGlobals.ActiveVessel.Autopilot.RSAS.pidPitch == null)
@@ -891,28 +806,23 @@ namespace TarsierSpaceTech
                     "If selected only targets that are the subject of a current contract will be shown"));
             //RSTUtils.Utilities.Log_Debug(String.Format(" - TargettingWindow - TSTBodies.Count = {0}", FlightGlobals.Bodies.Count));			
             var newTarget = 0;
-            if (isRBactive && RBWrapper.APIDBReady && RBWrapper.APIFLReady && RBmoduleTrackBodies.enabled)
+            if ( TSTMstStgs.Instance.isRBloaded && RBWrapper.RBactualAPI.enabled)
             {
                 //var filterRBTargets = isRBactive;
                 newTarget = FlightGlobals.Bodies.
                     FindIndex(
-                        g => g.Radius > 100 && (TSTProgressTracker.HasTelescopeCompleted(g) ||
-                             (ContractSystem.Instance &&
-                              ContractSystem.Instance.GetCurrentActiveContracts<TSTTelescopeContract>()
-                                  .Any(t => t.target.name == g.name)))
+                        g => g.Radius > 100 && (TSTProgressTracker.HasTelescopeCompleted(g) || (ContractSystem.Instance && ContractSystem.Instance.GetCurrentActiveContracts<TSTTelescopeContract>().Any(t => t.target.name == g.name)))
                             ? GUILayout.Button(g.theName)
                             : (filterContractTargets
                                 ? false
-                                : (RBmoduleTrackBodies.TrackedBodies[g] ? g.Radius > 100 ? GUILayout.Button(g.theName) : false : false)));
+                                : (TSTMstStgs.Instance.RBCelestialBodies[g].isResearched ? g.Radius > 100 ? GUILayout.Button(g.theName) : false : false)));
             }
             else
             {
                 newTarget = FlightGlobals.Bodies.
                     FindIndex(
-                        g => g.Radius > 100 && (TSTProgressTracker.HasTelescopeCompleted(g) ||
-                             (ContractSystem.Instance &&
-                              ContractSystem.Instance.GetCurrentActiveContracts<TSTTelescopeContract>()
-                                  .Any(t => t.target.name == g.name)))
+                        g => g.Radius > 100 && (TSTProgressTracker.HasTelescopeCompleted(g) || (ContractSystem.Instance && ContractSystem.Instance.GetCurrentActiveContracts<TSTTelescopeContract>()
+                        .Any(t => t.target.name == g.name)))
                             ? GUILayout.Button(g.theName)
                             : (filterContractTargets ? false : g.Radius > 100 ? GUILayout.Button(g.theName) : false));
             }
@@ -955,41 +865,27 @@ namespace TarsierSpaceTech
         private void TargettingGalWindow(int windowID)
         {
             GUILayout.BeginVertical();
-            GalscrollViewVector = GUILayout.BeginScrollView(GalscrollViewVector, GUILayout.Height(300),
-                GUILayout.Width(GUI_WIDTH_SMALL));
-            filterContractTargets = GUILayout.Toggle(filterContractTargets,
-                new GUIContent("Show only contract targets",
-                    "If selected only targets that are the subject of a current contract will be shown"));
+            GalscrollViewVector = GUILayout.BeginScrollView(GalscrollViewVector, GUILayout.Height(300),GUILayout.Width(GUI_WIDTH_SMALL));
+            filterContractTargets = GUILayout.Toggle(filterContractTargets,new GUIContent("Show only contract targets","If selected only targets that are the subject of a current contract will be shown"));
             //RSTUtils.Utilities.Log_Debug(String.Format(" - TargettingWindow - TSTGalaxies.Galaxies.Count = {0}", TSTGalaxies.Galaxies.Count));			
 
             var newTarget = 0;
-            if (isRBactive && RBWrapper.APIDBReady && RBWrapper.APIFLReady && RBmoduleTrackBodies.enabled)
+            if (RBWrapper.APIRBReady && RBWrapper.RBactualAPI.enabled)
             {
-                var filterRBTargets = isRBactive;
                 newTarget = TSTGalaxies.Galaxies.
                     FindIndex(
                         g => TSTProgressTracker.HasTelescopeCompleted(g) ||
-                             (ContractSystem.Instance &&
-                              ContractSystem.Instance.GetCurrentActiveContracts<TSTTelescopeContract>()
-                                  .Any(t => t.target.name == g.name))
+                             (ContractSystem.Instance && ContractSystem.Instance.GetCurrentActiveContracts<TSTTelescopeContract>().Any(t => t.target.name == g.name))
                             ? GUILayout.Button(g.theName)
-                            : (filterContractTargets
-                                ? false
-                                : (RBmoduleTrackBodies.TrackedBodies[
-                                    TSTGalaxies.CBGalaxies.Find(x => x.theName == g.theName)]
-                                    ? GUILayout.Button(g.theName)
-                                    : false)));
+                            : (filterContractTargets ? false : (TSTMstStgs.Instance.RBCelestialBodies[TSTGalaxies.CBGalaxies.Find(x => x.theName == g.theName)].isResearched ? GUILayout.Button(g.theName): false)));
             }
             else
             {
                 newTarget = TSTGalaxies.Galaxies.
                     FindIndex(
                         g => TSTProgressTracker.HasTelescopeCompleted(g) ||
-                             (ContractSystem.Instance &&
-                              ContractSystem.Instance.GetCurrentActiveContracts<TSTTelescopeContract>()
-                                  .Any(t => t.target.name == g.name))
-                            ? GUILayout.Button(g.theName)
-                            : (filterContractTargets ? false : GUILayout.Button(g.theName)));
+                             (ContractSystem.Instance && ContractSystem.Instance.GetCurrentActiveContracts<TSTTelescopeContract>().Any(t => t.target.name == g.name))
+                            ? GUILayout.Button(g.theName) : (filterContractTargets ? false : GUILayout.Button(g.theName)));
             }
 
             //RSTUtils.Utilities.Log_Debug(String.Format(" - TargettingWindow - newTarget = {0}", newTarget));

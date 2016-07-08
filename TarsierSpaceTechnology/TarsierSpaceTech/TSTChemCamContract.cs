@@ -169,19 +169,19 @@ namespace TarsierSpaceTech
             }
 
             // if ResearchBodies is installed we need to check if the target body has been found. If it has not, then we set the target to default so a contract is not generated at this time.
-            if (TSTMstStgs.Instance.isRBactive)
+            if (TSTMstStgs.Instance.isRBactive && RBWrapper.RBactualAPI.enabled)
             {
                 try
                 {
-                    if (RBWrapper.APISCReady)
+                    if (RBWrapper.APIRBReady)
                     {                        
-                        List<KeyValuePair<CelestialBody, bool>> trackbodyentry = TSTMstStgs.Instance.TrackedBodies.Where(e => e.Key == target).ToList();
+                        List<KeyValuePair<CelestialBody, RBWrapper.CelestialBodyInfo>> trackbodyentry = TSTMstStgs.Instance.RBCelestialBodies.Where(e => e.Key.name == target.name).ToList();
                         if (trackbodyentry.Count != 1)
                         {
                             Utilities.Log("ChemCam Contract cannot find target in ResearchBodies TrackedBodies {0}" , target.name);
                             return false;
                         }
-                        if (trackbodyentry[0].Value == false)
+                        if (trackbodyentry[0].Value.isResearched == false)
                         {
                             Utilities.Log("ChemCam Contract target in ResearchBodies TrackedBodies is still not tracked {0}" , target.name);
                             return false;
