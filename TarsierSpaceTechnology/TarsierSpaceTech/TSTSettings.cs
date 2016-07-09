@@ -43,12 +43,13 @@ namespace TarsierSpaceTech
         public TSTOPMPlanets TSTopmplanets { get; } 
         public TSTNHPlanets TSTnhplanets { get; }        
         private readonly string globalConfigFilename;
-        internal bool isRBactive;
-        internal bool isRBloaded;
-        internal bool loadRBthisscene;
-        internal Dictionary<CelestialBody, bool> TrackedBodies = new Dictionary<CelestialBody, bool>();
-        internal Dictionary<CelestialBody, int> ResearchState = new Dictionary<CelestialBody, int>();
+        internal bool isRBactive = false;
+        internal bool isRBloaded = false;
+        internal bool loadRBthisscene = false;
 
+        internal Dictionary<CelestialBody, RBWrapper.CelestialBodyInfo> RBCelestialBodies =
+            new Dictionary<CelestialBody, RBWrapper.CelestialBodyInfo>();
+        
         public TSTMstStgs()
         {                       
             Utilities.Log("TSTMstStgs Constructor");
@@ -88,77 +89,19 @@ namespace TarsierSpaceTech
 
         public void Update()
         {
-            if (Time.timeSinceLevelLoad < 4.0f || !isRBactive || !loadRBthisscene || isRBloaded) // Check not loading level, or ResearchBodies is not active, or don't need to load RB this scene or it's already loaded.
+            if (Time.timeSinceLevelLoad < 3.0f || !isRBactive || !loadRBthisscene || isRBloaded) // Check not loading level, or ResearchBodies is not active, or don't need to load RB this scene or it's already loaded.
             {
                 return;
             }
-            isRBactive = Utilities.IsResearchBodiesInstalled;
+            
             if (isRBactive)
             {
-                RBWrapper.InitRBDBWrapper();
-                RBWrapper.InitRBSCWrapper();
-                RBWrapper.InitRBFLWrapper();
-                if (RBWrapper.APISCReady)
+                if (!RBWrapper.APIRBReady)
+                    RBWrapper.InitRBWrapper();
+                isRBloaded = RBWrapper.APIRBReady;
+                if (isRBloaded)
                 {
-
-                    TrackedBodies = RBWrapper.RBSCactualAPI.TrackedBodies;
-                    ResearchState = RBWrapper.RBSCactualAPI.ResearchState;
-
-                    Dictionary<string, string> dbdiscoverymsgs = RBWrapper.RBDBactualAPI.DiscoveryMessage;
-
-                    if (File.Exists("saves/" + HighLogic.SaveFolder + "/researchbodies.cfg"))
-                    {
-                        ConfigNode mainnode = ConfigNode.Load("saves/" + HighLogic.SaveFolder + "/researchbodies.cfg");
-                        foreach (CelestialBody cb in TSTGalaxies.CBGalaxies)
-                        {
-                            bool fileContainsGalaxy = false;
-                            foreach (ConfigNode node in mainnode.GetNode("RESEARCHBODIES").nodes)
-                            {
-                                if (cb.bodyName.Contains(node.GetValue("body")))
-                                {
-                                    bool ignore = false;
-                                    bool.TryParse(node.GetValue("ignore"), out ignore);
-                                    if (ignore)
-                                    {
-                                        TrackedBodies[cb] = true;
-                                        ResearchState[cb] = 100;
-                                    }
-                                    else
-                                    {
-                                        TrackedBodies[cb] = bool.Parse(node.GetValue("isResearched"));
-                                        if (node.HasValue("researchState"))
-                                        {
-                                            ResearchState[cb] = int.Parse(node.GetValue("researchState"));
-                                        }
-                                        else
-                                        {
-                                            ConfigNode cbNode = null;
-                                            foreach (ConfigNode cbSettingNode in mainnode.GetNode("RESEARCHBODIES").nodes)
-                                            {
-                                                if (cbSettingNode.GetValue("body") == cb.GetName())
-                                                    cbNode = cbSettingNode;
-                                            }
-                                            if (cbNode != null) cbNode.AddValue("researchState", "0");
-                                            mainnode.Save("saves/" + HighLogic.SaveFolder + "/researchbodies.cfg");
-                                            ResearchState[cb] = 0;
-                                        }
-                                    }
-                                    fileContainsGalaxy = true;
-                                }
-                            }
-                            if (!fileContainsGalaxy)
-                            {
-                                ConfigNode newNodeForCB = mainnode.GetNode("RESEARCHBODIES").AddNode("BODY");
-                                newNodeForCB.AddValue("body", cb.GetName());
-                                newNodeForCB.AddValue("isResearched", "false");
-                                newNodeForCB.AddValue("researchState", "0");
-                                newNodeForCB.AddValue("ignore", "false");
-                                TrackedBodies[cb] = false; ResearchState[cb] = 0;
-                                mainnode.Save("saves/" + HighLogic.SaveFolder + "/researchbodies.cfg");
-                            }
-                        }
-                        isRBloaded = true;
-                    }
+                    RBCelestialBodies = RBWrapper.RBactualAPI.CelestialBodies;
                 }
             }
         }

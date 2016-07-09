@@ -1,4 +1,6 @@
-﻿V6.3 "More Kopernicus - New Horizons"
+﻿V6.4 "ResearchBodies 1.8"
+	Compatible version for integration with ResearchBodies V1.8.
+V6.3 "More Kopernicus - New Horizons"
 	Added support for New Horizons Kopernicus planet mod.
 	Changed Reputation for contracts to be related to distance from home world, rather than the planet order from the Sun.
 	Added Biomes to Science Reputation/Science/Funds calculations for ChemCam (previously it only used the planet).
