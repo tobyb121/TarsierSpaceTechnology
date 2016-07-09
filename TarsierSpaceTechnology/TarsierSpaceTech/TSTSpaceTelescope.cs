@@ -616,7 +616,7 @@ namespace TarsierSpaceTech
             Utilities.Log_Debug("Gather Science complete");
             if (objs.Count == 0)
             {
-                ScreenMessages.PostScreenMessage("No science collected", 3f, ScreenMessageStyle.UPPER_CENTER);
+                ScreenMessages.PostScreenMessage("No science collected", 5f, ScreenMessageStyle.UPPER_CENTER);
             }
 
             if (saveToFile)
@@ -630,7 +630,7 @@ namespace TarsierSpaceTech
                         "Telescope_" + DateTime.Now.ToString("d-m-y") + "_" + i + "Large.png", null))
                     i++;
                 _camera.saveToFile("Telescope_" + DateTime.Now.ToString("d-m-y") + "_" + i, "TeleScope");
-                ScreenMessages.PostScreenMessage("Picture saved", 3f, ScreenMessageStyle.UPPER_CENTER);
+                ScreenMessages.PostScreenMessage("Picture saved", 5f, ScreenMessageStyle.UPPER_CENTER);
             }
         }
 
@@ -839,7 +839,7 @@ namespace TarsierSpaceTech
                 if (FlightGlobals.ActiveVessel.mainBody.name == bodyTarget.name)
                 {
                     Utilities.Log_Debug("Cannot Target: {0} : {1} in it's SOI", newTarget.ToString(), bodyTarget.name);
-                    ScreenMessages.PostScreenMessage("Cannot Target " + bodyTarget.theName + " as in it's SOI", 3f,
+                    ScreenMessages.PostScreenMessage("Cannot Target " + bodyTarget.theName + " as in it's SOI", 5f,
                         ScreenMessageStyle.UPPER_CENTER);
                 }
                 else
@@ -849,7 +849,7 @@ namespace TarsierSpaceTech
                     Utilities.Log_Debug("Targetting: {0} : {1}, layer= {2}", newTarget.ToString(), bodyTarget.name,
                         bodyTarget.gameObject.layer.ToString());
                     Utilities.Log_Debug("pos=" + bodyTarget.position);
-                    ScreenMessages.PostScreenMessage("Target: " + bodyTarget.theName, 3f,
+                    ScreenMessages.PostScreenMessage("Target: " + bodyTarget.theName, 5f,
                         ScreenMessageStyle.UPPER_CENTER);
                 }
             }
@@ -901,7 +901,7 @@ namespace TarsierSpaceTech
                 Utilities.Log_Debug("Targetting: {0} : {1},layer= {2},scaledpos= {3}", newTarget.ToString(),
                     galaxyTarget.name, galaxyTarget.gameObject.layer.ToString(), galaxyTarget.scaledPosition.ToString());
                 Utilities.Log_Debug("pos= {0}", galaxyTarget.position.ToString());
-                ScreenMessages.PostScreenMessage("Target: " + galaxyTarget.theName, 3f, ScreenMessageStyle.UPPER_CENTER);
+                ScreenMessages.PostScreenMessage("Target: " + galaxyTarget.theName, 5f, ScreenMessageStyle.UPPER_CENTER);
             }
             GUILayout.EndScrollView();
             GUILayout.Space(10);
@@ -982,115 +982,83 @@ namespace TarsierSpaceTech
             ScienceSubject subject;
             ScienceData data;
             var experimentSituation = getExperimentSituation();
+            string tgtName;
+            string tgttheName;
             try
             {
                 if (galaxy != null)
                 {
-                    Utilities.Log_Debug("Doing Science for {0}", galaxy.theName);
-                    experiment = ResearchAndDevelopment.GetExperiment("TarsierSpaceTech.SpaceTelescope");
-                    if (experiment == null)
-                    {
-                        Utilities.Log("Unable to find experiment TarsierSpaceTech.SpaceTelescope, Are you missing a config file? Report on forums.");
-                        ScreenMessages.PostScreenMessage("TST Unable to find Experiment - Internal Failure. See Log.", 3f,
-                            ScreenMessageStyle.UPPER_CENTER);
-                        return;
-                    }
-                    Utilities.Log_Debug("Got experiment");
-
-                    subject = ResearchAndDevelopment.GetExperimentSubject(experiment, experimentSituation,
-                    Sun.Instance.sun, "LookingAt" + galaxy.name);
-                    subject.title = "Space Telescope picture of " + galaxy.theName;
-                    Utilities.Log_Debug("Got subject, determining science data using {0}", part.name);
+                    tgtName = galaxy.name;
+                    tgttheName = galaxy.theName;
                 }
                 else
                 {
-                    Utilities.Log_Debug("Doing Science for {0}", planet.theName);
-                    experiment = ResearchAndDevelopment.GetExperiment("TarsierSpaceTech.SpaceTelescope");
-                    if (experiment == null)
-                    {
-                        Utilities.Log("Unable to find experiment TarsierSpaceTech.SpaceTelescope, Are you missing a config file? Report on forums.");
-                        ScreenMessages.PostScreenMessage("TST Unable to find Experiment - Internal Failure. See Log.", 3f,
-                            ScreenMessageStyle.UPPER_CENTER);
-                        return;
-                    }
-                    Utilities.Log_Debug("Got experiment");
-
-                    subject = ResearchAndDevelopment.GetExperimentSubject(experiment, experimentSituation, planet,
-                    "LookingAt" + planet.name);
-                    subject.title = "Space Telescope picture of " + planet.theName;
-                    Utilities.Log_Debug("Got subject, determining science data using {0}", part.name);
+                    tgtName = planet.name;
+                    tgttheName = planet.theName;
                 }
-
+                Utilities.Log_Debug("Doing Science for {0}", tgttheName);
+                experiment = ResearchAndDevelopment.GetExperiment("TarsierSpaceTech.SpaceTelescope");
+                if (experiment == null)
+                {
+                    Utilities.Log("Unable to find experiment TarsierSpaceTech.SpaceTelescope, Are you missing a config file? Report on forums.");
+                    ScreenMessages.PostScreenMessage("TST Unable to find Experiment - Internal Failure. See Log.", 5f,
+                        ScreenMessageStyle.UPPER_CENTER);
+                    return;
+                }
+                Utilities.Log_Debug("Got experiment");
                 
+                subject = ResearchAndDevelopment.GetExperimentSubject(experiment, experimentSituation, vessel.mainBody, "LookingAt" + tgtName);
+                subject.title = "Space Telescope picture of " + tgttheName;
+                Utilities.Log_Debug("Got subject, determining science data using {0}", part.name);
+
                 if (experiment.IsAvailableWhile(experimentSituation, vessel.mainBody))
                 {
                     if (part.name == "tarsierSpaceTelescope")
                     {
                         if (galaxy != null)
                         {
-                            data = new ScienceData(experiment.baseValue/2*subject.dataScale, xmitDataScalar, labBoostScalar,
-                                subject.id, subject.title, false, part.flightID);
-
-                            Utilities.Log_Debug("Got data");
-                            data.title = "Tarsier Space Telescope: Orbiting " + vessel.mainBody.theName + " looking at " +
-                                         galaxy.theName;
-                            _scienceData.Add(data);
-                            Utilities.Log_Debug("Added Data Amt= {0}, TransmitValue= {1}, LabBoost= {2}, LabValue= {3}",
-                                data.dataAmount.ToString(), data.transmitValue.ToString(), data.labBoost.ToString(),
-                                data.labValue.ToString());
-                            ScreenMessages.PostScreenMessage("Collected Science for " + galaxy.theName, 3f,
-                                ScreenMessageStyle.UPPER_CENTER);
+                            data = new ScienceData(experiment.baseValue/2*subject.dataScale, xmitDataScalar,labBoostScalar,subject.id, subject.title, false, part.flightID);
                         }
                         else
                         {
-                            data = new ScienceData(experiment.baseValue * 0.8f * subject.dataScale, xmitDataScalar,
-                            labBoostScalar, subject.id, subject.title, false, part.flightID);
-                            Utilities.Log_Debug("Got data");
-                            data.title = "Tarsier Space Telescope: Oriting " + vessel.mainBody.theName + " looking at " +
-                                         planet.theName;
-                            _scienceData.Add(data);
-                            Utilities.Log_Debug("Added Data Amt= {0}, TransmitValue= {1}, LabBoost= {2}, LabValue= {3}",
-                                data.dataAmount.ToString(), data.transmitValue.ToString(), data.labBoost.ToString(),
-                                data.labValue.ToString());
-                            ScreenMessages.PostScreenMessage("Collected Science for " + planet.theName, 3f,
-                                ScreenMessageStyle.UPPER_CENTER);
+                            data = new ScienceData(experiment.baseValue * 0.8f * subject.dataScale, xmitDataScalar,labBoostScalar, subject.id, subject.title, false, part.flightID);
                         }
                     }
                     else
                     {
                         if (galaxy != null)
                         {
-                            data = new ScienceData(experiment.baseValue * subject.dataScale, xmitDataScalar, labBoostScalar,
-                             subject.id, subject.title, false, part.flightID);
-                            Utilities.Log_Debug("Got data");
-                            data.title = "Tarsier Space Telescope: Orbiting " + vessel.mainBody.theName + " looking at " +
-                                         galaxy.theName;
-                            _scienceData.Add(data);
-                            Utilities.Log_Debug("Added Data Amt= {0}, TransmitValue= {1}, LabBoost= {2}, LabValue= {3}",
-                                data.dataAmount.ToString(), data.transmitValue.ToString(), data.labBoost.ToString(),
-                                data.labValue.ToString());
-                            ScreenMessages.PostScreenMessage("Collected Science for " + galaxy.theName, 3f,
-                                ScreenMessageStyle.UPPER_CENTER);
+                            data = new ScienceData(experiment.baseValue * subject.dataScale, xmitDataScalar, labBoostScalar,subject.id, subject.title, false, part.flightID);
                         }
                         else
                         {
-                            data = new ScienceData(experiment.baseValue * subject.dataScale, xmitDataScalar, labBoostScalar,
-                            subject.id, subject.title, false, part.flightID);
-                            Utilities.Log_Debug("Got data");
-                            data.title = "Tarsier Space Telescope: Oriting " + vessel.mainBody.theName + " looking at " +
-                                         planet.theName;
-                            _scienceData.Add(data);
-                            Utilities.Log_Debug("Added Data Amt= {0}, TransmitValue= {1}, LabBoost= {2}, LabValue= {3}",
-                                data.dataAmount.ToString(), data.transmitValue.ToString(), data.labBoost.ToString(),
-                                data.labValue.ToString());
-                            ScreenMessages.PostScreenMessage("Collected Science for " + planet.theName, 3f,
-                                ScreenMessageStyle.UPPER_CENTER);
+                            data = new ScienceData(experiment.baseValue * subject.dataScale, xmitDataScalar, labBoostScalar,subject.id, subject.title, false, part.flightID);
                         }
                     }
+                    Utilities.Log_Debug("Got data");
+                    data.title = "Tarsier Space Telescope: Orbiting " + vessel.mainBody.theName + " looking at " + tgttheName;
+                    _scienceData.Add(data);
+                    Utilities.Log_Debug("Added Data Amt= {0}, TransmitValue= {1}, LabBoost= {2}, LabValue= {3}",
+                        data.dataAmount.ToString(), data.transmitValue.ToString(), data.labBoost.ToString(),
+                        data.labValue.ToString());
+                    //If ResearchBodies is installed check if body is already found or not, if it isn't change the screen message to say "Unknown Body"
+                    if (Utilities.IsResearchBodiesInstalled && RBWrapper.RBactualAPI.enabled)
+                    {
+                        var keyvalue = TSTMstStgs.Instance.RBCelestialBodies.FirstOrDefault(a => a.Key.theName == tgttheName);
+                        if (keyvalue.Key != null)
+                        {
+                            if (!keyvalue.Value.isResearched)
+                            {
+                                tgttheName = "Unknown Body";
+                            }
+                        }
+                    }
+
+                    ScreenMessages.PostScreenMessage("Collected Science for " + tgttheName, 5f,ScreenMessageStyle.UPPER_CENTER);
                 }
                 else
                 {
-                    ScreenMessages.PostScreenMessage("Cannot take picture whilst " + experimentSituation, 3f,
+                    ScreenMessages.PostScreenMessage("Cannot take picture whilst " + experimentSituation, 5f,
                             ScreenMessageStyle.UPPER_CENTER);
                 }
             }
@@ -1294,14 +1262,40 @@ namespace TarsierSpaceTech
                 data,
                 xmitDataScalar,
                 data.labBoost,
-                true,
-                "If you transmit this data it will only be worth: " + Mathf.Round(data.transmitValue * 100) + "% of the full science value",
+                false,
+                "",
                 true,
                 labSearch,
                 _onPageDiscard,
                 _onPageKeep,
                 _onPageTransmit,
                 _onPageSendToLab);
+            //If ResearchBodies is installed we check if the body is discovered or not. If it isn't we change the science results page text.
+            if (Utilities.IsResearchBodiesInstalled && RBWrapper.RBactualAPI.enabled)
+            {
+                if (data.subjectID.Contains("TarsierSpaceTech.SpaceTelescope"))
+                {
+                    if (data.title.Contains("Tarsier Space Telescope: Orbiting"))
+                    {
+                        int index = data.title.IndexOf("looking at");
+                        if (index != -1)
+                        {
+                            string bodyName = data.title.Substring(index + 11);  
+                            var keyvalue =
+                                TSTMstStgs.Instance.RBCelestialBodies.FirstOrDefault(a => a.Key.theName == bodyName);
+                            if (keyvalue.Key != null)
+                            {
+                                if (!keyvalue.Value.isResearched)
+                                {
+                                    page.resultText =
+                                        "We have collected a picture of a previously unknown body. If we return or transmit this data to home we will learn more about it.";
+                                    page.title = "Space Telescope picture of Unknown Body";
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             ExperimentsResultDialog.DisplayResult(page);
         }
 

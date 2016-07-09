@@ -417,12 +417,12 @@ namespace TarsierSpaceTech
                     if (scienceSubject.title.Contains("Space Telescope picture of "))
                     {
                         string bodyName = scienceSubject.title.Substring(27);
-                        List<KeyValuePair<CelestialBody, RBWrapper.CelestialBodyInfo>> foundbodyentry = TSTMstStgs.Instance.RBCelestialBodies.Where(e => e.Key.name == bodyName).ToList();
-                        if (foundbodyentry.Count == 1)
+                        var foundbodyentry = TSTMstStgs.Instance.RBCelestialBodies.FirstOrDefault(a => a.Key.theName == bodyName);
+                        if (foundbodyentry.Key != null)
                         {
                             try
                             {
-                                processResearchBody(foundbodyentry[0].Key);
+                                processResearchBody(foundbodyentry.Key);
                             }
                             catch (Exception ex)
                             {
