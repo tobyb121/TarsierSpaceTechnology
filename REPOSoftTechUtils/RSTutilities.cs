@@ -1,6 +1,5 @@
 ﻿
 
-using HighlightingSystem;
 /**
 * REPOSoftTech KSP Utilities
 * (C) Copyright 2015, Jamie Leighton
@@ -19,6 +18,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using Highlighting;
 using UnityEngine;
 using Object = UnityEngine.Object;
 using Random = System.Random;
@@ -153,7 +153,7 @@ namespace RSTUtils
 			Log_Debug("Distance from Home Planet = " + DstFrmHome);
 			return DstFrmHome;
 		}
-
+		
 		public static bool CelestialBodyDistancetoSun(CelestialBody cb, out Vector3d sun_dir, out double sun_dist)
 		{
 			// bodies traced against
@@ -802,24 +802,20 @@ namespace RSTUtils
 		{
 			if (on)
 			{
-				if (part.highlighter == null)
+				if (part.HighlightActive)
 				{
 					var color = XKCDColors.Yellow;
-					var model = part.FindModelTransform("model");
-					part.highlighter = model.gameObject.AddComponent<Highlighter>();
-					part.highlighter.ConstantOn(color);
 					part.SetHighlightColor(color);
 					part.SetHighlight(true, false);
 				}
 			}
 			else
 			{
-				if (part.highlighter != null)
+				if (part.HighlightActive)
 				{
 					part.SetHighlightDefault();
-					part.highlighter.gameObject.DestroyGameObjectImmediate();
-					part.highlighter = null;
-				}
+                    part.SetHighlight(false, false);
+                }
 			}
 		}
 
@@ -840,16 +836,7 @@ namespace RSTUtils
 		#endregion Temperature
 
 		#region Resources
-
-		private static List<PartResource> resources;
-		//Resources
-		public static double GetAvailableResource(Part part, String resourceName)
-		{
-			resources = new List<PartResource>();
-			part.GetConnectedResources(PartResourceLibrary.Instance.GetDefinition(resourceName).id, ResourceFlowMode.ALL_VESSEL, resources);
-			return resources.Sum(pr => pr.amount);
-		}
-
+        
 		public const int MAX_TRANSFER_ATTEMPTS = 4;
 
 		private static double totalReceived;
@@ -877,6 +864,30 @@ namespace RSTUtils
 			}
 			return totalReceived;
 		}
+
+        /// <summary>
+        /// Converts Stock EC units to SI units (W,kW,mW)
+        /// </summary>
+        /// <param name="EC">input EC units amount</param>
+        /// <param name="Unit">OUTPUT Unit string</param>
+        /// <returns>converted SI units amount</returns>
+	    public static double ConvertECtoSI(double EC, out string Unit)
+	    {
+            double outputECSI = EC;
+            outputECSI *= 1000; //Watts (W)
+	        Unit = "W";
+	        if (outputECSI > 1000)
+	        {
+	            outputECSI /= 1000; //KiloWatts
+	            Unit = "kW";
+	        }
+	        if (outputECSI > 1000)
+	        {
+                outputECSI /= 1000; //MegaWatts
+                Unit = "mW";
+            }
+	        return outputECSI;
+	    }
 
 		#endregion Resources
 
@@ -1249,7 +1260,9 @@ namespace RSTUtils
 			Inactive,
 			Active,
 			MissingResource,
-			OutputFull
+			OutputFull,
+            ZeroEfficiency
+
 		}
 
 		private static ISRUStatus returnStatus;
@@ -1264,7 +1277,10 @@ namespace RSTUtils
 			if (tmpRegRc.status.ToLower().Contains("inactive")) returnStatus = ISRUStatus.Inactive; //Status is inactive, it's inactive.. Not sure how but sometimes this remains on load even when it's inactive? Hence the test above.
 			if (tmpRegRc.status.ToLower().Contains("missing")) returnStatus = ISRUStatus.MissingResource; //Missing an Input resource makes this appear in the status.
 			if (tmpRegRc.status.ToLower().Contains("full")) returnStatus = ISRUStatus.OutputFull; //If the vessel has nowhere to store the output, full appears in the status.
-			if (tmpRegRc.status.ToLower().Contains("load")) returnStatus = ISRUStatus.Active; //a Percentage Load indicates it is active and actually processing... except when it gets stuck on this.
+            if (tmpRegRc.status.ToLower().Contains("output cap")) returnStatus = ISRUStatus.OutputFull; //If the vessel has nowhere to store the output, output cap: x% appears in the status.
+            if (tmpRegRc.status.ToLower().Contains("load")) returnStatus = ISRUStatus.Active; //a Percentage Load indicates it is active and actually processing... except when it gets stuck on this.
+		    if (tmpRegRc.status.ToLower().Contains("zero efficiency")) returnStatus = ISRUStatus.ZeroEfficiency; //Efficiency has reduced to zero (heat factor?).
+            if (tmpRegRc.status.ToLower().Contains("operational")) returnStatus = ISRUStatus.Active; //a new status with KSP 1.1.3.
 			return returnStatus;
 		}
 
@@ -1314,16 +1330,25 @@ namespace RSTUtils
 			}
 		}
 
-	    internal static bool IsEVEInstalled
-	    {
-	        get
-	        {
-	            return IsModInstalled("EVEManager");
-	            
-	        }
-	    }
+		internal static bool IsEVEInstalled
+		{
+			get
+			{
+				return IsModInstalled("EVEManager");
+				
+			}
+		}
 
-		internal static bool IsOPMInstalled
+        internal static bool IsROInstalled
+        {
+            get
+            {
+                return IsModInstalled("RealismOverhaul");
+
+            }
+        }
+
+        internal static bool IsOPMInstalled
 		{
 			get
 			{
