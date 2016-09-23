@@ -66,7 +66,12 @@ namespace TarsierSpaceTech
         public override bool MeetRequirements()
         {
             AvailablePart ap1 = PartLoader.getPartInfoByName("tarsierChemCam");
-            return ResearchAndDevelopment.PartTechAvailable(ap1);
+            if (ap1 != null)
+            {
+                return ResearchAndDevelopment.PartTechAvailable(ap1);
+            }
+            Utilities.Log("It appears the TST ChemCam part is missing. Cannot check Contract Requirements");
+            return false;
         }
 
         protected override string GetSynopsys()
