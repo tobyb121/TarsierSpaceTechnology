@@ -37,20 +37,21 @@ namespace TarsierSpaceTech
     [KSPAddon(KSPAddon.Startup.EveryScene, false)]
     class TSTMenu : MonoBehaviour
     {
+        public static TSTMenu Instance;
         //GUI Properties 
-        private AppLauncherToolBar TSTMenuAppLToolBar;
+        internal AppLauncherToolBar TSTMenuAppLToolBar;
         private static int TSTwindowID = new Random().Next();
         private static int FTTwindowID;
-        private static int SCwindowID;
+        //private static int SCwindowID;
         private const float FWINDOW_WIDTH = 480;        
-        private const float SWINDOW_WIDTH = 460;
+        //private const float SWINDOW_WIDTH = 460;
         private const float WINDOW_BASE_HEIGHT = 380;
-        private int SCwindow_SettingWidth = 380;
+        //private int SCwindow_SettingWidth = 380;
         private Rect FwindowPos = new Rect(40, Screen.height / 2 - 100, FWINDOW_WIDTH, WINDOW_BASE_HEIGHT); // Flight Window position and size
         private Rect FTwindowPos = new Rect(60 + FWINDOW_WIDTH, Screen.height / 2 - 100, FWINDOW_WIDTH, WINDOW_BASE_HEIGHT); // Flight Window position and size
-        private Rect SCwindowPos = new Rect(40, Screen.height / 2 - 100, SWINDOW_WIDTH, WINDOW_BASE_HEIGHT); // Flight Window position and size
+        //private Rect SCwindowPos = new Rect(40, Screen.height / 2 - 100, SWINDOW_WIDTH, WINDOW_BASE_HEIGHT); // Flight Window position and size
         private GUIStyle sectionTitleStyle, subsystemButtonStyle, statusStyle, warningStyle, PartListStyle, PartListPartStyle;
-        private GUIStyle scrollStyle, resizeStyle;
+        private GUIStyle resizeStyle; //scrollStyle,
         private Vector2 CamscrollViewVector = Vector2.zero;
         private Vector2 SDDscrollViewVector = Vector2.zero;
         private bool mouseDown;
@@ -59,9 +60,9 @@ namespace TarsierSpaceTech
         private string tmpToolTip;
 
         //Settings Menu Temp Vars              
-        private string InputSChemwinSml, InputSChemwinLge, InputSTelewinLge, InputSTelewinSml, InputSMaxChemCamContracts;
-        private int InputVChemwinSml, InputVChemwinLge, InputVTelewinLge, InputVTelewinSml, InputVMaxChemCamContracts;
-        private bool InputUseAppLauncher, Inputdebugging, InputTooltips, InputphotoOnlyChemCamContracts;
+        //private string InputSChemwinSml, InputSChemwinLge, InputSTelewinLge, InputSTelewinSml, InputSMaxChemCamContracts;
+        //private int InputVChemwinSml, InputVChemwinLge, InputVTelewinLge, InputVTelewinSml, InputVMaxChemCamContracts;
+        //private bool InputUseAppLauncher, Inputdebugging, InputTooltips, InputphotoOnlyChemCamContracts;
 
 
         //GuiVisibility
@@ -84,8 +85,13 @@ namespace TarsierSpaceTech
         private bool RT2Present;
         private bool RT2Enabled;
         private bool RT2VesselConnected;
-        private double RT2VesselDelay;        
-                
+        private double RT2VesselDelay;
+
+
+        public TSTMenu()
+        {
+            Instance = this;
+        }     
 
         public void Awake()
         {
@@ -97,14 +103,14 @@ namespace TarsierSpaceTech
             }
             TSTwindowID = Utilities.getnextrandomInt();
             FTTwindowID = Utilities.getnextrandomInt();
-            SCwindowID =  Utilities.getnextrandomInt();
+            //SCwindowID =  Utilities.getnextrandomInt();
             RT2Present = Utilities.IsRTInstalled;
             
             TSTMenuAppLToolBar = new AppLauncherToolBar("TST", "Tarsier Space Tech",
                 "TarsierSpaceTech/Icons/ToolbarIcon",
-                (ApplicationLauncher.AppScenes.SPACECENTER | ApplicationLauncher.AppScenes.FLIGHT),
+                (ApplicationLauncher.AppScenes.FLIGHT),
                 GameDatabase.Instance.GetTexture("TarsierSpaceTech/Icons/TSTIconOn", false), GameDatabase.Instance.GetTexture("TarsierSpaceTech/Icons/TSTIconOff", false),
-                GameScenes.SPACECENTER, GameScenes.FLIGHT);
+                GameScenes.FLIGHT);
             
             Utilities.Log("Awake complete");
         }
@@ -116,8 +122,8 @@ namespace TarsierSpaceTech
             Utilities.Log_Debug("TSTMenu Start in " + HighLogic.LoadedScene);
             FwindowPos.x = TSTMstStgs.Instance.TSTsettings.FwindowPosX;
             FwindowPos.y = TSTMstStgs.Instance.TSTsettings.FwindowPosY;
-            SCwindowPos.x = TSTMstStgs.Instance.TSTsettings.SCwindowPosX;
-            SCwindowPos.y = TSTMstStgs.Instance.TSTsettings.SCwindowPosY;
+            //SCwindowPos.x = TSTMstStgs.Instance.TSTsettings.SCwindowPosX;
+            //SCwindowPos.y = TSTMstStgs.Instance.TSTsettings.SCwindowPosY;
             
             if (RT2Present)
             {
@@ -143,8 +149,8 @@ namespace TarsierSpaceTech
             
             TSTMstStgs.Instance.TSTsettings.FwindowPosX = FwindowPos.x;
             TSTMstStgs.Instance.TSTsettings.FwindowPosY = FwindowPos.y;
-            TSTMstStgs.Instance.TSTsettings.SCwindowPosX = SCwindowPos.x;
-            TSTMstStgs.Instance.TSTsettings.SCwindowPosY = SCwindowPos.y;
+            //TSTMstStgs.Instance.TSTsettings.SCwindowPosX = SCwindowPos.x;
+            //TSTMstStgs.Instance.TSTsettings.SCwindowPosY = SCwindowPos.y;
         }
 
         public void Update()
@@ -224,7 +230,7 @@ namespace TarsierSpaceTech
                 if (_FTVisible)
                     FTwindowPos = GUILayout.Window(FTTwindowID, FTwindowPos, windowFT, "Fine Tune Gyros & SAS", GUILayout.MinHeight(20));
             }    
-                         
+            /*             
             if (Utilities.GameModeisSpaceCenter)
             {
                 crntWindow = TSTWindow.SETTINGS;
@@ -251,7 +257,7 @@ namespace TarsierSpaceTech
                 SCwindowPos = GUILayout.Window(SCwindowID, SCwindowPos, windowSC, "Tarsier Space Technology", GUILayout.MinHeight(20), GUILayout.ExpandWidth(true),
                                 GUILayout.ExpandHeight(true));                
             }
-
+            */
             if (TSTMstStgs.Instance.TSTsettings.Tooltips)
                 Utilities.DrawToolTip();
         }
@@ -452,7 +458,7 @@ namespace TarsierSpaceTech
             
             GUI.DragWindow();
         }
-
+        /*
         private void windowSC(int id)
         {
             GUIContent closeContent = new GUIContent(Textures.BtnRedCross, "Close Window");
@@ -633,7 +639,7 @@ namespace TarsierSpaceTech
 
             GUI.DragWindow();
         }
-
+        */
         private void HandleResizeEvents(Rect resizeRect)
         {
             var theEvent = Event.current;
@@ -661,10 +667,10 @@ namespace TarsierSpaceTech
                                 FwindowPos.height = Mathf.Clamp(mouseY - FwindowPos.y + (resizeRect.height / 2), 50, Screen.height - FwindowPos.y);
                                 break;
 
-                            case TSTWindow.SETTINGS:
-                                SCwindowPos.width = Mathf.Clamp(Input.mousePosition.x - SCwindowPos.x + (resizeRect.width / 2), 50, Screen.width - SCwindowPos.x);
-                                SCwindowPos.height = Mathf.Clamp(mouseY - SCwindowPos.y + (resizeRect.height / 2), 50, Screen.height - SCwindowPos.y);
-                                break;
+                            //case TSTWindow.SETTINGS:
+                            //    SCwindowPos.width = Mathf.Clamp(Input.mousePosition.x - SCwindowPos.x + (resizeRect.width / 2), 50, Screen.width - SCwindowPos.x);
+                            //    SCwindowPos.height = Mathf.Clamp(mouseY - SCwindowPos.y + (resizeRect.height / 2), 50, Screen.height - SCwindowPos.y);
+                            //    break;
                         }                        
                     }
                     else
@@ -749,7 +755,7 @@ namespace TarsierSpaceTech
             subsystemButtonStyle.padding.top = 0;
             subsystemButtonStyle.padding.bottom = 0;
 
-            scrollStyle = new GUIStyle(GUI.skin.scrollView);
+            //scrollStyle = new GUIStyle(GUI.skin.scrollView);
 
             PartListStyle = new GUIStyle(GUI.skin.label);
             PartListStyle.alignment = TextAnchor.MiddleLeft;

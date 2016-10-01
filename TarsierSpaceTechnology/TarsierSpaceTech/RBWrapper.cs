@@ -88,10 +88,7 @@ namespace TarsierSpaceTech
             LogFormatted_DebugOnly("Attempting to Grab ResearchBodies Types...");
 
             //find the base type
-            RBAPIType = AssemblyLoader.loadedAssemblies
-                .Select(a => a.assembly.GetExportedTypes())
-                .SelectMany(t => t)
-                .FirstOrDefault(t => t.FullName == "ResearchBodies.ResearchBodies");
+            RBAPIType = getType("ResearchBodies.ResearchBodies"); 
 
             if (RBAPIType == null)
             {
@@ -101,10 +98,7 @@ namespace TarsierSpaceTech
             LogFormatted_DebugOnly("ResearchBodies Version:{0}", RBAPIType.Assembly.GetName().Version.ToString());
             
             //find the base type
-            RBSCAPIType = AssemblyLoader.loadedAssemblies
-                .Select(a => a.assembly.GetExportedTypes())
-                .SelectMany(t => t)
-                .FirstOrDefault(t => t.FullName == "ResearchBodies.ResearchBodiesController");
+            RBSCAPIType = getType("ResearchBodies.ResearchBodiesController"); 
 
             if (RBSCAPIType == null)
             {
@@ -112,10 +106,7 @@ namespace TarsierSpaceTech
             }
 
             //find the base type
-            RBDBAPIType = AssemblyLoader.loadedAssemblies
-                .Select(a => a.assembly.GetExportedTypes())
-                .SelectMany(t => t)
-                .FirstOrDefault(t => t.FullName == "ResearchBodies.Database");
+            RBDBAPIType = getType("ResearchBodies.Database"); 
 
             if (RBDBAPIType == null)
             {
@@ -123,10 +114,7 @@ namespace TarsierSpaceTech
             }
 
             //find the CelestialBodyInfo type
-            RBDBCelestialBodyType = AssemblyLoader.loadedAssemblies
-                .Select(a => a.assembly.GetExportedTypes())
-                .SelectMany(t => t)
-                .FirstOrDefault(t => t.FullName == "ResearchBodies.CelestialBodyInfo");
+            RBDBCelestialBodyType = getType("ResearchBodies.CelestialBodyInfo");
 
             if (RBDBCelestialBodyType == null)
             {
@@ -189,8 +177,24 @@ namespace TarsierSpaceTech
             _RBWrapped = true;
             return true;
         }
-        
-        
+
+        internal static Type getType(string name)
+        {
+            Type type = null;
+            AssemblyLoader.loadedAssemblies.TypeOperation(t =>
+
+            {
+                if (t.FullName == name)
+                    type = t;
+            }
+            );
+
+            if (type != null)
+            {
+                return type;
+            }
+            return null;
+        }
 
         /// <summary>
         /// The Type that is an analogue of the real ResearchBodies. This lets you access all the API-able properties and Methods of ResearchBodies

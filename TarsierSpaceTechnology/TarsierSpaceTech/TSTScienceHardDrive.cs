@@ -97,10 +97,12 @@ namespace TarsierSpaceTech
                             Utilities.Log_Debug("Checking Space: {0} : {1} : {2}" , d.dataAmount.ToString() , _dataAmount.ToString() , Capacity.ToString());
                             if (d.dataAmount + _dataAmount <= Capacity)
                             {
-                                if (Utilities.GetAvailableResource(part, "ElectricCharge") >= d.dataAmount * powerUsage)
+                                float ECAmount = d.dataAmount*powerUsage;
+                                double resAvail = 0;
+                                if (Utilities.requireResource(vessel, "ElectricCharge", ECAmount, true, out resAvail)) // GetAvailableResource(part, "ElectricCharge") >= d.dataAmount * powerUsage)
                                 {
-                                    Utilities.Log_Debug("Removing Electric Charge");
-                                    part.RequestResource("ElectricCharge", d.dataAmount * powerUsage);
+                                    //Utilities.Log_Debug("Removing Electric Charge");
+                                    //part.RequestResource("ElectricCharge", d.dataAmount * powerUsage);
                                     Utilities.Log_Debug("Adding Data");
                                     scienceData.Add(d);
                                     d.dataAmount *= (1 - corruption);
@@ -113,7 +115,7 @@ namespace TarsierSpaceTech
                                 }
                                 else
                                 {
-                                    ScreenMessages.PostScreenMessage("Required " + (d.dataAmount * powerUsage).ToString("00.00") + " ElectricCharge not available to store data" , 10f, ScreenMessageStyle.UPPER_CENTER);
+                                    ScreenMessages.PostScreenMessage("Required " + ECAmount.ToString("00.00") + " ElectricCharge not available to store data" , 10f, ScreenMessageStyle.UPPER_CENTER);
                                 }
                             }
                             else
@@ -160,10 +162,12 @@ namespace TarsierSpaceTech
                             Utilities.Log_Debug("Checking Space: {0} : {1} : {2}", d.dataAmount.ToString(), _dataAmount.ToString(), Capacity.ToString());
                             if (d.dataAmount + _dataAmount <= Capacity)
                             {
-                                if (Utilities.GetAvailableResource(part, "ElectricCharge") >= d.dataAmount * powerUsage)
+                                float ECAmount = d.dataAmount * powerUsage;
+                                double resAvail = 0;
+                                if (Utilities.requireResource(vessel, "ElectricCharge", ECAmount, true, out resAvail)) //.GetAvailableResource(part, "ElectricCharge") >= d.dataAmount * powerUsage)
                                 {
-                                    Utilities.Log_Debug("Removing Electric Charge");
-                                    part.RequestResource("ElectricCharge", d.dataAmount * powerUsage);
+                                    //Utilities.Log_Debug("Removing Electric Charge");
+                                    //part.RequestResource("ElectricCharge", d.dataAmount * powerUsage);
                                     Utilities.Log_Debug("Adding Data");
                                     scienceData.Add(d);
                                     d.dataAmount *= (1 - corruption);
@@ -176,7 +180,7 @@ namespace TarsierSpaceTech
                                 }
                                 else
                                 {
-                                    ScreenMessages.PostScreenMessage("Required " + (d.dataAmount * powerUsage).ToString("00.00") + " ElectricCharge not available to store data", 10f, ScreenMessageStyle.UPPER_CENTER);
+                                    ScreenMessages.PostScreenMessage("Required " + ECAmount.ToString("00.00") + " ElectricCharge not available to store data", 10f, ScreenMessageStyle.UPPER_CENTER);
                                 }
                             }
                             else
@@ -329,10 +333,10 @@ namespace TarsierSpaceTech
                 ExperimentResultDialogPage page = new ExperimentResultDialogPage(
                     part,
                     data,
-                    data.transmitValue,
-                    data.labBoost,
+                    data.baseTransmitValue,
+                    data.transmitBonus,
                     true,
-                    "If you transmit this data it will only be worth: " + Mathf.Round(data.transmitValue * 100) + "% of the full science value",
+                    "If you transmit this data it will only be worth: " + Mathf.Round(data.baseTransmitValue * 100) + "% of the full science value",
                     true,
                     labSearch,
                     _onPageDiscard,
@@ -349,10 +353,10 @@ namespace TarsierSpaceTech
             ExperimentResultDialogPage page = new ExperimentResultDialogPage(
                     part,
                     data,
-                    data.transmitValue,
-                    data.labBoost,
+                    data.baseTransmitValue,
+                    data.transmitBonus,
                     true,
-                    "If you transmit this data it will only be worth: " + Mathf.Round(data.transmitValue * 100) + "% of the full science value",
+                    "If you transmit this data it will only be worth: " + Mathf.Round(data.baseTransmitValue * 100) + "% of the full science value",
                     true,
                     labSearch,
                     _onPageDiscard,

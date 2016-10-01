@@ -146,8 +146,8 @@ namespace TarsierSpaceTech
 
         public float FwindowPosX ;
         public float FwindowPosY ;
-        public float SCwindowPosX ;
-        public float SCwindowPosY ;
+        //public float SCwindowPosX ;
+        //public float SCwindowPosY ;
         public float CwindowPosX ;
         public float CwindowPosY ;
         public float GalwindowPosX ;
@@ -181,8 +181,8 @@ namespace TarsierSpaceTech
         {
             FwindowPosX = 40;
             FwindowPosY = 50;
-            SCwindowPosX = 40;
-            SCwindowPosY = 50;
+            //SCwindowPosX = 40;
+            //SCwindowPosY = 50;
             CwindowPosX = 128;
             CwindowPosY = 128;
             GalwindowPosX = 512;
@@ -221,27 +221,27 @@ namespace TarsierSpaceTech
             {
                 ConfigNode TSTsettingsNode = new ConfigNode();
                 node.TryGetNode(configNodeName, ref TSTsettingsNode);
-                TSTsettingsNode.TryGetValue( "FwindowPosX", ref FwindowPosX);
-                TSTsettingsNode.TryGetValue( "FwindowPosY", ref FwindowPosY);
-                TSTsettingsNode.TryGetValue( "SCwindowPosX", ref FwindowPosX);
-                TSTsettingsNode.TryGetValue( "SCwindowPosY", ref FwindowPosY);
-                TSTsettingsNode.TryGetValue( "CwindowPosX", ref CwindowPosX);
-                TSTsettingsNode.TryGetValue( "CwindowPosY", ref CwindowPosY);
-                TSTsettingsNode.TryGetValue( "GalwindowPosX", ref GalwindowPosX);
-                TSTsettingsNode.TryGetValue( "GalwindowPosY", ref GalwindowPosY);
-                TSTsettingsNode.TryGetValue( "BodwindowPosX", ref BodwindowPosX);
-                TSTsettingsNode.TryGetValue( "BodwindowPosY", ref BodwindowPosY);
-                TSTsettingsNode.TryGetValue( "ChemwinSml", ref ChemwinSml);
-                TSTsettingsNode.TryGetValue( "ChemwinLge", ref ChemwinLge);
-                TSTsettingsNode.TryGetValue( "TelewinSml", ref TelewinSml);
-                TSTsettingsNode.TryGetValue( "TelewinLge", ref TelewinLge);
-                TSTsettingsNode.TryGetValue( "UseAppLauncher", ref UseAppLauncher);
-                TSTsettingsNode.TryGetValue( "debugging", ref debugging);
-                TSTsettingsNode.TryGetValue( "Tooltips", ref Tooltips);
-                Utilities.debuggingOn = debugging;
-                TSTsettingsNode.TryGetValue( "maxChemCamContracts", ref maxChemCamContracts);
-                TSTsettingsNode.TryGetValue( "photoOnlyChemCamContracts", ref photoOnlyChemCamContracts);
-                TSTsettingsNode.TryGetValue("ZoomSkyBox", ref ZoomSkyBox);
+                TSTsettingsNode.TryGetValue("FwindowPosX", ref FwindowPosX);
+                TSTsettingsNode.TryGetValue("FwindowPosY", ref FwindowPosY);
+                //TSTsettingsNode.TryGetValue( "SCwindowPosX", ref FwindowPosX);
+                //TSTsettingsNode.TryGetValue( "SCwindowPosY", ref FwindowPosY);
+                TSTsettingsNode.TryGetValue("CwindowPosX", ref CwindowPosX);
+                TSTsettingsNode.TryGetValue("CwindowPosY", ref CwindowPosY);
+                TSTsettingsNode.TryGetValue("GalwindowPosX", ref GalwindowPosX);
+                TSTsettingsNode.TryGetValue("GalwindowPosY", ref GalwindowPosY);
+                TSTsettingsNode.TryGetValue("BodwindowPosX", ref BodwindowPosX);
+                TSTsettingsNode.TryGetValue("BodwindowPosY", ref BodwindowPosY);
+                //TSTsettingsNode.TryGetValue( "ChemwinSml", ref ChemwinSml);
+                //TSTsettingsNode.TryGetValue( "ChemwinLge", ref ChemwinLge);
+                //TSTsettingsNode.TryGetValue( "TelewinSml", ref TelewinSml);
+                //TSTsettingsNode.TryGetValue( "TelewinLge", ref TelewinLge);
+                //TSTsettingsNode.TryGetValue( "UseAppLauncher", ref UseAppLauncher);
+                //TSTsettingsNode.TryGetValue( "debugging", ref debugging);
+                //TSTsettingsNode.TryGetValue( "Tooltips", ref Tooltips);
+                //Utilities.debuggingOn = debugging;
+                //TSTsettingsNode.TryGetValue( "maxChemCamContracts", ref maxChemCamContracts);
+                //TSTsettingsNode.TryGetValue( "photoOnlyChemCamContracts", ref photoOnlyChemCamContracts);
+                //TSTsettingsNode.TryGetValue("ZoomSkyBox", ref ZoomSkyBox);
                 TSTsettingsNode.TryGetValue("scienceUndiscoveredScope", ref scienceUndiscoveredScope);
                 TSTsettingsNode.TryGetValue("scienceDiscoveredScope", ref scienceDiscoveredScope);
                 TSTsettingsNode.TryGetValue("repUndiscoveredScope", ref repUndiscoveredScope);
@@ -254,9 +254,49 @@ namespace TarsierSpaceTech
                 TSTsettingsNode.TryGetValue("repDiscoveredChem", ref repDiscoveredChem);
                 TSTsettingsNode.TryGetValue("fundsUndiscoveredChem", ref fundsUndiscoveredChem);
                 TSTsettingsNode.TryGetValue("fundsdiscoveredChem", ref fundsdiscoveredChem);
+
+                ApplySettings();
                 Utilities.Log_Debug("TSTSettings load complete");
             }
         }
+
+        internal void ApplySettings()
+        {
+            Utilities.Log_Debug("TSTSettings ApplySettings Start");
+            if (HighLogic.CurrentGame != null)
+            {
+                var TST_SettingsParms = HighLogic.CurrentGame.Parameters.CustomParams<TST_SettingsParms>();
+                if (TST_SettingsParms != null)
+                {
+                    var GUI = TSTMenu.Instance ?? null;
+                    ChemwinSml = TST_SettingsParms.ChemwinSml;
+                    ChemwinLge = TST_SettingsParms.ChemwinLge;
+                    TelewinSml = TST_SettingsParms.TelewinSml;
+                    TelewinLge = TST_SettingsParms.TelewinLge;
+                    
+                    if (UseAppLauncher != TST_SettingsParms.UseAppLauncher)
+                    {
+                        UseAppLauncher = TST_SettingsParms.UseAppLauncher;
+                        if (GUI != null)
+                        {
+                            GUI.TSTMenuAppLToolBar.chgAppIconStockToolBar(UseAppLauncher);
+                        }
+                    }
+                    debugging = TST_SettingsParms.debugging;
+                    Utilities.debuggingOn = debugging;
+                    Tooltips = TST_SettingsParms.ToolTips;
+                    maxChemCamContracts = TST_SettingsParms.maxChemCamContracts;
+                    photoOnlyChemCamContracts = TST_SettingsParms.photoOnlyChemCamContracts;
+                    ZoomSkyBox = TST_SettingsParms.ZoomSkyBox;
+                }
+                else
+                    Utilities.Log_Debug("DFSettings ApplySettings Settings Params Not Set!");
+            }
+            else
+                Utilities.Log_Debug("DFSettings ApplySettings CurrentGame is NULL!");
+            Utilities.Log_Debug("DFSettings ApplySettings End");
+        }
+    
 
         public void Save(ConfigNode node)
         {
@@ -272,23 +312,23 @@ namespace TarsierSpaceTech
             }
             settingsNode.AddValue("FwindowPosX", FwindowPosX);
             settingsNode.AddValue("FwindowPosY", FwindowPosY);
-            settingsNode.AddValue("SCwindowPosX", FwindowPosX);
-            settingsNode.AddValue("SCwindowPosY", FwindowPosY);
+            //settingsNode.AddValue("SCwindowPosX", FwindowPosX);
+            //settingsNode.AddValue("SCwindowPosY", FwindowPosY);
             settingsNode.AddValue("CwindowPosX", CwindowPosX);
             settingsNode.AddValue("CwindowPosY", CwindowPosY);
             settingsNode.AddValue("GalwindowPosX", GalwindowPosX);
             settingsNode.AddValue("GalwindowPosY", GalwindowPosY);
             settingsNode.AddValue("BodwindowPosX", BodwindowPosX);
             settingsNode.AddValue("BodwindowPosY", BodwindowPosY);
-            settingsNode.AddValue("ChemwinSml", ChemwinSml);
-            settingsNode.AddValue("ChemwinLge", ChemwinLge);
-            settingsNode.AddValue("TelewinSml", TelewinSml);
-            settingsNode.AddValue("TelewinLge", TelewinLge);
-            settingsNode.AddValue("UseAppLauncher", UseAppLauncher);
-            settingsNode.AddValue("debugging", debugging);
-            settingsNode.AddValue("Tooltips", Tooltips);
-            settingsNode.AddValue("maxChemCamContracts", maxChemCamContracts);
-            settingsNode.AddValue("ZoomSkyBox", ZoomSkyBox);
+            //settingsNode.AddValue("ChemwinSml", ChemwinSml);
+            //settingsNode.AddValue("ChemwinLge", ChemwinLge);
+            //settingsNode.AddValue("TelewinSml", TelewinSml);
+            //settingsNode.AddValue("TelewinLge", TelewinLge);
+            //settingsNode.AddValue("UseAppLauncher", UseAppLauncher);
+            //settingsNode.AddValue("debugging", debugging);
+            //settingsNode.AddValue("Tooltips", Tooltips);
+            //settingsNode.AddValue("maxChemCamContracts", maxChemCamContracts);
+            //settingsNode.AddValue("ZoomSkyBox", ZoomSkyBox);
             settingsNode.AddValue("scienceUndiscoveredScope", scienceUndiscoveredScope);
             settingsNode.AddValue("scienceDiscoveredScope", scienceDiscoveredScope);
             settingsNode.AddValue("repUndiscoveredScope", repUndiscoveredScope);

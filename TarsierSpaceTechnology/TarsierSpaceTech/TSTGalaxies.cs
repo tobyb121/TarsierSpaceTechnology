@@ -101,6 +101,8 @@ namespace TarsierSpaceTech
                 celestialBody.transform.position = galaxy.position;
                 celestialBody.atmosphere = false;
                 celestialBody.ocean = false;
+                celestialBody.timeWarpAltitudeLimits = new float[0];
+                celestialBody.Radius = 500;
                 celestialBody.orbitDriver = null;
                 celestialBody.progressTree = null;                
                 CBGalaxies.Add(celestialBody);

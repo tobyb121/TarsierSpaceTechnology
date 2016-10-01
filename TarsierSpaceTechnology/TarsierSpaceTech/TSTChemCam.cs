@@ -32,7 +32,7 @@ using RSTUtils;
 using UnityEngine;
 using UnityEngine.Rendering;
 using Random = UnityEngine.Random;
-using Resources = TarsierSpaceTech.Properties.Resources;
+//using Resources = TarsierSpaceTech.Properties.Resources;
 
 namespace TarsierSpaceTech
 {
@@ -117,7 +117,7 @@ namespace TarsierSpaceTech
 			Utilities.Log_Debug("Finding Animation Object");
 			_animationObj = Utilities.FindChildRecursive(transform, "ChemCam").GetComponent<Animation>();
 
-			viewfinder.LoadImage(Resources.viewfinder);
+			viewfinder.LoadImage(Properties.Resources.viewfinder);
 
 			PlanetNames = (from CelestialBody b in FlightGlobals.Bodies select b.name).ToList();
 			CHMCwindowID = Utilities.getnextrandomInt();
@@ -542,9 +542,9 @@ namespace TarsierSpaceTech
 					part,
 					data,
 					xmitDataScalar,
-					data.labBoost,
+					data.transmitBonus,
 					true,
-                    "If you transmit this data it will only be worth: " + Mathf.Round(data.transmitValue * 100) + "% of the full science value",
+                    "If you transmit this data it will only be worth: " + Mathf.Round(data.baseTransmitValue * 100) + "% of the full science value",
                     true,
 					labSearch,
 					_onPageDiscard,

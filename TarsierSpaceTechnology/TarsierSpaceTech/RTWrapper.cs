@@ -83,11 +83,8 @@ namespace TarsierSpaceTech
             LogFormatted_DebugOnly("Attempting to Grab Remote Tech Types...");
 
             //find the base type
-            RTAPIType = AssemblyLoader.loadedAssemblies
-                .Select(a => a.assembly.GetExportedTypes())
-                .SelectMany(t => t)
-                .FirstOrDefault(t => t.FullName == "RemoteTech.API.API");
-
+            RTAPIType = getType("RemoteTech.API.API");
+            
             if (RTAPIType == null)
             {
                 return false;
@@ -119,6 +116,24 @@ namespace TarsierSpaceTech
 
             _RTWrapped = true;
             return true;
+        }
+
+        internal static Type getType(string name)
+        {
+            Type type = null;
+            AssemblyLoader.loadedAssemblies.TypeOperation(t =>
+
+            {
+                if (t.FullName == name)
+                    type = t;
+            }
+            );
+
+            if (type != null)
+            {
+                return type;
+            }
+            return null;
         }
 
         /// <summary>
