@@ -31,7 +31,6 @@ using Contracts;
 using KSP.UI.Screens.Flight.Dialogs;
 using RSTUtils;
 using UnityEngine;
-using Resources = TarsierSpaceTech.Properties.Resources;
 
 namespace TarsierSpaceTech
 {
@@ -43,18 +42,18 @@ namespace TarsierSpaceTech
 
         private static readonly List<byte[]> targets_raw = new List<byte[]>
         {
-            Resources.target_01,
-            Resources.target_02,
-            Resources.target_03,
-            Resources.target_04,
-            Resources.target_05,
-            Resources.target_06,
-            Resources.target_07,
-            Resources.target_08,
-            Resources.target_09,
-            Resources.target_10,
-            Resources.target_11,
-            Resources.target_12
+            Properties.Resources.target_01,
+            Properties.Resources.target_02,
+            Properties.Resources.target_03,
+            Properties.Resources.target_04,
+            Properties.Resources.target_05,
+            Properties.Resources.target_06,
+            Properties.Resources.target_07,
+            Properties.Resources.target_08,
+            Properties.Resources.target_09,
+            Properties.Resources.target_10,
+            Properties.Resources.target_11,
+            Properties.Resources.target_12
         };
 
         private static readonly List<Texture2D> targets = new List<Texture2D>();
@@ -200,7 +199,7 @@ namespace TarsierSpaceTech
             GALwindowID = Utilities.getnextrandomInt();
             BODwindowID = Utilities.getnextrandomInt();
             Utilities.Log_Debug("TSTTel On end start");
-            StartCoroutine(setSASParams());
+            //StartCoroutine(setSASParams());
             Utilities.Log_Debug("TSTTel Adding Input Callback");
             _vessel = vessel;
             _vessel.OnAutopilotUpdate += onFlightInput;
@@ -214,12 +213,12 @@ namespace TarsierSpaceTech
         
         private IEnumerator setSASParams()
         {
-            while (FlightGlobals.ActiveVessel.Autopilot.RSAS.pidPitch == null)
+            while (FlightGlobals.ActiveVessel.Autopilot.SAS.pidLockedPitch == null)
                 yield return null;
             Utilities.Log_Debug("Setting PIDs");
-            FlightGlobals.ActiveVessel.Autopilot.RSAS.pidPitch.ReinitializePIDsOnly(PIDKp, PIDKi, PIDKd);
-            FlightGlobals.ActiveVessel.Autopilot.RSAS.pidRoll.ReinitializePIDsOnly(PIDKp, PIDKi, PIDKd);
-            FlightGlobals.ActiveVessel.Autopilot.RSAS.pidYaw.ReinitializePIDsOnly(PIDKp, PIDKi, PIDKd);
+            FlightGlobals.ActiveVessel.Autopilot.SAS.pidLockedPitch.Reinitialize(PIDKp, PIDKi, PIDKd);
+            FlightGlobals.ActiveVessel.Autopilot.SAS.pidLockedRoll.Reinitialize(PIDKp, PIDKi, PIDKd);
+            FlightGlobals.ActiveVessel.Autopilot.SAS.pidLockedYaw.Reinitialize(PIDKp, PIDKi, PIDKd);
         }
 
         public void removeFlightInputHandler(Vessel target)
@@ -1039,7 +1038,7 @@ namespace TarsierSpaceTech
                     data.title = "Tarsier Space Telescope: Orbiting " + vessel.mainBody.theName + " looking at " + tgttheName;
                     _scienceData.Add(data);
                     Utilities.Log_Debug("Added Data Amt= {0}, TransmitValue= {1}, LabBoost= {2}, LabValue= {3}",
-                        data.dataAmount.ToString(), data.transmitValue.ToString(), data.labBoost.ToString(),
+                        data.dataAmount.ToString(), data.baseTransmitValue.ToString(), data.transmitBonus.ToString(),
                         data.labValue.ToString());
                     //If ResearchBodies is installed check if body is already found or not, if it isn't change the screen message to say "Unknown Body"
                     if (Utilities.IsResearchBodiesInstalled && RBWrapper.RBactualAPI.enabled)
@@ -1261,7 +1260,7 @@ namespace TarsierSpaceTech
                 part,
                 data,
                 xmitDataScalar,
-                data.labBoost,
+                data.transmitBonus,
                 false,
                 "",
                 true,

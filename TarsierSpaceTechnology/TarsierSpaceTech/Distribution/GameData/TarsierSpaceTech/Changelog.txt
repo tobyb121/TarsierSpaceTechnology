@@ -1,4 +1,8 @@
-﻿V6.4 "ResearchBodies 1.8"
+﻿V6.5 "KSP 1.2"
+	Changes for KSP 1.2.
+	Added a check to Contract generation to ensure the TST parts are actually loaded in-game (removes log spam if they aren't).
+	Moved Some (*not all) settings to the new Stock Difficulty Settings Integration.
+V6.4 "ResearchBodies 1.8"
 	Compatible version for integration with ResearchBodies V1.8.
 	Re-balanced price of Telescopes to take into account the cost of the ResearchBodies and Asteroid Day infrared telescopes.
 	The small telescope now costs 10,000 (was 5,000) - entry price is still 5,000.

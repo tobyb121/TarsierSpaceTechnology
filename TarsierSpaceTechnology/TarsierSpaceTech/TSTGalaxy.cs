@@ -35,7 +35,7 @@ namespace TarsierSpaceTech
         private OrbitDriver _galaxy_orbitdriver = null;
         private VesselTargetModes _galaxy_targetmodes = VesselTargetModes.Direction;
         private static Mesh mesh;
-        private Material mat = new Material(Shader.Find("Unlit/Transparent"));        
+        private Material mat;        
         public string theName;
         private ConfigNode config;
         private string textureURL;
@@ -52,6 +52,10 @@ namespace TarsierSpaceTech
         
         public void Start()
         {
+            if (mat == null)
+            {
+                mat = new Material(Shader.Find("Unlit/Transparent"));
+            }
             if (mesh == null)
             {
                 Utilities.Log_Debug("Generating GalaxyMesh");
@@ -91,6 +95,7 @@ namespace TarsierSpaceTech
 
         public void Load(ConfigNode config)
         {
+            mat = new Material(Shader.Find("Unlit/Transparent"));
             this.config = config;
             string name = config.GetValue("name");
             string theName = config.GetValue("theName");

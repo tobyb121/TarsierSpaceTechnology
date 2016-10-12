@@ -66,7 +66,20 @@ namespace TarsierSpaceTech
         {
             AvailablePart ap1 = PartLoader.getPartInfoByName("tarsierSpaceTelescope");
             AvailablePart ap2 = PartLoader.getPartInfoByName("tarsierAdvSpaceTelescope");
-            return ResearchAndDevelopment.PartTechAvailable(ap1)||ResearchAndDevelopment.PartTechAvailable(ap2);
+            if (ap1 != null && ap2 != null)
+            {
+                return ResearchAndDevelopment.PartTechAvailable(ap1) || ResearchAndDevelopment.PartTechAvailable(ap2);
+            }
+            if (ap1 != null && ap2 == null)
+            {
+                return ResearchAndDevelopment.PartTechAvailable(ap1);
+            }
+            if (ap1 == null && ap2 != null)
+            {
+                return ResearchAndDevelopment.PartTechAvailable(ap2);
+            }
+            Utilities.Log("It appears the TST telescope parts are missing. Cannot check Contract Requirements");
+            return false;
         }
 
         protected override string GetSynopsys()
