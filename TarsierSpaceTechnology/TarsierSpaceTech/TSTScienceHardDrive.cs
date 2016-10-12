@@ -99,7 +99,8 @@ namespace TarsierSpaceTech
                             {
                                 float ECAmount = d.dataAmount*powerUsage;
                                 double resAvail = 0;
-                                if (Utilities.requireResource(vessel, "ElectricCharge", ECAmount, true, out resAvail)) // GetAvailableResource(part, "ElectricCharge") >= d.dataAmount * powerUsage)
+                                double restotal = 0;
+                                if (Utilities.requireResource(vessel, "ElectricCharge", ECAmount, true, true, false, out resAvail, out restotal)) // GetAvailableResource(part, "ElectricCharge") >= d.dataAmount * powerUsage)
                                 {
                                     //Utilities.Log_Debug("Removing Electric Charge");
                                     //part.RequestResource("ElectricCharge", d.dataAmount * powerUsage);
@@ -164,7 +165,8 @@ namespace TarsierSpaceTech
                             {
                                 float ECAmount = d.dataAmount * powerUsage;
                                 double resAvail = 0;
-                                if (Utilities.requireResource(vessel, "ElectricCharge", ECAmount, true, out resAvail)) //.GetAvailableResource(part, "ElectricCharge") >= d.dataAmount * powerUsage)
+                                double restotal = 0;
+                                if (Utilities.requireResource(vessel, "ElectricCharge", ECAmount, true, true, false, out resAvail, out restotal)) //.GetAvailableResource(part, "ElectricCharge") >= d.dataAmount * powerUsage)
                                 {
                                     //Utilities.Log_Debug("Removing Electric Charge");
                                     //part.RequestResource("ElectricCharge", d.dataAmount * powerUsage);

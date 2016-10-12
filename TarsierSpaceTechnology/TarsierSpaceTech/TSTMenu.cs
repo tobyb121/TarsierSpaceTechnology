@@ -42,14 +42,10 @@ namespace TarsierSpaceTech
         internal AppLauncherToolBar TSTMenuAppLToolBar;
         private static int TSTwindowID = new Random().Next();
         private static int FTTwindowID;
-        //private static int SCwindowID;
         private const float FWINDOW_WIDTH = 480;        
-        //private const float SWINDOW_WIDTH = 460;
         private const float WINDOW_BASE_HEIGHT = 380;
-        //private int SCwindow_SettingWidth = 380;
         private Rect FwindowPos = new Rect(40, Screen.height / 2 - 100, FWINDOW_WIDTH, WINDOW_BASE_HEIGHT); // Flight Window position and size
         private Rect FTwindowPos = new Rect(60 + FWINDOW_WIDTH, Screen.height / 2 - 100, FWINDOW_WIDTH, WINDOW_BASE_HEIGHT); // Flight Window position and size
-        //private Rect SCwindowPos = new Rect(40, Screen.height / 2 - 100, SWINDOW_WIDTH, WINDOW_BASE_HEIGHT); // Flight Window position and size
         private GUIStyle sectionTitleStyle, subsystemButtonStyle, statusStyle, warningStyle, PartListStyle, PartListPartStyle;
         private GUIStyle resizeStyle; //scrollStyle,
         private Vector2 CamscrollViewVector = Vector2.zero;
@@ -58,13 +54,7 @@ namespace TarsierSpaceTech
         private bool stylesSet;
         private bool LoadConfig = true;
         private string tmpToolTip;
-
-        //Settings Menu Temp Vars              
-        //private string InputSChemwinSml, InputSChemwinLge, InputSTelewinLge, InputSTelewinSml, InputSMaxChemCamContracts;
-        //private int InputVChemwinSml, InputVChemwinLge, InputVTelewinLge, InputVTelewinSml, InputVMaxChemCamContracts;
-        //private bool InputUseAppLauncher, Inputdebugging, InputTooltips, InputphotoOnlyChemCamContracts;
-
-
+        
         //GuiVisibility
         
         private bool _FTVisible;
@@ -103,7 +93,6 @@ namespace TarsierSpaceTech
             }
             TSTwindowID = Utilities.getnextrandomInt();
             FTTwindowID = Utilities.getnextrandomInt();
-            //SCwindowID =  Utilities.getnextrandomInt();
             RT2Present = Utilities.IsRTInstalled;
             
             TSTMenuAppLToolBar = new AppLauncherToolBar("TST", "Tarsier Space Tech",
@@ -122,8 +111,6 @@ namespace TarsierSpaceTech
             Utilities.Log_Debug("TSTMenu Start in " + HighLogic.LoadedScene);
             FwindowPos.x = TSTMstStgs.Instance.TSTsettings.FwindowPosX;
             FwindowPos.y = TSTMstStgs.Instance.TSTsettings.FwindowPosY;
-            //SCwindowPos.x = TSTMstStgs.Instance.TSTsettings.SCwindowPosX;
-            //SCwindowPos.y = TSTMstStgs.Instance.TSTsettings.SCwindowPosY;
             
             if (RT2Present)
             {
@@ -149,8 +136,6 @@ namespace TarsierSpaceTech
             
             TSTMstStgs.Instance.TSTsettings.FwindowPosX = FwindowPos.x;
             TSTMstStgs.Instance.TSTsettings.FwindowPosY = FwindowPos.y;
-            //TSTMstStgs.Instance.TSTsettings.SCwindowPosX = SCwindowPos.x;
-            //TSTMstStgs.Instance.TSTsettings.SCwindowPosY = SCwindowPos.y;
         }
 
         public void Update()
@@ -230,34 +215,7 @@ namespace TarsierSpaceTech
                 if (_FTVisible)
                     FTwindowPos = GUILayout.Window(FTTwindowID, FTwindowPos, windowFT, "Fine Tune Gyros & SAS", GUILayout.MinHeight(20));
             }    
-            /*             
-            if (Utilities.GameModeisSpaceCenter)
-            {
-                crntWindow = TSTWindow.SETTINGS;
-                if (LoadConfig)
-                {
-                    TSTMstStgs.Instance.TSTsettings.Load(TSTMstStgs.Instance.globalNode);                    
-                    InputVChemwinSml = TSTMstStgs.Instance.TSTsettings.ChemwinSml;
-                    InputVChemwinLge = TSTMstStgs.Instance.TSTsettings.ChemwinLge;
-                    InputVTelewinSml = TSTMstStgs.Instance.TSTsettings.TelewinSml;
-                    InputVTelewinLge = TSTMstStgs.Instance.TSTsettings.TelewinLge;
-                    InputSChemwinSml = InputVChemwinSml.ToString();
-                    InputSChemwinLge = InputVChemwinLge.ToString();
-                    InputSTelewinSml = InputVTelewinSml.ToString();
-                    InputSTelewinLge = InputVTelewinLge.ToString();
-                    InputUseAppLauncher = TSTMstStgs.Instance.TSTsettings.UseAppLauncher;
-                    Inputdebugging = TSTMstStgs.Instance.TSTsettings.debugging;
-                    InputTooltips = TSTMstStgs.Instance.TSTsettings.Tooltips;
-                    InputVMaxChemCamContracts = TSTMstStgs.Instance.TSTsettings.maxChemCamContracts;
-                    InputSMaxChemCamContracts = InputVMaxChemCamContracts.ToString();
-                    InputphotoOnlyChemCamContracts = TSTMstStgs.Instance.TSTsettings.photoOnlyChemCamContracts;
-                    LoadConfig = false;
-                }
-                SCwindowPos.ClampInsideScreen();
-                SCwindowPos = GUILayout.Window(SCwindowID, SCwindowPos, windowSC, "Tarsier Space Technology", GUILayout.MinHeight(20), GUILayout.ExpandWidth(true),
-                                GUILayout.ExpandHeight(true));                
-            }
-            */
+            
             if (TSTMstStgs.Instance.TSTsettings.Tooltips)
                 Utilities.DrawToolTip();
         }
@@ -458,188 +416,7 @@ namespace TarsierSpaceTech
             
             GUI.DragWindow();
         }
-        /*
-        private void windowSC(int id)
-        {
-            GUIContent closeContent = new GUIContent(Textures.BtnRedCross, "Close Window");
-            Rect closeRect = new Rect(SCwindowPos.width - 21, 4, 16, 16);
-            if (GUI.Button(closeRect, closeContent, Textures.ClosebtnStyle))
-            {
-                TSTMenuAppLToolBar.onAppLaunchToggle();
-                return;
-            }
-
-            //Settings Menu                     
-            GUILayout.BeginVertical(); 
-            // Begin the ScrollView                        
-            CamscrollViewVector = GUILayout.BeginScrollView(CamscrollViewVector);
-            GUILayout.BeginVertical();
-
-            GUILayout.BeginHorizontal();
-            GUILayout.Box(new GUIContent("Small Size setting of ChemCam Window in pixels", "Small Size setting of ChemCam Window in pixels"), statusStyle, GUILayout.Width(SCwindow_SettingWidth));
-            InputSChemwinSml = Regex.Replace(GUILayout.TextField(InputSChemwinSml, 4, GUILayout.MinWidth(30.0F)), "[^.0-9]", "");  //you can play with the width of the text box
-            GUILayout.EndHorizontal();
-            if (!int.TryParse(InputSChemwinSml, out InputVChemwinSml))
-            {
-                InputVChemwinSml = TSTMstStgs.Instance.TSTsettings.ChemwinSml;
-            }
-            if (InputVChemwinSml > Utilities.scaledScreenWidth - 20)
-            {
-                InputVChemwinSml = Utilities.scaledScreenWidth - 20;
-            }
-
-            GUILayout.BeginHorizontal();
-            GUILayout.Box(new GUIContent("Large Size setting of ChemCam Window in pixels", "Large Size setting of ChemCam Window in pixels"), statusStyle, GUILayout.Width(SCwindow_SettingWidth));
-            InputSChemwinLge = Regex.Replace(GUILayout.TextField(InputSChemwinLge, 4, GUILayout.MinWidth(30.0F)), "[^.0-9]", "");  //you can play with the width of the text box
-            GUILayout.EndHorizontal();
-            if (!int.TryParse(InputSChemwinLge, out InputVChemwinLge))
-            {
-                InputVChemwinLge = TSTMstStgs.Instance.TSTsettings.ChemwinLge;
-            }
-            if (InputVChemwinLge > Utilities.scaledScreenWidth - 20)
-            {
-                InputVChemwinLge = Utilities.scaledScreenWidth - 20;
-            }
-
-            GUILayout.BeginHorizontal();
-            GUILayout.Box(new GUIContent("Small Size setting of Telescope Window in pixels", "Small Size setting of Telescope Window in pixels"), statusStyle, GUILayout.Width(SCwindow_SettingWidth));
-            InputSTelewinSml = Regex.Replace(GUILayout.TextField(InputSTelewinSml, 4, GUILayout.MinWidth(30.0F)), "[^.0-9]", "");  //you can play with the width of the text box
-            GUILayout.EndHorizontal();
-            if (!int.TryParse(InputSTelewinSml, out InputVTelewinSml))
-            {
-                InputVTelewinSml = TSTMstStgs.Instance.TSTsettings.TelewinSml;
-            }
-            if (InputVTelewinSml > Utilities.scaledScreenWidth - 20)
-            {
-                InputVTelewinSml = Utilities.scaledScreenWidth - 20;
-            }
-
-            GUILayout.BeginHorizontal();
-            GUILayout.Box(new GUIContent("Large Size setting of Telescope Window in pixels", "Large Size setting of Telescope Window in pixels"), statusStyle, GUILayout.Width(SCwindow_SettingWidth));
-            InputSTelewinLge = Regex.Replace(GUILayout.TextField(InputSTelewinLge, 4, GUILayout.MinWidth(30.0F)), "[^.0-9]", "");  //you can play with the width of the text box
-            GUILayout.EndHorizontal();
-            if (!int.TryParse(InputSTelewinLge, out InputVTelewinLge))
-            {
-                InputVTelewinLge = TSTMstStgs.Instance.TSTsettings.TelewinLge;
-            }
-            if (InputVTelewinLge > Utilities.scaledScreenWidth - 20)
-            {
-                InputVTelewinLge = Utilities.scaledScreenWidth - 20;
-            }
-            if (HighLogic.CurrentGame.Mode == Game.Modes.SANDBOX ||
-                HighLogic.CurrentGame.Mode == Game.Modes.SCIENCE_SANDBOX)
-            {
-                GUI.enabled = false;
-                tmpToolTip = "Only Available in Career Mode";
-            }
-            else
-            {
-                tmpToolTip = "The maximum number of ChemCam Contracts that can be offered at one time capped at 20";
-            }
-                
-            GUILayout.BeginHorizontal();
-            GUILayout.Box(new GUIContent("Maximum ChemCam Contracts", tmpToolTip), statusStyle, GUILayout.Width(SCwindow_SettingWidth));
-            InputSMaxChemCamContracts = Regex.Replace(GUILayout.TextField(InputSMaxChemCamContracts, 4, GUILayout.MinWidth(30.0F)), "[^.0-9]", "");  //you can play with the width of the text box
-            GUILayout.EndHorizontal();
-            if (!int.TryParse(InputSMaxChemCamContracts, out InputVMaxChemCamContracts))
-            {
-                InputVMaxChemCamContracts = TSTMstStgs.Instance.TSTsettings.maxChemCamContracts;
-            }
-            if (InputVMaxChemCamContracts > 20)
-            {
-                InputVMaxChemCamContracts = 20;
-            }
-
-            GUI.enabled = true;
-
-            if (HighLogic.CurrentGame.Mode == Game.Modes.SANDBOX ||
-                HighLogic.CurrentGame.Mode == Game.Modes.SCIENCE_SANDBOX)
-            {
-                GUI.enabled = false;
-                tmpToolTip = "Only Available in Career Mode";
-            }
-            else
-            {
-                tmpToolTip = "ChemCam Contracts are only offered for bodies that have already been photographed";
-            }
-
-            GUILayout.BeginHorizontal();
-            GUILayout.Box(new GUIContent("ChemCam contracts restricted", tmpToolTip), statusStyle, GUILayout.Width(SCwindow_SettingWidth));
-            InputphotoOnlyChemCamContracts = GUILayout.Toggle(InputphotoOnlyChemCamContracts, "", GUILayout.MinWidth(30.0F)); //you can play with the width of the text box
-            GUILayout.EndHorizontal();
-
-            GUI.enabled = true;
-
-            if (!ToolbarManager.ToolbarAvailable)
-            {
-                GUI.enabled = false;
-                tmpToolTip = "Not available unless ToolBar mod is installed";
-            }
-            else
-            {
-                tmpToolTip =
-                    "If ON TST Icon will appear in the stock Applauncher, if OFF TST Icon will appear in ToolBar mod";
-            }
-
-            GUILayout.BeginHorizontal();
-            GUILayout.Box(new GUIContent("Use Stock App Icon", tmpToolTip), statusStyle, GUILayout.Width(SCwindow_SettingWidth));
-            InputUseAppLauncher = GUILayout.Toggle(InputUseAppLauncher, "", GUILayout.MinWidth(30.0F)); //you can play with the width of the text box
-            GUILayout.EndHorizontal();
-
-            GUI.enabled = true;
-
-            GUILayout.BeginHorizontal();
-            GUILayout.Box(new GUIContent("Debug Logging ON", "Only turn this on if you are experiencing issues with TST and wish to capture a more verbose log to report on the forums."), statusStyle, GUILayout.Width(SCwindow_SettingWidth));
-            Inputdebugging = GUILayout.Toggle(Inputdebugging, "", GUILayout.MinWidth(30.0F)); //you can play with the width of the text box
-            GUILayout.EndHorizontal();
-
-            GUILayout.BeginHorizontal();
-            GUILayout.Box(new GUIContent("ToolTips ON", "If ON you will see this ToolTip, and others. If OFF ToolTips are not shown"), statusStyle, GUILayout.Width(SCwindow_SettingWidth));
-            InputTooltips = GUILayout.Toggle(InputTooltips, "", GUILayout.MinWidth(30.0F)); //you can play with the width of the text box
-            GUILayout.EndHorizontal();
-
-            // End the ScrollView
-            GUILayout.EndVertical();
-            GUILayout.EndScrollView();
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button(new GUIContent("Save & Exit Settings", "Save & Exit Settings"), GUILayout.Width(155f)))
-            {
-                TSTMstStgs.Instance.TSTsettings.ChemwinSml = InputVChemwinSml;
-                TSTMstStgs.Instance.TSTsettings.ChemwinLge = InputVChemwinLge;
-                TSTMstStgs.Instance.TSTsettings.TelewinSml = InputVTelewinSml;
-                TSTMstStgs.Instance.TSTsettings.TelewinLge = InputVTelewinLge;
-                if (TSTMstStgs.Instance.TSTsettings.UseAppLauncher != InputUseAppLauncher)
-                {
-                    TSTMstStgs.Instance.TSTsettings.UseAppLauncher = InputUseAppLauncher;
-                    TSTMenuAppLToolBar.chgAppIconStockToolBar(TSTMstStgs.Instance.TSTsettings.UseAppLauncher);
-                }
-                TSTMstStgs.Instance.TSTsettings.debugging = Inputdebugging;
-                TSTMstStgs.Instance.TSTsettings.Tooltips = InputTooltips;
-                TSTMstStgs.Instance.TSTsettings.maxChemCamContracts = InputVMaxChemCamContracts;
-                TSTMstStgs.Instance.TSTsettings.photoOnlyChemCamContracts = InputphotoOnlyChemCamContracts;                                         
-                LoadConfig = true;                
-                TSTMstStgs.Instance.TSTsettings.Save(TSTMstStgs.Instance.globalNode);
-                TSTMenuAppLToolBar.GuiVisible = !TSTMenuAppLToolBar.GuiVisible;
-            }
-            if (GUILayout.Button(new GUIContent("Reset Settings", "Reset Settings"), GUILayout.Width(155f)))
-            {
-                LoadConfig = true;
-            }
-            GUILayout.EndHorizontal();
-            //Settings Menu    
-            GUILayout.EndVertical();            
-            GUILayout.Space(14);
-
-            GUIContent resizeContent = new GUIContent(Textures.BtnResize, "Resize Window");
-            Rect resizeRect = new Rect(SCwindowPos.width - 17, SCwindowPos.height - 17, 16, 16);
-            GUI.Label(resizeRect, resizeContent, Textures.ResizeStyle);
-            HandleResizeEvents(resizeRect);
-            if (TSTMstStgs.Instance.TSTsettings.Tooltips)
-                Utilities.SetTooltipText();
-
-            GUI.DragWindow();
-        }
-        */
+        
         private void HandleResizeEvents(Rect resizeRect)
         {
             var theEvent = Event.current;
@@ -666,11 +443,6 @@ namespace TarsierSpaceTech
                                 FwindowPos.width = Mathf.Clamp(Input.mousePosition.x - FwindowPos.x + (resizeRect.width / 2), 50, Screen.width - FwindowPos.x);
                                 FwindowPos.height = Mathf.Clamp(mouseY - FwindowPos.y + (resizeRect.height / 2), 50, Screen.height - FwindowPos.y);
                                 break;
-
-                            //case TSTWindow.SETTINGS:
-                            //    SCwindowPos.width = Mathf.Clamp(Input.mousePosition.x - SCwindowPos.x + (resizeRect.width / 2), 50, Screen.width - SCwindowPos.x);
-                            //    SCwindowPos.height = Mathf.Clamp(mouseY - SCwindowPos.y + (resizeRect.height / 2), 50, Screen.height - SCwindowPos.y);
-                            //    break;
                         }                        
                     }
                     else
