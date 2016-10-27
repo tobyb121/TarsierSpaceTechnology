@@ -61,9 +61,9 @@ namespace TarsierSpaceTech
 		private int frameLimit = 5;
 		private int f;
 		
-		private List<ScienceData> _scienceData = new List<ScienceData>();
+		private List<ScienceData> _scienceData;
 
-		private static Texture2D viewfinder = new Texture2D(1, 1);
+		private static Texture2D viewfinder;
 
 		private static List<string> PlanetNames;
 
@@ -90,8 +90,9 @@ namespace TarsierSpaceTech
 				_inEditor = true;
 				return;
 			}
-
-			Utilities.Log_Debug("Starting ChemCam");
+            viewfinder = new Texture2D(1, 1);
+            _scienceData = new List<ScienceData>();
+            Utilities.Log_Debug("Starting ChemCam");
 			_lookTransform = Utilities.FindChildRecursive(transform,"CameraTransform");
 			_camera=_lookTransform.gameObject.AddComponent<TSTCameraModule>();
 
@@ -192,7 +193,8 @@ namespace TarsierSpaceTech
 
 		public void OnGUI()
 		{
-			if (!_inEditor && _camera.Enabled && vessel.isActiveVessel && FlightUIModeController.Instance.Mode != FlightUIMode.ORBITAL && !Utilities.isPauseMenuOpen)
+            if (Time.timeSinceLevelLoad < 2f) return;
+            if (!_inEditor && _camera.Enabled && vessel.isActiveVessel && FlightUIModeController.Instance.Mode != FlightUIMode.ORBITAL && !Utilities.isPauseMenuOpen)
 			{
 				if (!Textures.StylesSet) Textures.SetupStyles();
 
