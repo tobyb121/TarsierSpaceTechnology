@@ -1,4 +1,9 @@
-﻿V6.5 "KSP 1.2"
+﻿V6.6 "KSP 1.2.1 & ResearchBodies 1.9"
+	Re-compile for KSP 1.2.1.
+	Moved initializers out of ..ctor to avoid Unity messages.
+	Eliminate NullRef errors on scene change for onGUI (was issuing two errors each time you switched scene).
+	Support ResearchBodies 1.9.
+V6.5 "KSP 1.2"
 	Changes for KSP 1.2.
 	Added a check to Contract generation to ensure the TST parts are actually loaded in-game (removes log spam if they aren't).
 	Moved Some (*not all) settings to the new Stock Difficulty Settings Integration.

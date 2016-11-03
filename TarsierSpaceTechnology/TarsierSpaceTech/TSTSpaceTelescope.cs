@@ -914,9 +914,10 @@ namespace TarsierSpaceTech
 
         public void OnGUI()
         {
+            if (Time.timeSinceLevelLoad < 2f) return;
             if (Utilities.GameModeisFlight)
             {
-                if (!_inEditor && _camera != null)
+                if (!_inEditor && _camera != null && !Utilities.isPauseMenuOpen)
                 {
                     if (!Textures.StylesSet) Textures.SetupStyles();
 

@@ -216,7 +216,7 @@ namespace TarsierSpaceTech
                 //Methods
 
                 LogFormatted_DebugOnly("Getting enabled Method");
-                enabledMethod = RBAPIType.GetMethod("get_enabled", BindingFlags.Public | BindingFlags.Static);
+                enabledMethod = RBAPIType.GetMethod("get_Enabled", BindingFlags.Public | BindingFlags.Static);
                 LogFormatted_DebugOnly("Success: " + (enabledMethod != null));
 
                 LogFormatted_DebugOnly("Getting FoundBody Method");
