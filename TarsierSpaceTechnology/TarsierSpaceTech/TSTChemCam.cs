@@ -81,17 +81,21 @@ namespace TarsierSpaceTech
 		
 		private Vessel _vessel;
 
+	    public void Awake()
+	    {
+	        base.Awake();
+            viewfinder = new Texture2D(1, 1);
+            _scienceData = new List<ScienceData>();
+        }
 
 		public override void OnStart(StartState state)
 		{
 			base.OnStart(state);
-			if (state == StartState.Editor)
+            if (state == StartState.Editor)
 			{
 				_inEditor = true;
 				return;
 			}
-            viewfinder = new Texture2D(1, 1);
-            _scienceData = new List<ScienceData>();
             Utilities.Log_Debug("Starting ChemCam");
 			_lookTransform = Utilities.FindChildRecursive(transform,"CameraTransform");
 			_camera=_lookTransform.gameObject.AddComponent<TSTCameraModule>();
