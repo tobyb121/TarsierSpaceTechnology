@@ -1,4 +1,6 @@
-﻿V6.6 "KSP 1.2.1 & ResearchBodies 1.9"
+﻿V6.6.1
+	Fix ChemCam crashing the editor scene.
+V6.6 "KSP 1.2.1 & ResearchBodies 1.9"
 	Re-compile for KSP 1.2.1.
 	Moved initializers out of ..ctor to avoid Unity messages.
 	Eliminate NullRef errors on scene change for onGUI (was issuing two errors each time you switched scene).
