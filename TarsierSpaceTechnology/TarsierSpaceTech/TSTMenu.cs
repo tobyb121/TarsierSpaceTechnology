@@ -64,6 +64,7 @@ namespace TarsierSpaceTech
             SETTINGS
         }
         private TSTWindow crntWindow;
+        private bool _onGameSceneSwitchRequested;
 
         //TST Parts
         private List<TSTChemCam> tstchemcam = new List<TSTChemCam>();
@@ -100,7 +101,10 @@ namespace TarsierSpaceTech
                 (ApplicationLauncher.AppScenes.FLIGHT),
                 GameDatabase.Instance.GetTexture("TarsierSpaceTech/Icons/TSTIconOn", false), GameDatabase.Instance.GetTexture("TarsierSpaceTech/Icons/TSTIconOff", false),
                 GameScenes.FLIGHT);
-            
+
+            GameEvents.onGameSceneSwitchRequested.Add(onGameSceneSwitchRequested);
+            GameEvents.onVesselSwitching.Add(onVesselSwitching);
+
             Utilities.Log("Awake complete");
         }
         
@@ -136,11 +140,26 @@ namespace TarsierSpaceTech
             
             TSTMstStgs.Instance.TSTsettings.FwindowPosX = FwindowPos.x;
             TSTMstStgs.Instance.TSTsettings.FwindowPosY = FwindowPos.y;
+
+            GameEvents.onGameSceneSwitchRequested.Remove(onGameSceneSwitchRequested);
+            GameEvents.onVesselSwitching.Remove(onVesselSwitching);
+
+        }
+
+        private void onGameSceneSwitchRequested(GameEvents.FromToAction<GameScenes, GameScenes> fromto)
+        {
+            _onGameSceneSwitchRequested = true;
+        }
+
+        private void onVesselSwitching(Vessel from, Vessel to)
+        {
+            if (TSTMenuAppLToolBar.GuiVisible)
+                TSTMenuAppLToolBar.GuiVisible = false;
         }
 
         public void Update()
         {
-            if (Time.timeSinceLevelLoad < 2f)
+            if (Time.timeSinceLevelLoad < 2f || _onGameSceneSwitchRequested)
                 return;
             
 
@@ -198,7 +217,8 @@ namespace TarsierSpaceTech
 
         private void OnGUI()
         {
-            if (Utilities.GameModeisEVA || !TSTMenuAppLToolBar.GuiVisible || TSTMenuAppLToolBar.gamePaused || TSTMenuAppLToolBar.hideUI)
+            if (Utilities.GameModeisEVA || !TSTMenuAppLToolBar.GuiVisible || TSTMenuAppLToolBar.gamePaused || TSTMenuAppLToolBar.hideUI
+                || _onGameSceneSwitchRequested)
             {
                 return;
             }
