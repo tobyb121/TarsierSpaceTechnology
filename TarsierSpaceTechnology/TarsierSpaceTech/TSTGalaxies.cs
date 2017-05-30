@@ -97,7 +97,8 @@ namespace TarsierSpaceTech
                 GameObject goCB = new GameObject(name, typeof(CelestialBody));                
                 goCB.transform.parent = go.transform;
                 CelestialBody celestialBody = goCB.GetComponent<CelestialBody>();
-                celestialBody.bodyName = galaxy.theName;
+                celestialBody.bodyName = galaxy.name;
+                celestialBody.bodyDisplayName = galaxy.displayName;
                 celestialBody.transform.position = galaxy.position;
                 celestialBody.atmosphere = false;
                 celestialBody.ocean = false;

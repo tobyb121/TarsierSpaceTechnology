@@ -15,7 +15,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using Object = System.Object;
@@ -400,9 +399,9 @@ namespace TarsierSpaceTech
                 Dictionary<CelestialBody, CelestialBodyInfo> DictToReturn = new Dictionary<CelestialBody, CelestialBodyInfo>();
                 try
                 {
-                    foreach (var item in (IDictionary)actualCelestialBodies)
+                    foreach (Object item in (IDictionary)actualCelestialBodies)
                     {
-                        var typeitem = item.GetType();
+                        Type typeitem = item.GetType();
                         PropertyInfo[] itemprops = typeitem.GetProperties(BindingFlags.Instance | BindingFlags.Public);
                         CelestialBody itemkey = (CelestialBody)itemprops[0].GetValue(item, null);
                         object itemvalue = (object)itemprops[1].GetValue(item, null);

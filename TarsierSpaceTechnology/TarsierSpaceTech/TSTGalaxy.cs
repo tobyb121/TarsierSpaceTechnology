@@ -25,6 +25,7 @@
 using RSTUtils;
 using UnityEngine;
 using UnityEngine.Rendering;
+using KSP.Localization;
 
 namespace TarsierSpaceTech
 {
@@ -36,7 +37,7 @@ namespace TarsierSpaceTech
         private VesselTargetModes _galaxy_targetmodes = VesselTargetModes.Direction;
         private static Mesh mesh;
         private Material mat;        
-        public string theName;
+        public string displayName;
         private ConfigNode config;
         private string textureURL;
 
@@ -98,14 +99,14 @@ namespace TarsierSpaceTech
             mat = new Material(Shader.Find("Unlit/Transparent"));
             this.config = config;
             string name = config.GetValue("name");
-            string theName = config.GetValue("theName");
+            string displayName = config.GetValue("displayName");
             Vector3 pos = ConfigNode.ParseVector3(config.GetValue("location"));            
             textureURL = config.GetValue("textureURL");
             float size = float.Parse(config.GetValue("size"));
             Utilities.Log_Debug("Creating Galaxy: {0} : {1} : {2}" , name , pos.ToString() , textureURL);
             Utilities.Log_Debug("Setting Name");
             this.name = name;
-            this.theName = theName;            
+            this.displayName = Localizer.Format(displayName);            
             this.size = 1e3f * size * ScaledSpace.ScaleFactor;                       
             scaledPosition = -130e6f * pos.normalized;
             Utilities.Log_Debug("Setting Scaled Position= {0}" , scaledPosition.ToString());
@@ -156,6 +157,11 @@ namespace TarsierSpaceTech
         public string GetName()
         {
             return name;
+        }
+
+        public string GetDisplayName()
+        {
+            return displayName;
         }
 
         public Vector3 GetObtVelocity()

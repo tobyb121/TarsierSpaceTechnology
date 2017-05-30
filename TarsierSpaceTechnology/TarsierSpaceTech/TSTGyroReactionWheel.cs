@@ -25,6 +25,7 @@
 
 namespace TarsierSpaceTech
 {
+    [System.Obsolete("TSTGyroReactionWheel is deprecated.")]
     class TSTGyroReactionWheel: ModuleReactionWheel
     {
         [KSPField(isPersistant = true)]
