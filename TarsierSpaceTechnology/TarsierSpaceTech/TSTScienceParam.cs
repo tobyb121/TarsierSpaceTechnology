@@ -25,6 +25,7 @@
 using System.Collections.Generic;
 using Contracts;
 using RSTUtils;
+using KSP.Localization;
 
 namespace TarsierSpaceTech
 {
@@ -32,7 +33,7 @@ namespace TarsierSpaceTech
     {
         protected override string GetTitle()
         {
-            return "Transmit or Recover the science data";
+            return Localizer.Format("#autoLOC_TST_0080"); //#autoLOC_TST_0080 = Transmit or Recover the science data
         }
 
         protected override string GetNotes()

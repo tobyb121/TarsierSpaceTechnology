@@ -22,11 +22,10 @@
  *
  */
 
-using System.Linq;
 using Contracts;
 using Contracts.Agents;
 using RSTUtils;
-using UnityEngine;
+using KSP.Localization;
 
 namespace TarsierSpaceTech
 {
@@ -49,17 +48,17 @@ namespace TarsierSpaceTech
 
         protected override string GetDescription()
         {
-            return TextGen.GenerateBackStories(agent.Name, agent.GetMindsetString(), "Space Telescope", target.name, "test", MissionSeed);
+            return TextGen.GenerateBackStories(Localizer.Format("#autoLOC_TST_0052"), agent.Name, Localizer.Format("#autoLOC_TST_0058"), target.name, MissionSeed, true, true, true); //#autoLOC_TST_0052 = Exploration #autoLOC_TST_0058 = Space Telescope
         }
 
         protected override string GetTitle()
         {
-            return "Take a picture of "+target.theName;
+            return Localizer.Format("#autoLOC_TST_0059",target.displayName); //#autoLOC_TST_0059 = Take a picture of <<1>>
         }
 
         protected override string MessageCompleted()
         {
-            return "Great picture";
+            return Localizer.Format("#autoLOC_TST_0060"); //#autoLOC_TST_0060 = Great picture
         }
 
         public override bool MeetRequirements()
@@ -85,7 +84,7 @@ namespace TarsierSpaceTech
         protected override string GetSynopsys()
         {
             
-            return "Use a space telescope to take a picture of "+target.theName;
+            return Localizer.Format("#autoLOC_TST_0061", target.displayName); //#autoLOC_TST_0061 = Use a space telescope to take a picture of <<1>>
         }
 
         public TSTSpaceTelescope.TargetableObject target
