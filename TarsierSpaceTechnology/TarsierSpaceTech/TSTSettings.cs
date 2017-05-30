@@ -27,8 +27,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using RSTUtils;
-using UniLinq;
 using UnityEngine;
+using KSP.Localization;
 
 namespace TarsierSpaceTech
 {
@@ -37,11 +37,11 @@ namespace TarsierSpaceTech
     {
         public static TSTMstStgs Instance { get; private set; }               
         internal ConfigNode globalNode = new ConfigNode();
-        public TSTSettings TSTsettings { get; }
-        public TSTStockPlanets TSTstockplanets { get; }
-        public TSTRSSPlanets TSTrssplanets { get; }
-        public TSTOPMPlanets TSTopmplanets { get; } 
-        public TSTNHPlanets TSTnhplanets { get; }        
+        public TSTSettings TSTsettings { get; private set; }
+        public TSTStockPlanets TSTstockplanets { get; private set; }
+        public TSTRSSPlanets TSTrssplanets { get; private set; }
+        public TSTOPMPlanets TSTopmplanets { get; private set; } 
+        public TSTNHPlanets TSTnhplanets { get; private set; }        
         private readonly string globalConfigFilename;
         internal bool isRBactive = false;
         internal bool isRBloaded = false;
@@ -248,10 +248,10 @@ namespace TarsierSpaceTech
             Utilities.Log_Debug("TSTSettings ApplySettings Start");
             if (HighLogic.CurrentGame != null)
             {
-                var TST_SettingsParms = HighLogic.CurrentGame.Parameters.CustomParams<TST_SettingsParms>();
+                TST_SettingsParms TST_SettingsParms = HighLogic.CurrentGame.Parameters.CustomParams<TST_SettingsParms>();
                 if (TST_SettingsParms != null)
                 {
-                    var GUI = TSTMenu.Instance ?? null;
+                    TSTMenu GUI = TSTMenu.Instance ?? null;
                     ChemwinSml = TST_SettingsParms.ChemwinSml;
                     ChemwinLge = TST_SettingsParms.ChemwinLge;
                     TelewinSml = TST_SettingsParms.TelewinSml;

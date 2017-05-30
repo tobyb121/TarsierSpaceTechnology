@@ -22,9 +22,8 @@
  *
  */
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
+using UniLinq;
 using KSP.IO;
 using RSTUtils;
 using UnityEngine;
@@ -265,13 +264,13 @@ namespace TarsierSpaceTech
             //set exposure back to what it was
             for (int i = 0; i < skyboxRenderers.Length; i++)
             {
-                var sr = skyboxRenderers[i];
+                Renderer sr = skyboxRenderers[i];
                 sr.material.SetColor(PropertyIDs._Color, origColor);
             }
 
             //Render ScaledSpace
             //Render Atmospheres
-            foreach (var afg in atmospheres)
+            foreach (AtmosphereFromGround afg in atmospheres)
             {
                 //cache the atmosphere info
                 if (!atmoInfo.ContainsKey(afg))
@@ -294,12 +293,12 @@ namespace TarsierSpaceTech
             _scaledSpaceCam.camera.Render(); // render the ScaledSpaceCam
 
             //reset atmoInfo
-            foreach (var afg in atmospheres)
+            foreach (AtmosphereFromGround afg in atmospheres)
             {
                 //reset the atmosphere info from the cache
                 if (atmoInfo.ContainsKey(afg))
                 {
-                    var info = atmoInfo[afg];
+                    Vector4 info = atmoInfo[afg];
                     afg.cameraPos = new Vector3(info.x, info.y, info.z);
                     afg.cameraHeight = info.z;
                     afg.cameraHeight2 = info.z * info.z;
@@ -341,13 +340,13 @@ namespace TarsierSpaceTech
             //set exposure back to what it was
             for (int i = 0; i < skyboxRenderers.Length; i++)
             {
-                var sr = skyboxRenderers[i];
+                Renderer sr = skyboxRenderers[i];
                 sr.material.SetColor(PropertyIDs._Color, origColor);
             }
 
             //Render ScaledSpace
             //Render Atmospheres
-            foreach (var afg in atmospheres)
+            foreach (AtmosphereFromGround afg in atmospheres)
             {
                 //cache the atmosphere info
                 if (!atmoInfo.ContainsKey(afg))
@@ -370,12 +369,12 @@ namespace TarsierSpaceTech
             _scaledSpaceCamFS.camera.Render(); // render the ScaledSpaceCam
 
             //reset atmoInfo
-            foreach (var afg in atmospheres)
+            foreach (AtmosphereFromGround afg in atmospheres)
             {
                 //reset the atmosphere info from the cache
                 if (atmoInfo.ContainsKey(afg))
                 {
-                    var info = atmoInfo[afg];
+                    Vector4 info = atmoInfo[afg];
                     afg.cameraPos = new Vector3(info.x, info.y, info.z);
                     afg.cameraHeight = info.z;
                     afg.cameraHeight2 = info.z * info.z;

@@ -24,10 +24,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using UniLinq;
 using Contracts;
 using Contracts.Agents;
 using RSTUtils;
+using KSP.Localization;
 
 namespace TarsierSpaceTech
 {
@@ -50,17 +51,17 @@ namespace TarsierSpaceTech
 
         protected override string GetDescription()
         {
-            return TextGen.GenerateBackStories(agent.Name, agent.GetMindsetString(), "ChemCam", target.name, "test", MissionSeed);
+            return TextGen.GenerateBackStories(Localizer.Format("#autoLOC_TST_0052"), agent.Name, Localizer.Format("#autoLOC_TST_0053") , target.name, MissionSeed, true, true, true); //#autoLOC_TST_0052 = Exploration # autoLOC_TST_0053 = ChemCam 
         }
 
         protected override string GetTitle()
         {
-            return "Analyse the surface composition of " + target.theName;
+            return Localizer.Format("#autoLOC_TST_0054", target.displayName); //#autoLOC_TST_0054 = Analyse the surface composition of <<1>>
         }
 
         protected override string MessageCompleted()
         {
-            return "The data has been collected, please send it back for analysis";
+            return Localizer.Format("#autoLOC_TST_0055"); //#autoLOC_TST_0055 = The data has been collected, please send it back for analysis
         }
 
         public override bool MeetRequirements()
@@ -78,9 +79,10 @@ namespace TarsierSpaceTech
         {
             if (biome != "")
             {
-                return "Use the ChemCam to analyse the surface composition of the " + biome + " on " + target.theName;
+                string biomedisplayName = ScienceUtil.GetBiomedisplayName(target, biome);
+                return Localizer.Format("#autoLOC_TST_0056", biomedisplayName, target.displayName); //#autoLOC_TST_0056 = Use the ChemCam to analyse the surface composition of the <<1>> on <<2>>
             }
-            return "Use the ChemCam to analyse the surface of " + target.theName;
+            return Localizer.Format("#autoLOC_TST_0057", target.displayName); //#autoLOC_TST_0057 = Use the ChemCam to analyse the surface of <<1>>
         }
 
         protected override void OnCompleted()
@@ -210,7 +212,7 @@ namespace TarsierSpaceTech
             param2.matchFields.Add("TarsierSpaceTech.ChemCam");
             param2.matchFields.Add(target.name);
             biome = "";
-            List<string> biomes = ResearchAndDevelopment.GetBiomeTags(target);
+            List<string> biomes = ResearchAndDevelopment.GetBiomeTags(target, true);
             if (biomes.Count > 1)
             {
                 do

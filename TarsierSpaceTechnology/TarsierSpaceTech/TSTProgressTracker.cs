@@ -24,9 +24,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using Contracts;
+using KSP.Localization;
+using UniLinq;
 using RSTUtils;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -344,10 +344,10 @@ namespace TarsierSpaceTech
                 {
                     foreach (CelestialBody b in FlightGlobals.Bodies.Where(p => p.Radius > 100 && p.pqsController != null))
                     {
-                        List<string> biomes = ResearchAndDevelopment.GetBiomeTags(b);
+                        List<string> biomes = ResearchAndDevelopment.GetBiomeTags(b, true);
                         if (biomes.Count > 1)
                         {
-                            foreach (var biome in biomes)
+                            foreach (string biome in biomes)
                             {
                                 string nodename = b.name + "," + biome;
                                 if (chemCamNode.HasValue(nodename))
@@ -373,10 +373,10 @@ namespace TarsierSpaceTech
                 {
                     foreach (CelestialBody b in FlightGlobals.Bodies.Where(p => p.Radius > 100 && p.pqsController != null))
                     {
-                        List<string> biomes = ResearchAndDevelopment.GetBiomeTags(b);
+                        List<string> biomes = ResearchAndDevelopment.GetBiomeTags(b, true);
                         if (biomes.Count > 1)
                         {
-                            foreach (var biome in biomes)
+                            foreach (string biome in biomes)
                             {
                                 string nodename = b.name + "," + biome;
                                 ChemCamData[nodename] = false;
@@ -414,10 +414,14 @@ namespace TarsierSpaceTech
             {
                 if (scienceSubject.id.Contains("TarsierSpaceTech.SpaceTelescope"))
                 {
-                    if (scienceSubject.title.Contains("Space Telescope picture of "))
+                    int index = scienceSubject.id.IndexOf("LookingAt");
+                    if (index != -1)                        
                     {
-                        string bodyName = scienceSubject.title.Substring(27);
-                        var foundbodyentry = TSTMstStgs.Instance.RBCelestialBodies.FirstOrDefault(a => a.Key.theName == bodyName);
+                        string[] tmpIDelements = scienceSubject.id.Split('@');
+                        string[] valuesasarray = Enum.GetNames(typeof(ExperimentSituations));
+                        string[] splitvars = tmpIDelements[1].Split(valuesasarray, StringSplitOptions.None);
+                        string bodyName = splitvars[0];                        
+                        KeyValuePair<CelestialBody, RBWrapper.CelestialBodyInfo> foundbodyentry = TSTMstStgs.Instance.RBCelestialBodies.FirstOrDefault(a => a.Key.name == bodyName);
                         if (foundbodyentry.Key != null)
                         {
                             try
@@ -474,20 +478,20 @@ namespace TarsierSpaceTech
                             RBPopupMsg = TSTMstStgs.Instance.RBCelestialBodies[bodyFound].discoveryMessage;
                         }
                     }
-                    ScreenMessages.PostScreenMessage("Discovered new body " + bodyFound.name, 5.0f, ScreenMessageStyle.UPPER_CENTER);
+                    ScreenMessages.PostScreenMessage(Localizer.Format("#autoLOC_TST_0064", bodyFound.displayName), 5.0f, ScreenMessageStyle.UPPER_CENTER); //#autoLOC_TST_0064 = Discovered new body <<1>>
                     if (withParent)
                     {
                         if (RBWrapper.RBactualAPI.CelestialBodies.ContainsKey(parentBody))
                         {
                             RBPopupMsg = RBPopupMsg + " \r" + TSTMstStgs.Instance.RBCelestialBodies[parentBody].discoveryMessage;
                         }
-                        ScreenMessages.PostScreenMessage("Discovered new body " + parentBody, 5.0f, ScreenMessageStyle.UPPER_CENTER);
+                        ScreenMessages.PostScreenMessage(Localizer.Format("#autoLOC_TST_0064", parentBody.displayName), 5.0f, ScreenMessageStyle.UPPER_CENTER); //#autoLOC_TST_0064 = Discovered new body <<1>>
                     }
                     showRBWindow = true;
                 }
                 else
                 {
-                    ScreenMessages.PostScreenMessage("Discovered new body " + bodyFound.name, 5.0f, ScreenMessageStyle.UPPER_CENTER);
+                    ScreenMessages.PostScreenMessage(Localizer.Format("#autoLOC_TST_0064", bodyFound.displayName), 5.0f, ScreenMessageStyle.UPPER_CENTER); //#autoLOC_TST_0064 = Discovered new body <<1>>
                 }
 
             }
@@ -498,7 +502,7 @@ namespace TarsierSpaceTech
             if (!Utilities.isPauseMenuOpen)
             {
                 if (showRBWindow)
-                    RBWindowPos = GUILayout.Window(RBwindowID, RBWindowPos, RBWindow, "Research Bodies", GUILayout.Width(200));
+                    RBWindowPos = GUILayout.Window(RBwindowID, RBWindowPos, RBWindow, Localizer.Format("#autoLOC_TST_0063"), GUILayout.Width(200)); //#autoLOC_TST_0063 = Research Bodies
 
             }
         }
@@ -507,7 +511,7 @@ namespace TarsierSpaceTech
             GUILayout.BeginVertical();
             GUILayout.Label(RBPopupMsg, GUILayout.ExpandWidth(false));
             GUILayout.Space(10);
-            if (GUILayout.Button("Close"))
+            if (GUILayout.Button(Localizer.Format("#autoLOC_TST_0065"))) //#autoLOC_TST_0065 = Close
             {
                 showRBWindow = false;
                 RBPopupMsg = string.Empty;
