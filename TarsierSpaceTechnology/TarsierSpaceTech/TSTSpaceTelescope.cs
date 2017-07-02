@@ -1422,9 +1422,9 @@ namespace TarsierSpaceTech
                     if (index != -1)
                     {
                         string[] tmpIDelements = data.subjectID.Split('@');
-                        string[] valuesasarray = Enum.GetNames(typeof(ExperimentSituations));
+                        string[] valuesasarray = { "LookingAt" };
                         string[] splitvars = tmpIDelements[1].Split(valuesasarray, StringSplitOptions.None);
-                        string bodyName = splitvars[0];  
+                        string bodyName = splitvars[1];  
                         KeyValuePair<CelestialBody, RBWrapper.CelestialBodyInfo> keyvalue = new KeyValuePair<CelestialBody, RBWrapper.CelestialBodyInfo>();
                         foreach (KeyValuePair<CelestialBody, RBWrapper.CelestialBodyInfo> kvp in TSTMstStgs.Instance.RBCelestialBodies)
                         {

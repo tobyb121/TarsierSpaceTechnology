@@ -418,9 +418,9 @@ namespace TarsierSpaceTech
                     if (index != -1)                        
                     {
                         string[] tmpIDelements = scienceSubject.id.Split('@');
-                        string[] valuesasarray = Enum.GetNames(typeof(ExperimentSituations));
+                        string[] valuesasarray = { "LookingAt" };
                         string[] splitvars = tmpIDelements[1].Split(valuesasarray, StringSplitOptions.None);
-                        string bodyName = splitvars[0];                        
+                        string bodyName = splitvars[1];                        
                         KeyValuePair<CelestialBody, RBWrapper.CelestialBodyInfo> foundbodyentry = TSTMstStgs.Instance.RBCelestialBodies.FirstOrDefault(a => a.Key.name == bodyName);
                         if (foundbodyentry.Key != null)
                         {
@@ -468,14 +468,14 @@ namespace TarsierSpaceTech
                     {
                         if (TSTMstStgs.Instance.RBCelestialBodies.ContainsKey(bodyFound))
                         {
-                            RBPopupMsg = RBPopupMsg + " \r" + TSTMstStgs.Instance.RBCelestialBodies[bodyFound].discoveryMessage;
+                            RBPopupMsg = RBPopupMsg + " \r" + Localizer.Format("#autoLOC_RBodies_discovery_" + bodyFound.bodyName);
                         }
                     }
                     else
                     {
                         if (TSTMstStgs.Instance.RBCelestialBodies.ContainsKey(bodyFound))
                         {
-                            RBPopupMsg = TSTMstStgs.Instance.RBCelestialBodies[bodyFound].discoveryMessage;
+                            RBPopupMsg = Localizer.Format("#autoLOC_RBodies_discovery_" + bodyFound.bodyName);
                         }
                     }
                     ScreenMessages.PostScreenMessage(Localizer.Format("#autoLOC_TST_0064", bodyFound.displayName), 5.0f, ScreenMessageStyle.UPPER_CENTER); //#autoLOC_TST_0064 = Discovered new body <<1>>
@@ -483,7 +483,7 @@ namespace TarsierSpaceTech
                     {
                         if (RBWrapper.RBactualAPI.CelestialBodies.ContainsKey(parentBody))
                         {
-                            RBPopupMsg = RBPopupMsg + " \r" + TSTMstStgs.Instance.RBCelestialBodies[parentBody].discoveryMessage;
+                            RBPopupMsg = RBPopupMsg + " \r" + Localizer.Format("#autoLOC_RBodies_discovery_" + parentBody.bodyName);
                         }
                         ScreenMessages.PostScreenMessage(Localizer.Format("#autoLOC_TST_0064", parentBody.displayName), 5.0f, ScreenMessageStyle.UPPER_CENTER); //#autoLOC_TST_0064 = Discovered new body <<1>>
                     }
