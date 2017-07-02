@@ -1,4 +1,6 @@
-﻿V6.7
+﻿V6.8
+	Support ResearchBodies V1.9.2
+V6.7
 	Re-compile for KSP 1.3.
 	Localized for Languages. Translation volunteers welcome. ;)
 	Show Data Corruption Percentage and EC usage for SSDs in their PAW.
