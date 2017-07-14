@@ -210,14 +210,14 @@ namespace TarsierSpaceTech
             if (state == StartState.Editor)
             {
                 _inEditor = true;
-                return;
             }
             _baseTransform = Utilities.FindChildRecursive(transform, baseTransformName);
             cameraTransform = Utilities.FindChildRecursive(transform, cameraTransformName);
             _lookTransform = Utilities.FindChildRecursive(transform, lookTransformName);
             _animationTransform = Utilities.FindChildRecursive(transform, animationTransformName);
             zeroRotation = cameraTransform.localRotation;
-            _camera = cameraTransform.gameObject.AddComponent<TSTCameraModule>();
+            if (state != StartState.Editor)
+                _camera = cameraTransform.gameObject.AddComponent<TSTCameraModule>();
             
             //_animation = _baseTransform.animation;
             if (_animationTransform != null)
@@ -256,6 +256,9 @@ namespace TarsierSpaceTech
                 disableEvents = true;
                 disableEventsProcessed = false;
             }
+
+            if (state == StartState.Editor)
+                return;
 
             for (int i = 0; i < targets_raw.Count; i++)
             {
@@ -502,7 +505,7 @@ namespace TarsierSpaceTech
             //}
         }
 
-        [KSPEvent(active = true, guiActive = true, name = "eventOpenCamera", guiName = "#autoLOC_TST_0084")] //#autoLOC_TST_0084 = Open Camera
+        [KSPEvent(active = true, guiActive = true, name = "eventOpenCamera", guiActiveEditor = true, guiName = "#autoLOC_TST_0084")] //#autoLOC_TST_0084 = Open Camera
         public void eventOpenCamera()
         {
             Events["eventOpenCamera"].active = false;
@@ -560,15 +563,18 @@ namespace TarsierSpaceTech
             Events["eventCloseCamera"].active = true;
             Events["eventControlFromHere"].active = true;
             Events["toggleServos"].active = true;
-            //Set camera active
-            _camera.Enabled = true;
-            Active = true;
-            windowState = WindowState.Small;
-            _camera.changeSize(GUI_WIDTH_SMALL, GUI_WIDTH_SMALL);
-            cameraTransform.localRotation = zeroRotation;
+            if (!_inEditor)
+            {
+                //Set camera active
+                _camera.Enabled = true;
+                Active = true;
+                windowState = WindowState.Small;
+                _camera.changeSize(GUI_WIDTH_SMALL, GUI_WIDTH_SMALL);
+                cameraTransform.localRotation = zeroRotation;
+            }
         }
 
-        [KSPEvent(active = false, guiActive = true, name = "eventCloseCamera", guiName = "#autoLOC_TST_0085")] //#autoLOC_TST_0085 = Close Camera
+        [KSPEvent(active = false, guiActive = true, name = "eventCloseCamera", guiActiveEditor = true, guiName = "#autoLOC_TST_0085")] //#autoLOC_TST_0085 = Close Camera
         public void eventCloseCamera()
         {
             try
@@ -592,9 +598,12 @@ namespace TarsierSpaceTech
                 Events["eventCloseCamera"].active = false;
                 Events["eventControlFromHere"].active = false;
                 Events["toggleServos"].active = false;
-                _camera.Enabled = false;
+                if (_camera != null)
+                    _camera.Enabled = false;
                 Active = false;
                 StartCoroutine(closeCamera());
+                if (_inEditor)
+                    return;
                 if (vessel.ReferenceTransform == _lookTransform)
                 {
                     vessel.FallBackReferenceTransform();

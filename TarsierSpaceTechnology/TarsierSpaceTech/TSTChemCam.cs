@@ -130,48 +130,50 @@ namespace TarsierSpaceTech
             if (state == StartState.Editor)
 			{
 				_inEditor = true;
-				return;
 			}
             Utilities.Log_Debug("Starting ChemCam");
 			_lookTransform = Utilities.FindChildRecursive(transform,"CameraTransform");
-			_camera=_lookTransform.gameObject.AddComponent<TSTCameraModule>();
+		    if (state != StartState.Editor)
+		    {
+		        _camera = _lookTransform.gameObject.AddComponent<TSTCameraModule>();
+		        Utilities.Log_Debug("Adding Lazer");
+		        _lazerTransform = Utilities.FindChildRecursive(transform, "LazerTransform");
+		        _lazerObj = _lazerTransform.gameObject.AddComponent<LineRenderer>();
+		        _lazerObj.enabled = false;
+		        //_lazerObj.castShadows = false;
+		        _lazerObj.shadowCastingMode = ShadowCastingMode.Off;
+		        _lazerObj.receiveShadows = false;
+		        _lazerObj.SetWidth(0.01f, 0.01f);
+		        _lazerObj.SetPosition(0, new Vector3(0, 0, 0));
+		        _lazerObj.SetPosition(1, new Vector3(0, 0, 5));
+		        _lazerObj.useWorldSpace = false;
+		        _lazerObj.material = new Material(Shader.Find("Particles/Additive"));
+		        _lazerObj.material.color = Color.red;
+		        _lazerObj.SetColors(Color.red, Color.red);
+		    }
 
-			Utilities.Log_Debug("Adding Lazer");
-			_lazerTransform = Utilities.FindChildRecursive(transform, "LazerTransform");
-			_lazerObj = _lazerTransform.gameObject.AddComponent<LineRenderer>();
-			_lazerObj.enabled = false;
-			//_lazerObj.castShadows = false;
-			_lazerObj.shadowCastingMode = ShadowCastingMode.Off;
-			_lazerObj.receiveShadows = false;
-			_lazerObj.SetWidth(0.01f, 0.01f);
-			_lazerObj.SetPosition(0, new Vector3(0, 0, 0));
-			_lazerObj.SetPosition(1, new Vector3(0, 0, 5));
-			_lazerObj.useWorldSpace = false;
-			_lazerObj.material = new Material(Shader.Find("Particles/Additive"));
-			_lazerObj.material.color = Color.red;
-			_lazerObj.SetColors(Color.red, Color.red);
-
-			Utilities.Log_Debug("Finding Camera Transforms");
+		    Utilities.Log_Debug("Finding Camera Transforms");
 			_headTransform = Utilities.FindChildRecursive(transform, "CamBody");
 			_upperArmTransform = Utilities.FindChildRecursive(transform, "ArmUpper");
 
 			Utilities.Log_Debug("Finding Animation Object");
 			_animationObj = Utilities.FindChildRecursive(transform, "ChemCam").GetComponent<Animation>();
-
-			viewfinder.LoadImage(Properties.Resources.viewfinder);
-
+            
 			PlanetNames = Utilities.GetCelestialBodyNames();
 			CHMCwindowID = Utilities.getnextrandomInt();
-			
-			Utilities.Log_Debug("Adding Input Callback");            
-			_vessel = vessel;
-			vessel.OnAutopilotUpdate += handleInput;
-			GameEvents.onVesselChange.Add(refreshFlghtInptHandler);
-			GameEvents.onVesselDestroy.Add(removeFlghtInptHandler);
-			GameEvents.OnVesselRecoveryRequested.Add(removeFlghtInptHandler);
-			Utilities.Log_Debug("Added Input Callback");
-			
-			Events["eventOpenCamera"].active = true;
+
+		    if (state != StartState.Editor)
+		    {
+		        viewfinder.LoadImage(Properties.Resources.viewfinder);
+                Utilities.Log_Debug("Adding Input Callback");
+		        _vessel = vessel;
+		        vessel.OnAutopilotUpdate += handleInput;
+		        GameEvents.onVesselChange.Add(refreshFlghtInptHandler);
+		        GameEvents.onVesselDestroy.Add(removeFlghtInptHandler);
+		        GameEvents.OnVesselRecoveryRequested.Add(removeFlghtInptHandler);
+		        Utilities.Log_Debug("Added Input Callback");
+		    }
+		    Events["eventOpenCamera"].active = true;
 			Actions["actionOpenCamera"].active = true;
 			Events["eventCloseCamera"].active = false;
 			Actions["actionCloseCamera"].active = false;
@@ -302,7 +304,7 @@ namespace TarsierSpaceTech
 			}
 		}
 
-		[KSPEvent(guiName = "#autoLOC_TST_0042", active = true, guiActive = true)] //#autoLOC_TST_0042 = Open Camera
+		[KSPEvent(guiName = "#autoLOC_TST_0042", active = true, guiActiveEditor = true, guiActive = true)] //#autoLOC_TST_0042 = Open Camera
         public void eventOpenCamera()
 		{
 			StartCoroutine(openCamera());
@@ -327,6 +329,10 @@ namespace TarsierSpaceTech
 			while (wait.MoveNext()) yield return null;
 			Events["eventCloseCamera"].active = true;
 			Actions["actionCloseCamera"].active = true;
+		    if (_inEditor)
+		    {
+		        yield break;
+		    }
 			_camera.Enabled = true;
 			Active = true;
 			_camera.fov = 80;
@@ -334,7 +340,7 @@ namespace TarsierSpaceTech
 			
 		}
 
-		[KSPEvent (guiName = "#autoLOC_TST_0043", active = false, guiActive = true)] //#autoLOC_TST_0043 = Close Camera
+		[KSPEvent (guiName = "#autoLOC_TST_0043", guiActiveEditor  = true, active = false, guiActive = true)] //#autoLOC_TST_0043 = Close Camera
 
         public void eventCloseCamera ()
 		{
@@ -350,7 +356,8 @@ namespace TarsierSpaceTech
 		{
 			Events["eventCloseCamera"].active = false;
 			Actions["actionCloseCamera"].active = false;
-			_camera.Enabled = false;
+            if (_camera != null)
+			    _camera.Enabled = false;    
 			Active = false;
 			while (_upperArmTransform.localEulerAngles != Vector3.zero || _headTransform.localEulerAngles != Vector3.zero)
 			{
@@ -410,16 +417,38 @@ namespace TarsierSpaceTech
 				{
 					Utilities.Log_Debug("Hit Planet");
 					Transform t = hit.collider.transform;
-					while (t != null)
+				    bool traversing = true;
+				    while (traversing)
+				    {
+				        for (int pnI = 0; pnI < PlanetNames.Count; pnI++)
+				        {
+				            if (t.name.Contains(PlanetNames[pnI]))
+				            {
+				                traversing = false;
+                                break;
+				            }
+				        }
+				        if (traversing)
+				        {
+				            //not found yet, go up to parent.
+				            if (t.parent == null)
+				            {
+				                traversing = false; //If parent is null we are done.
+				            }
+				            t = t.parent; // go to parent.
+				        }
+				    }
+				    if (t != null) //We found a match.
 					{
-						if (PlanetNames.Contains(t.name))
-							break;
-						t = t.parent;
-					}
-					if (t != null)
-					{
-						CelestialBody body=FlightGlobals.Bodies.Find(c=>c.name==t.name);
-						doScience(body);						
+                        CelestialBody body = FlightGlobals.Bodies.Find(c=>t.name.Contains(c.bodyName));
+					    if (body != null)
+					    {
+					        doScience(body);
+					    }
+					    else
+					    {
+					        ScreenMessages.PostScreenMessage(cacheautoLOC_TST_0048, 3f, ScreenMessageStyle.UPPER_CENTER);
+                        }
 					}
 					else
 					{
