@@ -1,4 +1,7 @@
-﻿V6.8
+﻿V6.9
+	Fix ChemCam not finding the ground/celestial body.
+	Also allow ChemCam and Telescopes to be opened and closed in VAB/SPH to allow user to check part placement when camera is open.
+V6.8
 	Support ResearchBodies V1.9.2
 V6.7
 	Re-compile for KSP 1.3.
