@@ -280,6 +280,7 @@ namespace TarsierSpaceTech
             GameEvents.onVesselDestroy.Add(removeFlightInputHandler);
             GameEvents.OnVesselRecoveryRequested.Add(removeFlightInputHandler);
             GameEvents.Contract.onContractsLoaded.Add(onContractSystemReady);
+            GameEvents.Contract.onAccepted.Add(onContractAccepted);
             Utilities.Log_Debug("TSTTel Added Input Callback");
             //if (Active) //Moved to OnUpdate so we can process any override/disable event parameters correctly.
             //    StartCoroutine(openCamera());
@@ -291,6 +292,7 @@ namespace TarsierSpaceTech
             GameEvents.onVesselDestroy.Remove(removeFlightInputHandler);
             GameEvents.OnVesselRecoveryRequested.Remove(removeFlightInputHandler);
             GameEvents.Contract.onContractsLoaded.Remove(onContractSystemReady);
+            GameEvents.Contract.onAccepted.Remove(onContractAccepted);
         }
 
         private void buildTargetLists()
@@ -323,6 +325,12 @@ namespace TarsierSpaceTech
                     contractTargets.Add(TSTtelescopecontracts[i].target.name);
                 }
             }
+        }
+
+        protected void onContractAccepted(Contracts.Contract contract)
+        {
+            contractTargets.Clear();
+            onContractSystemReady();
         }
 
         private IEnumerator setSASParams()
@@ -944,13 +952,13 @@ namespace TarsierSpaceTech
             int newTarget = -1;
             for (int i = 0; i < cbTargetList.Count; i++)
             {
-                //If Not Progress completed on this body skip it. (Always not true if Contracts system is not active).
-                if (!TSTProgressTracker.HasTelescopeCompleted(cbTargetList[i]) && !contractTargets.Contains(cbTargetList[i].name))
+                //If Career Game and Not Progress completed on this body skip it. 
+                if (!TSTProgressTracker.HasTelescopeCompleted(cbTargetList[i]) && HighLogic.CurrentGame.Mode == Game.Modes.CAREER)
                 {
                     continue;
                 }
-                //If we are filtering the list to only contract targets and this body is not in the list skip it.
-                if (filterContractTargets && !contractTargets.Contains(cbTargetList[i].name))
+                //If we are filtering the list to only contract targets and this body is not in the list skip it (career game only).
+                if (HighLogic.CurrentGame.Mode == Game.Modes.CAREER && filterContractTargets && !contractTargets.Contains(cbTargetList[i].name))
                 {
                     continue;
                 }
@@ -1018,16 +1026,16 @@ namespace TarsierSpaceTech
             int newTarget = -1;
             for (int i = 0; i < galaxyTargetList.Count; i++)
             {
-                //If Not Progress completed on this body skip it. (Always not true if Contracts system is not active).
-                if (!TSTProgressTracker.HasTelescopeCompleted(galaxyTargetList[i]) && !contractTargets.Contains(galaxyTargetList[i].name))
+                //If Career Game and Not Progress completed on this body skip it. 
+                if (!TSTProgressTracker.HasTelescopeCompleted(galaxyTargetList[i]) && HighLogic.CurrentGame.Mode == Game.Modes.CAREER)
                 {
                     continue;
                 }
-                //If we are filtering the list to only contract targets and this body is not in the list skip it.
-                if (filterContractTargets && !contractTargets.Contains(galaxyTargetList[i].name))
+                //If we are filtering the list to only contract targets and this body is not in the list skip it (career game only).
+                if (HighLogic.CurrentGame.Mode == Game.Modes.CAREER && filterContractTargets && !contractTargets.Contains(galaxyTargetList[i].name))
                 {
                     continue;
-                }
+                }                
                 //If ResearchBodies is installed and enabled, check if body is researched, if not skip it.
                 if (TSTMstStgs.Instance.isRBloaded && RBWrapper.RBactualAPI.enabled)
                 {
