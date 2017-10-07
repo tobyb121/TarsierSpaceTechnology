@@ -25,14 +25,13 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using KSP.IO;
 using KSP.UI.Screens.Flight.Dialogs;
 using RSTUtils;
 using UnityEngine;
 using UnityEngine.Rendering;
 using Random = UnityEngine.Random;
-using Resources = TarsierSpaceTech.Properties.Resources;
+using KSP.Localization;
 
 namespace TarsierSpaceTech
 {
@@ -61,9 +60,9 @@ namespace TarsierSpaceTech
 		private int frameLimit = 5;
 		private int f;
 		
-		private List<ScienceData> _scienceData = new List<ScienceData>();
+		private List<ScienceData> _scienceData;
 
-		private static Texture2D viewfinder = new Texture2D(1, 1);
+		private static Texture2D viewfinder;
 
 		private static List<string> PlanetNames;
 
@@ -81,56 +80,100 @@ namespace TarsierSpaceTech
 		
 		private Vessel _vessel;
 
+        #region Cache Strings
+
+	    private static string cacheautoLOC_TST_0031;
+	    private static string cacheautoLOC_TST_0032;
+	    private static string cacheautoLOC_TST_0033;
+	    private static string cacheautoLOC_TST_0034;
+	    private static string cacheautoLOC_TST_0035;
+	    private static string cacheautoLOC_TST_0036;
+	    private static string cacheautoLOC_TST_0037;
+	    private static string cacheautoLOC_TST_0038;
+	    private static string cacheautoLOC_TST_0039;
+	    private static string cacheautoLOC_TST_0048;
+	    private static string cacheautoLOC_TST_0049;
+        private static string cacheautoLOC_TST_0079;
+
+	    private static void CacheStrings()
+	    {
+            cacheautoLOC_TST_0031 = Localizer.Format("#autoLOC_TST_0031"); //#autoLOC_TST_0031 = Save To File
+	        cacheautoLOC_TST_0032 = Localizer.Format("#autoLOC_TST_0032"); //#autoLOC_TST_0032 = If this is on, picture files will be saved to GameData/TarsierSpaceTech/PluginData/TarsierSpaceTech
+            cacheautoLOC_TST_0033 = Localizer.Format("#autoLOC_TST_0033"); //#autoLOC_TST_0033 = Fire
+	        cacheautoLOC_TST_0034 = Localizer.Format("#autoLOC_TST_0034"); //#autoLOC_TST_0034 = Fire the Laser!
+	        cacheautoLOC_TST_0035 = Localizer.Format("#autoLOC_TST_0035"); //#autoLOC_TST_0035 = Large
+	        cacheautoLOC_TST_0036 = Localizer.Format("#autoLOC_TST_0036"); //#autoLOC_TST_0036 = Set Large Window Size
+	        cacheautoLOC_TST_0037 = Localizer.Format("#autoLOC_TST_0037"); //#autoLOC_TST_0037 = Small
+	        cacheautoLOC_TST_0038 = Localizer.Format("#autoLOC_TST_0038"); //#autoLOC_TST_0038 = set Small Window Size
+	        cacheautoLOC_TST_0039 = Localizer.Format("#autoLOC_TST_0039"); //#autoLOC_TST_0039 = ChemCam - Use I,J,K,L to move camera
+	        cacheautoLOC_TST_0048 = Localizer.Format("#autoLOC_TST_0048"); //#autoLOC_TST_0048 = No Terrain in Range to analyse
+	        cacheautoLOC_TST_0049 = Localizer.Format("#autoLOC_TST_0049"); //#autoLOC_TST_0049 = Picture saved
+            cacheautoLOC_TST_0079 = Localizer.Format("#autoLOC_TST_0079"); //#autoLOC_TST_0079 = No Comms Devices on this vessel. Cannot Transmit Data.
+        }
+
+
+
+
+        #endregion
+
+        public new void Awake()
+	    {
+	        base.Awake();
+            viewfinder = new Texture2D(1, 1);
+            _scienceData = new List<ScienceData>();
+        }
 
 		public override void OnStart(StartState state)
 		{
-			base.OnStart(state);
-			if (state == StartState.Editor)
+            CacheStrings();
+            base.OnStart(state);
+            if (state == StartState.Editor)
 			{
 				_inEditor = true;
-				return;
 			}
-
-			Utilities.Log_Debug("Starting ChemCam");
+            Utilities.Log_Debug("Starting ChemCam");
 			_lookTransform = Utilities.FindChildRecursive(transform,"CameraTransform");
-			_camera=_lookTransform.gameObject.AddComponent<TSTCameraModule>();
+		    if (state != StartState.Editor)
+		    {
+		        _camera = _lookTransform.gameObject.AddComponent<TSTCameraModule>();
+		        Utilities.Log_Debug("Adding Lazer");
+		        _lazerTransform = Utilities.FindChildRecursive(transform, "LazerTransform");
+		        _lazerObj = _lazerTransform.gameObject.AddComponent<LineRenderer>();
+		        _lazerObj.enabled = false;
+		        //_lazerObj.castShadows = false;
+		        _lazerObj.shadowCastingMode = ShadowCastingMode.Off;
+		        _lazerObj.receiveShadows = false;
+		        _lazerObj.SetWidth(0.01f, 0.01f);
+		        _lazerObj.SetPosition(0, new Vector3(0, 0, 0));
+		        _lazerObj.SetPosition(1, new Vector3(0, 0, 5));
+		        _lazerObj.useWorldSpace = false;
+		        _lazerObj.material = new Material(Shader.Find("Particles/Additive"));
+		        _lazerObj.material.color = Color.red;
+		        _lazerObj.SetColors(Color.red, Color.red);
+		    }
 
-			Utilities.Log_Debug("Adding Lazer");
-			_lazerTransform = Utilities.FindChildRecursive(transform, "LazerTransform");
-			_lazerObj = _lazerTransform.gameObject.AddComponent<LineRenderer>();
-			_lazerObj.enabled = false;
-			//_lazerObj.castShadows = false;
-			_lazerObj.shadowCastingMode = ShadowCastingMode.Off;
-			_lazerObj.receiveShadows = false;
-			_lazerObj.SetWidth(0.01f, 0.01f);
-			_lazerObj.SetPosition(0, new Vector3(0, 0, 0));
-			_lazerObj.SetPosition(1, new Vector3(0, 0, 5));
-			_lazerObj.useWorldSpace = false;
-			_lazerObj.material = new Material(Shader.Find("Particles/Additive"));
-			_lazerObj.material.color = Color.red;
-			_lazerObj.SetColors(Color.red, Color.red);
-
-			Utilities.Log_Debug("Finding Camera Transforms");
+		    Utilities.Log_Debug("Finding Camera Transforms");
 			_headTransform = Utilities.FindChildRecursive(transform, "CamBody");
 			_upperArmTransform = Utilities.FindChildRecursive(transform, "ArmUpper");
 
 			Utilities.Log_Debug("Finding Animation Object");
 			_animationObj = Utilities.FindChildRecursive(transform, "ChemCam").GetComponent<Animation>();
-
-			viewfinder.LoadImage(Resources.viewfinder);
-
-			PlanetNames = (from CelestialBody b in FlightGlobals.Bodies select b.name).ToList();
+            
+			PlanetNames = Utilities.GetCelestialBodyNames();
 			CHMCwindowID = Utilities.getnextrandomInt();
-			
-			Utilities.Log_Debug("Adding Input Callback");            
-			_vessel = vessel;
-			vessel.OnAutopilotUpdate += handleInput;
-			GameEvents.onVesselChange.Add(refreshFlghtInptHandler);
-			GameEvents.onVesselDestroy.Add(removeFlghtInptHandler);
-			GameEvents.OnVesselRecoveryRequested.Add(removeFlghtInptHandler);
-			Utilities.Log_Debug("Added Input Callback");
-			
-			Events["eventOpenCamera"].active = true;
+
+		    if (state != StartState.Editor)
+		    {
+		        viewfinder.LoadImage(Properties.Resources.viewfinder);
+                Utilities.Log_Debug("Adding Input Callback");
+		        _vessel = vessel;
+		        vessel.OnAutopilotUpdate += handleInput;
+		        GameEvents.onVesselChange.Add(refreshFlghtInptHandler);
+		        GameEvents.onVesselDestroy.Add(removeFlghtInptHandler);
+		        GameEvents.OnVesselRecoveryRequested.Add(removeFlghtInptHandler);
+		        Utilities.Log_Debug("Added Input Callback");
+		    }
+		    Events["eventOpenCamera"].active = true;
 			Actions["actionOpenCamera"].active = true;
 			Events["eventCloseCamera"].active = false;
 			Actions["actionCloseCamera"].active = false;
@@ -175,9 +218,9 @@ namespace TarsierSpaceTech
 			GUILayout.Box(_camera.Texture2D);
 			GUI.DrawTexture(GUILayoutUtility.GetLastRect(), viewfinder);
 			GUILayout.BeginHorizontal();
-			_saveToFile = GUILayout.Toggle(_saveToFile, new GUIContent("Save To File", "If this is on, picture files will be saved to GameData/TarsierSpaceTech/PluginData/TarsierSpaceTech"));
-			if (GUILayout.Button(new GUIContent("Fire", "Fire the Laser!"))) StartCoroutine(fireCamera(_saveToFile));
-			if (GUILayout.Button(windowState == WindowSate.Small ? new GUIContent("Large", "Set Large Window Size") : new GUIContent("Small", "set Small Window Size")))
+			_saveToFile = GUILayout.Toggle(_saveToFile, new GUIContent(cacheautoLOC_TST_0031, cacheautoLOC_TST_0032));
+			if (GUILayout.Button(new GUIContent(cacheautoLOC_TST_0033, cacheautoLOC_TST_0034))) StartCoroutine(fireCamera(_saveToFile));
+			if (GUILayout.Button(windowState == WindowSate.Small ? new GUIContent(cacheautoLOC_TST_0035, cacheautoLOC_TST_0036) : new GUIContent(cacheautoLOC_TST_0037, cacheautoLOC_TST_0038)))
 			{
 				windowState = windowState == WindowSate.Small ? WindowSate.Large : WindowSate.Small;
 				int w = (windowState == WindowSate.Small ? GUI_WIDTH_SMALL : GUI_WIDTH_LARGE);
@@ -192,17 +235,28 @@ namespace TarsierSpaceTech
 
 		public void OnGUI()
 		{
-			if (!_inEditor && _camera.Enabled && vessel.isActiveVessel && FlightUIModeController.Instance.Mode != FlightUIMode.ORBITAL && !Utilities.isPauseMenuOpen)
+            if (Time.timeSinceLevelLoad < 2f) return;
+            if (!_inEditor && _camera.Enabled && vessel.isActiveVessel && FlightUIModeController.Instance.Mode != FlightUIMode.ORBITAL && !Utilities.isPauseMenuOpen)
 			{
 				if (!Textures.StylesSet) Textures.SetupStyles();
 
-				_windowRect = GUILayout.Window(CHMCwindowID, _windowRect, drawWindow, "ChemCam - Use I,J,K,L to move camera", GUILayout.Width(GUI_WIDTH_SMALL));
+				_windowRect = GUILayout.Window(CHMCwindowID, _windowRect, drawWindow, cacheautoLOC_TST_0039, GUILayout.Width(GUI_WIDTH_SMALL));
 				if (TSTMstStgs.Instance.TSTsettings.Tooltips)
 					Utilities.DrawToolTip();
 			}
 		}
+        public override string GetInfo()
+        {
+            string infoStr = "";
+            infoStr += Localizer.Format("#autoLOC_TST_0040", XKCDColors.HexFormat.Cyan);
+            infoStr += Localizer.Format("#autoLOC_TST_0041");
+            infoStr += Localizer.Format("#autoLOC_238797", true);
+            infoStr += Localizer.Format("#autoLOC_238798", true);
+            infoStr += Localizer.Format("#autoLOC_238799", true);
+            return infoStr;
+        }
 
-		private void refreshFlghtInptHandler(Vessel target)
+        private void refreshFlghtInptHandler(Vessel target)
 		{
 			Utilities.Log_Debug("OnVesselSwitch curr: {0}, target: {1}" , vessel.name , target.name);
 			if (vessel != target)
@@ -250,14 +304,14 @@ namespace TarsierSpaceTech
 			}
 		}
 
-		[KSPEvent(guiName = "Open Camera", active = true, guiActive = true)]
-		public void eventOpenCamera()
+		[KSPEvent(guiName = "#autoLOC_TST_0042", active = true, guiActiveEditor = true, guiActive = true)] //#autoLOC_TST_0042 = Open Camera
+        public void eventOpenCamera()
 		{
 			StartCoroutine(openCamera());
 		}
 
-		[KSPAction("Open Camera")]
-		public void actionOpenCamera(KSPActionParam actParams)
+		[KSPAction("#autoLOC_TST_0042")] //#autoLOC_TST_0042 = Open Camera
+        public void actionOpenCamera(KSPActionParam actParams)
 		{
 			StartCoroutine(openCamera());
 		}
@@ -275,6 +329,10 @@ namespace TarsierSpaceTech
 			while (wait.MoveNext()) yield return null;
 			Events["eventCloseCamera"].active = true;
 			Actions["actionCloseCamera"].active = true;
+		    if (_inEditor)
+		    {
+		        yield break;
+		    }
 			_camera.Enabled = true;
 			Active = true;
 			_camera.fov = 80;
@@ -282,14 +340,15 @@ namespace TarsierSpaceTech
 			
 		}
 
-		[KSPEvent (guiName = "Close Camera", active = false, guiActive = true)]
-		public void eventCloseCamera ()
+		[KSPEvent (guiName = "#autoLOC_TST_0043", guiActiveEditor  = true, active = false, guiActive = true)] //#autoLOC_TST_0043 = Close Camera
+
+        public void eventCloseCamera ()
 		{
 			StartCoroutine (closeCamera());
 		}
 		
-		[KSPAction("Close Camera")]
-		public void actionCloseCamera (KSPActionParam actParams){
+		[KSPAction("#autoLOC_TST_0043")] //#autoLOC_TST_0043 = Close Camera
+        public void actionCloseCamera (KSPActionParam actParams){
 			StartCoroutine(closeCamera());
 		}
 
@@ -297,7 +356,8 @@ namespace TarsierSpaceTech
 		{
 			Events["eventCloseCamera"].active = false;
 			Actions["actionCloseCamera"].active = false;
-			_camera.Enabled = false;
+            if (_camera != null)
+			    _camera.Enabled = false;    
 			Active = false;
 			while (_upperArmTransform.localEulerAngles != Vector3.zero || _headTransform.localEulerAngles != Vector3.zero)
 			{
@@ -330,16 +390,16 @@ namespace TarsierSpaceTech
                     if (container.StoreData(new List<IScienceDataContainer> { this }, false))
                     {
                         //ScreenMessages.PostScreenMessage("Transferred Data to " + vessel.vesselName, 3f, ScreenMessageStyle.UPPER_CENTER);
-                        ScreenMessages.PostScreenMessage("<color=#99ff00ff>[" + base.part.partInfo.title + "]: All Items Collected.</color>", 5f, ScreenMessageStyle.UPPER_LEFT);
+                        ScreenMessages.PostScreenMessage(Localizer.Format("#autoLOC_TST_0045", part.partInfo.title), 5f, ScreenMessageStyle.UPPER_LEFT); //#autoLOC_TST_0045 = <color=#99ff00ff>[<<1>>]: All Items Collected.</color>
                     }
                     else
                     {
-                        ScreenMessages.PostScreenMessage("<color=orange>[" + base.part.partInfo.title + "]: Not all items could be Collected.</color>", 5f, ScreenMessageStyle.UPPER_LEFT);
+                        ScreenMessages.PostScreenMessage(Localizer.Format("#autoLOC_TST_0046", part.partInfo.title), 5f, ScreenMessageStyle.UPPER_LEFT); //#autoLOC_TST_0046 = <color=orange>[<<1>>]: Not all items could be Collected.</color>
                     }
                 }
                 else
                 {
-                    ScreenMessages.PostScreenMessage("<color=#99ff00ff>[" + base.part.partInfo.title + "]: Nothing to Collect.</color>", 3f, ScreenMessageStyle.UPPER_CENTER);
+                    ScreenMessages.PostScreenMessage(Localizer.Format("#autoLOC_TST_0047", part.partInfo.title), 3f, ScreenMessageStyle.UPPER_CENTER); //#autoLOC_TST_0047 = <color=#99ff00ff>[<<1>>]: Nothing to Collect.</color>
                 }
             }
             updateAvailableEvents();
@@ -357,20 +417,42 @@ namespace TarsierSpaceTech
 				{
 					Utilities.Log_Debug("Hit Planet");
 					Transform t = hit.collider.transform;
-					while (t != null)
+				    bool traversing = true;
+				    while (traversing)
+				    {
+				        for (int pnI = 0; pnI < PlanetNames.Count; pnI++)
+				        {
+				            if (t.name.Contains(PlanetNames[pnI]))
+				            {
+				                traversing = false;
+                                break;
+				            }
+				        }
+				        if (traversing)
+				        {
+				            //not found yet, go up to parent.
+				            if (t.parent == null)
+				            {
+				                traversing = false; //If parent is null we are done.
+				            }
+				            t = t.parent; // go to parent.
+				        }
+				    }
+				    if (t != null) //We found a match.
 					{
-						if (PlanetNames.Contains(t.name))
-							break;
-						t = t.parent;
-					}
-					if (t != null)
-					{
-						CelestialBody body=FlightGlobals.Bodies.Find(c=>c.name==t.name);
-						doScience(body);						
+                        CelestialBody body = FlightGlobals.Bodies.Find(c=>t.name.Contains(c.bodyName));
+					    if (body != null)
+					    {
+					        doScience(body);
+					    }
+					    else
+					    {
+					        ScreenMessages.PostScreenMessage(cacheautoLOC_TST_0048, 3f, ScreenMessageStyle.UPPER_CENTER);
+                        }
 					}
 					else
 					{
-						ScreenMessages.PostScreenMessage("No Terrain in Range to analyse", 3f, ScreenMessageStyle.UPPER_CENTER);
+						ScreenMessages.PostScreenMessage(cacheautoLOC_TST_0048, 3f, ScreenMessageStyle.UPPER_CENTER);
 					}
 				}
 			}
@@ -382,31 +464,47 @@ namespace TarsierSpaceTech
 					(File.Exists<TSTChemCam>("ChemCam_" + DateTime.Now.ToString("d-m-y") + "_" + i + "Large.png")))
 					i++;
 				_camera.saveToFile("ChemCam_" + DateTime.Now.ToString("d-m-y") + "_" + i, "ChemCam");
-				ScreenMessages.PostScreenMessage("Picture saved", 3f, ScreenMessageStyle.UPPER_CENTER);
+				ScreenMessages.PostScreenMessage(cacheautoLOC_TST_0049, 3f, ScreenMessageStyle.UPPER_CENTER);
 			}			
 		}
 
 		public void doScience(CelestialBody planet)
 		{
-			Utilities.Log_Debug("Doing Science for {0}" , planet.theName);
+			Utilities.Log_Debug("Doing Science for {0}" , planet.name);
 			ScienceExperiment experiment = ResearchAndDevelopment.GetExperiment(ExperimentID);
 			Utilities.Log_Debug("Got experiment");
-			string biome = "";
-			biome = part.vessel.landedAt != string.Empty ? part.vessel.landedAt : ScienceUtil.GetExperimentBiome(planet, FlightGlobals.ship_latitude, FlightGlobals.ship_longitude);
-			ScienceSubject subject = ResearchAndDevelopment.GetExperimentSubject(experiment, ScienceUtil.GetExperimentSituation(vessel), planet, biome);
-			Utilities.Log_Debug("Got subject");
-			if (experiment.IsAvailableWhile(ScienceUtil.GetExperimentSituation(vessel), planet))
+            ExperimentSituations situation = ScienceUtil.GetExperimentSituation(vessel);
+            if (experiment.IsAvailableWhile(ScienceUtil.GetExperimentSituation(vessel), planet))
 			{
-				ScienceData data = new ScienceData(experiment.baseValue * subject.dataScale, xmitDataScalar, labBoostScalar, subject.id, subject.title, false, part.flightID);
+                string biomeID = "";
+                string displaybiomeID = string.Empty;
+                if (part.vessel.landedAt != string.Empty)
+                {
+                    biomeID = Vessel.GetLandedAtString(part.vessel.landedAt);
+                    displaybiomeID = Localizer.Format(part.vessel.displaylandedAt);
+                }
+                else
+                {
+                    biomeID = ScienceUtil.GetExperimentBiome(planet, FlightGlobals.ship_latitude, FlightGlobals.ship_longitude);
+                    displaybiomeID = ScienceUtil.GetBiomedisplayName(vessel.mainBody, biomeID);
+                }                
+                ScienceSubject subject = ResearchAndDevelopment.GetExperimentSubject(experiment, situation, planet, biomeID, displaybiomeID);
+                Utilities.Log_Debug("Got subject");
+                ScienceData data = new ScienceData(experiment.baseValue * subject.dataScale, xmitDataScalar, labBoostScalar, subject.id, subject.title, false, part.flightID);
 				Utilities.Log_Debug("Got data");
 				_scienceData.Add(data);
-				Utilities.Log_Debug("Added Data");
-				ScreenMessages.PostScreenMessage("Collected Science for " + planet.theName, 3f, ScreenMessageStyle.UPPER_CENTER);
-				if (TSTProgressTracker.isActive)
+				Utilities.Log_Debug("Added Data");				
+                ScreenMessages.PostScreenMessage(Localizer.Format("#autoLOC_238419", part.partInfo.title, data.dataAmount.ToString(), subject.title), 8f, ScreenMessageStyle.UPPER_LEFT);
+                ReviewDataItem(data);
+                if (TSTProgressTracker.isActive)
 				{
-					TSTProgressTracker.OnChemCamFire(planet,biome);
+					TSTProgressTracker.OnChemCamFire(planet,biomeID);
 				}
 			}
+            else
+            {
+                ScreenMessages.PostScreenMessage(Localizer.Format("#autoLOC_238424", experiment.experimentTitle), 5f, ScreenMessageStyle.UPPER_CENTER);
+            }
 			updateAvailableEvents();
 		}
 
@@ -445,14 +543,21 @@ namespace TarsierSpaceTech
 
 		private void _onPageTransmit(ScienceData data)
 		{
-			List<IScienceDataTransmitter> transmitters = vessel.FindPartModulesImplementing<IScienceDataTransmitter>();
-			if (transmitters.Count > 0 && _scienceData.Contains(data))
-			{
-				transmitters.First().TransmitData(new List<ScienceData> { data });
-				_scienceData.Remove(data);
-				updateAvailableEvents();
-			}
-		}
+            IScienceDataTransmitter transmitter = ScienceUtil.GetBestTransmitter(vessel);
+
+            if (transmitter != null)
+            {
+                List<ScienceData> dataToSend = new List<ScienceData>();
+                dataToSend.Add(data);
+                transmitter.TransmitData(dataToSend);
+                _scienceData.Remove(data);
+                updateAvailableEvents();
+            }
+            else
+            {
+                ScreenMessages.PostScreenMessage(cacheautoLOC_TST_0079, 3f, ScreenMessageStyle.UPPER_CENTER);
+            }
+        }
 
 		private void _onPageSendToLab(ScienceData data)
 		{
@@ -542,9 +647,9 @@ namespace TarsierSpaceTech
 					part,
 					data,
 					xmitDataScalar,
-					data.labBoost,
+					data.transmitBonus,
 					true,
-                    "If you transmit this data it will only be worth: " + Mathf.Round(data.transmitValue * 100) + "% of the full science value",
+		            Localizer.Format("#autoLOC_TST_0051", Mathf.Round(data.baseTransmitValue * 100)),
                     true,
 					labSearch,
 					_onPageDiscard,

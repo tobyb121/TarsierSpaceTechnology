@@ -30,7 +30,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using Object = System.Object;
@@ -184,10 +183,7 @@ namespace TarsierSpaceTech
             LogFormatted_DebugOnly("Attempting to Grab DOE Types...");
 
             //find the base type
-            DOEType = AssemblyLoader.loadedAssemblies
-                .Select(a => a.assembly.GetExportedTypes())
-                .SelectMany(t => t)
-                .FirstOrDefault(t => t.FullName == "DistantObject.FlareDraw");
+            DOEType = getType("DistantObject.FlareDraw"); 
 
             if (DOEType == null)
             {
@@ -198,10 +194,7 @@ namespace TarsierSpaceTech
             LogFormatted("DistantObject Version:{0}", DOEType.Assembly.GetName().Version.ToString());
 
             //find the FlareDraw class type
-            DOEFlareDrawType = AssemblyLoader.loadedAssemblies
-                .Select(a => a.assembly.GetExportedTypes())
-                .SelectMany(t => t)
-                .FirstOrDefault(t => t.FullName == "DistantObject.FlareDraw");
+            DOEFlareDrawType = getType("DistantObject.FlareDraw"); 
 
             if (DOEFlareDrawType == null)
             {
@@ -232,6 +225,24 @@ namespace TarsierSpaceTech
 
             _DOEWrapped = true;
             return true;
+        }
+
+        internal static Type getType(string name)
+        {
+            Type type = null;
+            AssemblyLoader.loadedAssemblies.TypeOperation(t =>
+
+            {
+                if (t.FullName == name)
+                    type = t;
+            }
+            );
+
+            if (type != null)
+            {
+                return type;
+            }
+            return null;
         }
 
         /// <summary>

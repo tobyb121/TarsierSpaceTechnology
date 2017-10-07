@@ -1,4 +1,57 @@
-﻿V6.2 "Kopernicus, Science & other Enhancements/Fixes"
+﻿V7.1
+	Re-compile for KSP 1.3.1
+V7.0
+	Fix List of Celestial Bodies display for targeting in the Telescopes UI.
+	Also the same Celestial Body list will update while in flight if the player is using a Contracts app that accepts a contract for a Celestial Body.
+V6.9
+	Fix ChemCam not finding the ground/celestial body.
+	Also allow ChemCam and Telescopes to be opened and closed in VAB/SPH to allow user to check part placement when camera is open.
+V6.8
+	Support ResearchBodies V1.9.2
+V6.7
+	Re-compile for KSP 1.3.
+	Localized for Languages. Translation volunteers welcome. ;)
+	Show Data Corruption Percentage and EC usage for SSDs in their PAW.
+	SSDs now check if infinite Electric Charge cheat option is on or off.
+	Performance improvements under the hood.
+V6.6.2
+	Fix NRE on vessel switch in MapMode and with TST GUI open.
+V6.6.1
+	Fix ChemCam crashing the editor scene.
+V6.6 "KSP 1.2.1 & ResearchBodies 1.9"
+	Re-compile for KSP 1.2.1.
+	Moved initializers out of ..ctor to avoid Unity messages.
+	Eliminate NullRef errors on scene change for onGUI (was issuing two errors each time you switched scene).
+	Support ResearchBodies 1.9.g if 
+V6.5 "KSP 1.2"
+	Changes for KSP 1.2.
+	Added a check to Contract generation to ensure the TST parts are actually loaded in-game (removes log spam if they aren't).
+	Moved Some (*not all) settings to the new Stock Difficulty Settings Integration.
+V6.4 "ResearchBodies 1.8"
+	Compatible version for integration with ResearchBodies V1.8.
+	Re-balanced price of Telescopes to take into account the cost of the ResearchBodies and Asteroid Day infrared telescopes.
+	The small telescope now costs 10,000 (was 5,000) - entry price is still 5,000.
+	The advanced telescope now costs 25,000 (was 10,000) - entry price is still 10,000.
+V6.3 "More Kopernicus - New Horizons"
+	Added support for New Horizons Kopernicus planet mod.
+	Changed Reputation for contracts to be related to distance from home world, rather than the planet order from the Sun.
+	Added Biomes to Science Reputation/Science/Funds calculations for ChemCam (previously it only used the planet).
+	The default values used to calculate contract Reputation/Science/Funds for Telescope and ChemCam contracts are now loaded via the config.cfg file.
+	These can be tweaked by changing these numbers (they are not available in game via GUI). NB: The numbers do not directly relate to what values you see in-game as
+	there are formula used by KSP to calculate the funds, science and reputation for each contract. These values are the base numbers that feed into these formula.
+	The SDDs right click buttons have changed. There are now two buttons:
+	"Move all science to Drive" - This is the old action as per previous versions and will move all science from science container parts to this drive (until it is full).
+	"Move all experiments to Drive" - This is a new action and will only move experiment science data from parts that don't have a ScienceConverter (ScienceLab) 
+	and Command parts where crewcapacity > 0 to this drive (until it is full). 
+	Added Screen messages indicating what science experiments are moved as part of a SDD move action.
+	Fixed Integration settings for ResearchBodies mod to correct discovery messages for the galaxies and start-up parameters. (NB: ResearchBodies has not been updated for KSP 1.1.3)
+	so will not work, and when it is released for KSP 1.1.3 TST will also need another update (as ResearchBodies is in the middle of a big re-write).
+	Fixed bug in ChemCam Contract generation to Exclude Water Biomes.
+	Kopernicus on-demand has been adjusted so the lag/issues with bodies going in and out of camera view should no longer occur. The KopernicusOnDemand.cfg file
+	has been renamed to KopernicusOnDemand.cfg.optional (so it won't be active by default any more, but if you have lag issues you can rename it back in your install). 
+	Just make sure you are running the latest Kopernicus version and you shouldn't need it.
+	Fixes and re-compile for KSP 1.1.3 changes. - This version will only work on KSP 1.1.3 and up.
+V6.2 "Kopernicus, Science & other Enhancements/Fixes"
 	Changed Telescope Cameras to now show the SkyBox and Atmosphere shading. Skybox zooms proportional to the Camera zoom (no more pixelated skybox).
 	Skybox Camera Zooming can be disabled completely by manually changing the Config.cfg file field ZoomSkyBox to False.
 	Fixed scroll window in the TST settings menu.

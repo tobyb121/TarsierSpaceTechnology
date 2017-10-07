@@ -25,13 +25,11 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using Contracts;
 using KSP.UI.Screens.Flight.Dialogs;
 using RSTUtils;
 using UnityEngine;
-using Resources = TarsierSpaceTech.Properties.Resources;
+using KSP.Localization;
 
 namespace TarsierSpaceTech
 {
@@ -43,18 +41,18 @@ namespace TarsierSpaceTech
 
         private static readonly List<byte[]> targets_raw = new List<byte[]>
         {
-            Resources.target_01,
-            Resources.target_02,
-            Resources.target_03,
-            Resources.target_04,
-            Resources.target_05,
-            Resources.target_06,
-            Resources.target_07,
-            Resources.target_08,
-            Resources.target_09,
-            Resources.target_10,
-            Resources.target_11,
-            Resources.target_12
+            Properties.Resources.target_01,
+            Properties.Resources.target_02,
+            Properties.Resources.target_03,
+            Properties.Resources.target_04,
+            Properties.Resources.target_05,
+            Properties.Resources.target_06,
+            Properties.Resources.target_07,
+            Properties.Resources.target_08,
+            Properties.Resources.target_09,
+            Properties.Resources.target_10,
+            Properties.Resources.target_11,
+            Properties.Resources.target_12
         };
 
         private static readonly List<Texture2D> targets = new List<Texture2D>();
@@ -97,7 +95,6 @@ namespace TarsierSpaceTech
         private Vector2 GalscrollViewVector = Vector2.zero;
         private int GUI_WIDTH_LARGE = 600;
         private int GUI_WIDTH_SMALL = 320;
-        private bool isRBactive;
         private bool overrideEvents, overrideEventsProcessed;
         private bool disableEvents, disableEventsProcessed;
         private BaseEventList overrideEventList;
@@ -108,16 +105,15 @@ namespace TarsierSpaceTech
 
         [KSPField] public string lookTransformName = "LookTransform";
 
-        [KSPField(guiActive = false, guiName = "maxZoom", isPersistant = true)] public int maxZoom = 5;
+        [KSPField(guiActive = false, guiName = "#autoLOC_TST_0081", isPersistant = true)] public int maxZoom = 5; //#autoLOC_TST_0081 = maxZoom
 
         public float PIDKd = 0.5f;
         public float PIDKi = 6f;
         public float PIDKp = 12f;
-        private RBWrapper.ModuleTrackBodies RBmoduleTrackBodies;
-        private Dictionary<CelestialBody, int> ResearchState = new Dictionary<CelestialBody, int>();
         private int selectedTargetIndex = -1;
 
-        [KSPField] public bool servoControl = true;
+        [KSPField]
+        public bool servoControl = true;
 
         private bool showBodTargetsWindow;
         private bool showGalTargetsWindow;
@@ -125,35 +121,103 @@ namespace TarsierSpaceTech
         private Rect targetGalWindowPos = new Rect(512, 128, 0, 0);
 
         private int targetId;
+        private List<TargetableObject> lookingAtObjects;
+        private List<TargetableObject> possibletargetObjects;
+        private List<CelestialBody> cbTargetList;
+        private List<CelestialBody> galaxyTargetList;
+        private List<string> contractTargets;
 
         public TargettingMode targettingMode = TargettingMode.Galaxy;
-        private Dictionary<CelestialBody, bool> TrackedBodies = new Dictionary<CelestialBody, bool>();
-
         private Rect windowPos = new Rect(128, 128, 0, 0);
         public WindowState windowState = WindowState.Small;
 
-        [KSPField] public float xmitDataScalar = 0.5f;
+        [KSPField]
+        public float xmitDataScalar = 0.5f;
 
         private Quaternion zeroRotation;
-
         public Transform cameraTransform { get; private set; }
+
+        #region String Caches
+
+        private static string cacheautoLOC_TST_0035;
+        private static string cacheautoLOC_TST_0036;
+        private static string cacheautoLOC_TST_0037;
+        private static string cacheautoLOC_TST_0038;
+        private static string cacheautoLOC_TST_0088;
+        private static string cacheautoLOC_TST_0089;
+        private static string cacheautoLOC_TST_0090;
+        private static string cacheautoLOC_TST_0091;
+        private static string cacheautoLOC_TST_0092;
+        private static string cacheautoLOC_TST_0093;
+        private static string cacheautoLOC_TST_0094;
+        private static string cacheautoLOC_TST_0095;
+        private static string cacheautoLOC_TST_0096;
+        private static string cacheautoLOC_TST_0097;
+        private static string cacheautoLOC_TST_0098;
+        private static string cacheautoLOC_TST_0099;
+        private static string cacheautoLOC_TST_0100;
+        private static string cacheautoLOC_TST_0101;
+        private static string cacheautoLOC_TST_0102;
+        private static string cacheautoLOC_TST_0103;
+        private static string cacheautoLOC_TST_0104;
+        private static string cacheautoLOC_TST_0105;
+        private static string cacheautoLOC_TST_0106;
+        private static string cacheautoLOC_TST_0107;
+        private static string cacheautoLOC_TST_0108;
+        private static string cacheautoLOC_TST_0109;
+
+        private static void CacheStrings()
+        {
+            cacheautoLOC_TST_0035 = Localizer.Format("#autoLOC_TST_0035"); //#autoLOC_TST_0035 = Large
+            cacheautoLOC_TST_0036 = Localizer.Format("#autoLOC_TST_0036"); //#autoLOC_TST_0036 = Set Large Window Size
+            cacheautoLOC_TST_0037 = Localizer.Format("#autoLOC_TST_0037"); //#autoLOC_TST_0037 = Small
+            cacheautoLOC_TST_0038 = Localizer.Format("#autoLOC_TST_0038"); //#autoLOC_TST_0038 = set Small Window Size
+            cacheautoLOC_TST_0088 = Localizer.Format("#autoLOC_TST_0088"); //#autoLOC_TST_0088 = Zoom
+            cacheautoLOC_TST_0089 = Localizer.Format("#autoLOC_TST_0089"); //#autoLOC_TST_0089 = Set Zoom level on camera
+            cacheautoLOC_TST_0090 = Localizer.Format("#autoLOC_TST_0090"); //#autoLOC_TST_0090 = Reset Zoom
+            cacheautoLOC_TST_0091 = Localizer.Format("#autoLOC_TST_0091"); //#autoLOC_TST_0091 = Reset the Camera Zoom Level
+            cacheautoLOC_TST_0092 = Localizer.Format("#autoLOC_TST_0092"); //#autoLOC_TST_0092 = Hide Galaxies
+            cacheautoLOC_TST_0093 = Localizer.Format("#autoLOC_TST_0093"); //#autoLOC_TST_0093 = Hide the Galaxies Window
+            cacheautoLOC_TST_0094 = Localizer.Format("#autoLOC_TST_0094"); //#autoLOC_TST_0094 = Show Galaxies
+            cacheautoLOC_TST_0095 = Localizer.Format("#autoLOC_TST_0095"); //#autoLOC_TST_0095 = Show the Galaxies Window
+            cacheautoLOC_TST_0096 = Localizer.Format("#autoLOC_TST_0096"); //#autoLOC_TST_0096 = Hide Bodies
+            cacheautoLOC_TST_0097 = Localizer.Format("#autoLOC_TST_0097"); //#autoLOC_TST_0097 = Hide the Celestial Bodies Window
+            cacheautoLOC_TST_0098 = Localizer.Format("#autoLOC_TST_0098"); //#autoLOC_TST_0098 = Show Bodies
+            cacheautoLOC_TST_0099 = Localizer.Format("#autoLOC_TST_0099"); //#autoLOC_TST_0099 = Show the Celestial Bodies Window
+            cacheautoLOC_TST_0100 = Localizer.Format("#autoLOC_TST_0100"); //#autoLOC_TST_0100 = Hide
+            cacheautoLOC_TST_0101 = Localizer.Format("#autoLOC_TST_0101"); //#autoLOC_TST_0101 = Hide this Window
+            cacheautoLOC_TST_0102 = Localizer.Format("#autoLOC_TST_0102"); //#autoLOC_TST_0102 = Show Target
+            cacheautoLOC_TST_0103 = Localizer.Format("#autoLOC_TST_0103"); //#autoLOC_TST_0103 = Show/Hide the Targeting Reticle
+            cacheautoLOC_TST_0104 = Localizer.Format("#autoLOC_TST_0104"); //#autoLOC_TST_0104 = Save To File
+            cacheautoLOC_TST_0105 = Localizer.Format("#autoLOC_TST_0105"); //#autoLOC_TST_0105 = If this is on, picture files will be saved to GameData/TarsierSpaceTech/PluginData/TarsierSpaceTech
+            cacheautoLOC_TST_0106 = Localizer.Format("#autoLOC_TST_0106"); //#autoLOC_TST_0106 = Take Picture
+            cacheautoLOC_TST_0107 = Localizer.Format("#autoLOC_TST_0107"); //#autoLOC_TST_0107 = Take a Picture with the Camera
+            cacheautoLOC_TST_0108 = Localizer.Format("#autoLOC_TST_0108"); //#autoLOC_TST_0108 = Show only contract targets
+            cacheautoLOC_TST_0109 = Localizer.Format("#autoLOC_TST_0109"); //#autoLOC_TST_0109 = If selected only targets that are the subject of a current contract will be shown
+
+        }
+
+        #endregion
 
         public override void OnStart(StartState state)
         {
+            CacheStrings();
             base.OnStart(state);
             Utilities.Log_Debug("TSTTel Starting Telescope");
+            lookingAtObjects = new List<TargetableObject>();
+            possibletargetObjects = new List<TargetableObject>();
             part.CoMOffset = part.attachNodes[0].position;
             if (state == StartState.Editor)
             {
                 _inEditor = true;
-                return;
             }
             _baseTransform = Utilities.FindChildRecursive(transform, baseTransformName);
             cameraTransform = Utilities.FindChildRecursive(transform, cameraTransformName);
             _lookTransform = Utilities.FindChildRecursive(transform, lookTransformName);
             _animationTransform = Utilities.FindChildRecursive(transform, animationTransformName);
             zeroRotation = cameraTransform.localRotation;
-            _camera = cameraTransform.gameObject.AddComponent<TSTCameraModule>();
+            if (state != StartState.Editor)
+                _camera = cameraTransform.gameObject.AddComponent<TSTCameraModule>();
             
             //_animation = _baseTransform.animation;
             if (_animationTransform != null)
@@ -193,118 +257,90 @@ namespace TarsierSpaceTech
                 disableEventsProcessed = false;
             }
 
-            for (var i = 0; i < targets_raw.Count; i++)
+            if (state == StartState.Editor)
+                return;
+
+            for (int i = 0; i < targets_raw.Count; i++)
             {
-                var tex = new Texture2D(40, 40);
+                Texture2D tex = new Texture2D(40, 40);
                 tex.LoadImage(targets_raw[i]);
                 targets.Add(tex);
             }
             
+            buildTargetLists();
             CAMwindowID = Utilities.getnextrandomInt();
             GALwindowID = Utilities.getnextrandomInt();
             BODwindowID = Utilities.getnextrandomInt();
             Utilities.Log_Debug("TSTTel On end start");
-            StartCoroutine(setSASParams());
+            //StartCoroutine(setSASParams());
             Utilities.Log_Debug("TSTTel Adding Input Callback");
             _vessel = vessel;
             _vessel.OnAutopilotUpdate += onFlightInput;
             GameEvents.onVesselChange.Add(refreshFlightInputHandler);
             GameEvents.onVesselDestroy.Add(removeFlightInputHandler);
             GameEvents.OnVesselRecoveryRequested.Add(removeFlightInputHandler);
+            GameEvents.Contract.onContractsLoaded.Add(onContractSystemReady);
+            GameEvents.Contract.onAccepted.Add(onContractAccepted);
             Utilities.Log_Debug("TSTTel Added Input Callback");
             //if (Active) //Moved to OnUpdate so we can process any override/disable event parameters correctly.
             //    StartCoroutine(openCamera());
+        }
 
-            //If ResearchBodies is installed, initialise the PartModulewrapper and get the TrackedBodies dictionary item.
-            isRBactive = Utilities.IsResearchBodiesInstalled;
-            if (isRBactive)
+        public void OnDestroy()
+        {
+            GameEvents.onVesselChange.Remove(refreshFlightInputHandler);
+            GameEvents.onVesselDestroy.Remove(removeFlightInputHandler);
+            GameEvents.OnVesselRecoveryRequested.Remove(removeFlightInputHandler);
+            GameEvents.Contract.onContractsLoaded.Remove(onContractSystemReady);
+            GameEvents.Contract.onAccepted.Remove(onContractAccepted);
+        }
+
+        private void buildTargetLists()
+        {
+            cbTargetList = new List<CelestialBody>(FlightGlobals.Bodies);
+            galaxyTargetList = new List<CelestialBody>(TSTGalaxies.CBGalaxies);
+            contractTargets = new List<string>();
+            List<CelestialBody> cbsToRemove = new List<CelestialBody>();
+            for (int i = 0; i < cbTargetList.Count; i++)
             {
-                processRBstartup();
+                if (cbTargetList[i].Radius < 100)
+                {
+                    cbsToRemove.Add(cbTargetList[i]);
+                }
+            }
+            for (int i = 0; i < cbsToRemove.Count; i++)
+            {
+                cbTargetList.Remove(cbsToRemove[i]);
             }
         }
 
-        private void processRBstartup()
+        protected void onContractSystemReady()
         {
-            RBWrapper.InitRBDBWrapper();
-            RBWrapper.InitRBFLWrapper();
-            if (RBWrapper.APIFLReady)
+            //Get contract targets
+            if (ContractSystem.Instance)
             {
-                foreach (PartModule module in part.Modules)
+                TSTTelescopeContract[] TSTtelescopecontracts = ContractSystem.Instance.GetCurrentActiveContracts<TSTTelescopeContract>();
+                for (int i = 0; i < TSTtelescopecontracts.Length; i++)
                 {
-                    if (module.moduleName == "ModuleTrackBodies")
-                    {
-                        RBmoduleTrackBodies = new RBWrapper.ModuleTrackBodies(module);
-                        TrackedBodies = RBmoduleTrackBodies.TrackedBodies;
-                        ResearchState = RBmoduleTrackBodies.ResearchState;
-
-                        if (File.Exists("saves/" + HighLogic.SaveFolder + "/researchbodies.cfg"))
-                        {
-                            var mainnode = ConfigNode.Load("saves/" + HighLogic.SaveFolder + "/researchbodies.cfg");
-                            foreach (var cb in TSTGalaxies.CBGalaxies)
-                            {
-                                var fileContainsGalaxy = false;
-                                foreach (ConfigNode node in mainnode.GetNode("RESEARCHBODIES").nodes)
-                                {
-                                    if (cb.bodyName.Contains(node.GetValue("body")))
-                                    {
-                                        if (bool.Parse(node.GetValue("ignore")))
-                                        {
-                                            TrackedBodies[cb] = true;
-                                            ResearchState[cb] = 100;
-                                        }
-                                        else
-                                        {
-                                            TrackedBodies[cb] = bool.Parse(node.GetValue("isResearched"));
-                                            if (node.HasValue("researchState"))
-                                            {
-                                                ResearchState[cb] = int.Parse(node.GetValue("researchState"));
-                                            }
-                                            else
-                                            {
-                                                ConfigNode cbNode = null;
-                                                foreach (
-                                                    ConfigNode cbSettingNode in
-                                                        mainnode.GetNode("RESEARCHBODIES").nodes)
-                                                {
-                                                    if (cbSettingNode.GetValue("body") == cb.GetName())
-                                                        cbNode = cbSettingNode;
-                                                }
-                                                if (cbNode != null) cbNode.AddValue("researchState", "0");
-                                                mainnode.Save("saves/" + HighLogic.SaveFolder +
-                                                              "/researchbodies.cfg");
-                                                ResearchState[cb] = 0;
-                                            }
-                                        }
-                                        fileContainsGalaxy = true;
-                                    }
-                                }
-                                if (!fileContainsGalaxy)
-                                {
-                                    var newNodeForCB = mainnode.GetNode("RESEARCHBODIES").AddNode("BODY");
-                                    newNodeForCB.AddValue("body", cb.GetName());
-                                    newNodeForCB.AddValue("isResearched", "false");
-                                    newNodeForCB.AddValue("researchState", "0");
-                                    newNodeForCB.AddValue("ignore", "false");
-                                    TrackedBodies[cb] = false;
-                                    ResearchState[cb] = 0;
-                                    mainnode.Save("saves/" + HighLogic.SaveFolder + "/researchbodies.cfg");
-                                }
-                            }
-                        }
-                        break;
-                    }
+                    contractTargets.Add(TSTtelescopecontracts[i].target.name);
                 }
             }
         }
 
+        protected void onContractAccepted(Contracts.Contract contract)
+        {
+            contractTargets.Clear();
+            onContractSystemReady();
+        }
+
         private IEnumerator setSASParams()
         {
-            while (FlightGlobals.ActiveVessel.Autopilot.RSAS.pidPitch == null)
+            while (FlightGlobals.ActiveVessel.Autopilot.SAS.pidLockedPitch == null)
                 yield return null;
             Utilities.Log_Debug("Setting PIDs");
-            FlightGlobals.ActiveVessel.Autopilot.RSAS.pidPitch.ReinitializePIDsOnly(PIDKp, PIDKi, PIDKd);
-            FlightGlobals.ActiveVessel.Autopilot.RSAS.pidRoll.ReinitializePIDsOnly(PIDKp, PIDKi, PIDKd);
-            FlightGlobals.ActiveVessel.Autopilot.RSAS.pidYaw.ReinitializePIDsOnly(PIDKp, PIDKi, PIDKd);
+            FlightGlobals.ActiveVessel.Autopilot.SAS.pidLockedPitch.Reinitialize(PIDKp, PIDKi, PIDKd);
+            FlightGlobals.ActiveVessel.Autopilot.SAS.pidLockedRoll.Reinitialize(PIDKp, PIDKi, PIDKd);
+            FlightGlobals.ActiveVessel.Autopilot.SAS.pidLockedYaw.Reinitialize(PIDKp, PIDKi, PIDKd);
         }
 
         public void removeFlightInputHandler(Vessel target)
@@ -325,7 +361,7 @@ namespace TarsierSpaceTech
         public void toggleServos()
         {
             servoControl = !servoControl;
-            Events["toggleServos"].guiName = servoControl ? "Disable Servos" : "Enable Servos";
+            Events["toggleServos"].guiName = servoControl ? Localizer.Format("#autoLOC_TST_0082") : Localizer.Format("#autoLOC_TST_0083"); //#autoLOC_TST_0082 = Disable Servos #autoLOC_TST_0083 = Enable Servos
             if (!servoControl)
                 cameraTransform.localRotation = zeroRotation;
         }
@@ -341,7 +377,7 @@ namespace TarsierSpaceTech
             if (vessel == target)
             {
                 _vessel = target;
-                var vpm = _vessel.FindPartModulesImplementing<TSTSpaceTelescope>();
+                List<TSTSpaceTelescope> vpm = _vessel.FindPartModulesImplementing<TSTSpaceTelescope>();
                 if (vpm.Count > 0)
                 {
                     Utilities.Log_Debug("Adding Input Callback");
@@ -372,7 +408,7 @@ namespace TarsierSpaceTech
                     cameraTransform.Rotate(Vector3.right, 0.005f*_camera.fov);
                 }
 
-                var angle = Mathf.Abs(Quaternion.Angle(cameraTransform.localRotation, zeroRotation));
+                float angle = Mathf.Abs(Quaternion.Angle(cameraTransform.localRotation, zeroRotation));
 
                 if (angle > 1.5f)
                 {
@@ -477,7 +513,7 @@ namespace TarsierSpaceTech
             //}
         }
 
-        [KSPEvent(active = true, guiActive = true, name = "eventOpenCamera", guiName = "Open Camera")]
+        [KSPEvent(active = true, guiActive = true, name = "eventOpenCamera", guiActiveEditor = true, guiName = "#autoLOC_TST_0084")] //#autoLOC_TST_0084 = Open Camera
         public void eventOpenCamera()
         {
             Events["eventOpenCamera"].active = false;
@@ -520,13 +556,13 @@ namespace TarsierSpaceTech
                 if (animationClipNameOpen == "")
                 {
                     _animationOpen.Play();
-                    var wait = Utilities.WaitForAnimationNoClip(_animationOpen);
+                    IEnumerator wait = Utilities.WaitForAnimationNoClip(_animationOpen);
                     while (wait.MoveNext()) yield return null;
                 }
                 else
                 {
                     _animationOpen.Play(animationClipNameOpen);
-                    var wait = Utilities.WaitForAnimation(_animationOpen, animationClipNameOpen);
+                    IEnumerator wait = Utilities.WaitForAnimation(_animationOpen, animationClipNameOpen);
                     while (wait.MoveNext()) yield return null;
                 }
             }
@@ -535,15 +571,18 @@ namespace TarsierSpaceTech
             Events["eventCloseCamera"].active = true;
             Events["eventControlFromHere"].active = true;
             Events["toggleServos"].active = true;
-            //Set camera active
-            _camera.Enabled = true;
-            Active = true;
-            windowState = WindowState.Small;
-            _camera.changeSize(GUI_WIDTH_SMALL, GUI_WIDTH_SMALL);
-            cameraTransform.localRotation = zeroRotation;
+            if (!_inEditor)
+            {
+                //Set camera active
+                _camera.Enabled = true;
+                Active = true;
+                windowState = WindowState.Small;
+                _camera.changeSize(GUI_WIDTH_SMALL, GUI_WIDTH_SMALL);
+                cameraTransform.localRotation = zeroRotation;
+            }
         }
 
-        [KSPEvent(active = false, guiActive = true, name = "eventCloseCamera", guiName = "Close Camera")]
+        [KSPEvent(active = false, guiActive = true, name = "eventCloseCamera", guiActiveEditor = true, guiName = "#autoLOC_TST_0085")] //#autoLOC_TST_0085 = Close Camera
         public void eventCloseCamera()
         {
             try
@@ -567,9 +606,12 @@ namespace TarsierSpaceTech
                 Events["eventCloseCamera"].active = false;
                 Events["eventControlFromHere"].active = false;
                 Events["toggleServos"].active = false;
-                _camera.Enabled = false;
+                if (_camera != null)
+                    _camera.Enabled = false;
                 Active = false;
                 StartCoroutine(closeCamera());
+                if (_inEditor)
+                    return;
                 if (vessel.ReferenceTransform == _lookTransform)
                 {
                     vessel.FallBackReferenceTransform();
@@ -596,20 +638,20 @@ namespace TarsierSpaceTech
                     _animationClose[animationNameClose].speed = -1f;
                     _animationClose[animationNameClose].normalizedTime = 1f;
                     _animationClose.Play();
-                    var wait = Utilities.WaitForAnimationNoClip(_animationClose);
+                    IEnumerator wait = Utilities.WaitForAnimationNoClip(_animationClose);
                     while (wait.MoveNext()) yield return null;
                 }
                 else
                 {
                     _animationClose.Play(animationClipNameClose);
-                    var wait = Utilities.WaitForAnimation(_animationClose, animationClipNameClose);
+                    IEnumerator wait = Utilities.WaitForAnimation(_animationClose, animationClipNameClose);
                     while (wait.MoveNext()) yield return null;
                 }
             }
             Events["eventOpenCamera"].active = true;
         }
 
-        [KSPEvent(active = false, guiActive = true, name = "eventControlFromHere", guiName = "Control From Here")]
+        [KSPEvent(active = false, guiActive = true, name = "eventControlFromHere", guiName = "#autoLOC_TST_0086")] //#autoLOC_TST_0086 = Control From Here
         public void eventControlFromHere()
         {
             part.SetReferenceTransform(_lookTransform);
@@ -674,14 +716,15 @@ namespace TarsierSpaceTech
             Utilities.Log_Debug("Taking Picture");
             _scienceData.Clear();
             Utilities.Log_Debug("Checking Look At");
-            var objs = getLookingAt();
-            Utilities.Log_Debug("Looking at: {0} celestial objects", objs.Count.ToString());
-            foreach (var obj in objs)
+            getLookingAt();
+            Utilities.Log_Debug("Looking at: {0} celestial objects", lookingAtObjects.Count.ToString());
+            for (int i=0; i < lookingAtObjects.Count; i++)
             {
-                Utilities.Log_Debug("Looking at {0}", obj.theName);
+                TargetableObject obj = lookingAtObjects[i];            
+                Utilities.Log_Debug("Looking at {0}", obj.name);
                 if (obj.type == typeof(CelestialBody))
                 {
-                    var body = (CelestialBody) obj.BaseObject;
+                    CelestialBody body = (CelestialBody) obj.BaseObject;
                     doScience(null, body);
                     if (TSTProgressTracker.isActive)
                     {
@@ -690,7 +733,7 @@ namespace TarsierSpaceTech
                 }
                 else if (obj.type == typeof(TSTGalaxy))
                 {
-                    var galaxy = (TSTGalaxy) obj.BaseObject;
+                    TSTGalaxy galaxy = (TSTGalaxy) obj.BaseObject;
                     doScience(galaxy, null);
                     if (TSTProgressTracker.isActive)
                     {
@@ -699,15 +742,15 @@ namespace TarsierSpaceTech
                 }
             }
             Utilities.Log_Debug("Gather Science complete");
-            if (objs.Count == 0)
+            if (lookingAtObjects.Count == 0)
             {
-                ScreenMessages.PostScreenMessage("No science collected", 3f, ScreenMessageStyle.UPPER_CENTER);
+                ScreenMessages.PostScreenMessage(Localizer.Format("#autoLOC_TST_0087"), 5f, ScreenMessageStyle.UPPER_CENTER); //#autoLOC_TST_0087 = No science collected
             }
 
             if (saveToFile)
             {
                 Utilities.Log_Debug("Saving to File");
-                var i = 0;
+                int i = 0;
                 while (
                     KSP.IO.File.Exists<TSTSpaceTelescope>(
                         "Telescope_" + DateTime.Now.ToString("d-m-y") + "_" + i + ".png", null) ||
@@ -715,44 +758,63 @@ namespace TarsierSpaceTech
                         "Telescope_" + DateTime.Now.ToString("d-m-y") + "_" + i + "Large.png", null))
                     i++;
                 _camera.saveToFile("Telescope_" + DateTime.Now.ToString("d-m-y") + "_" + i, "TeleScope");
-                ScreenMessages.PostScreenMessage("Picture saved", 3f, ScreenMessageStyle.UPPER_CENTER);
+                ScreenMessages.PostScreenMessage(Localizer.Format("#autoLOC_TST_0049"), 5f, ScreenMessageStyle.UPPER_CENTER); //#autoLOC_TST_0049 = Picture saved
             }
         }
 
-
-        private List<TargetableObject> getLookingAt()
+        private void getTargetObjectList()
         {
-            var result = new List<TargetableObject>();
-            var bodies = FlightGlobals.Bodies.Select(b => (TargetableObject) b).ToList();
-            var galaxies = TSTGalaxies.Galaxies.Select(g => (TargetableObject) g).ToList();
-            Utilities.Log_Debug("getLookingAt start");
-            foreach (var obj in galaxies.Concat(bodies))
+            possibletargetObjects.Clear();
+            for (int i = 0; i < FlightGlobals.Bodies.Count; i++)
             {
-                var r = obj.position - cameraTransform.position;
-                var distance = r.magnitude;
-                var theta = Vector3d.Angle(cameraTransform.forward, r);
-                var visibleWidth = 2*obj.size/distance*180/Mathf.PI;
+                TargetableObject tempObject = (TargetableObject)FlightGlobals.Bodies[i];
+                if (tempObject != null)
+                {
+                    possibletargetObjects.Add(tempObject);
+                }
+            }
+            for (int i = 0; i < TSTGalaxies.Galaxies.Count; i++)
+            {
+                TargetableObject tempObject = (TargetableObject)TSTGalaxies.Galaxies[i];
+                if (tempObject != null)
+                {
+                    possibletargetObjects.Add(tempObject);
+                }
+            }            
+        }
+
+        private void getLookingAt()
+        {
+            lookingAtObjects.Clear();            
+            getTargetObjectList();
+            Utilities.Log_Debug("getLookingAt start");
+            for (int i = 0; i < possibletargetObjects.Count; i++)
+            {
+                TargetableObject obj = possibletargetObjects[i];            
+                Vector3 r = obj.position - cameraTransform.position;
+                float distance = r.magnitude;
+                double theta = Vector3d.Angle(cameraTransform.forward, r);
+                double visibleWidth = 2*obj.size/distance*180/Mathf.PI;
                 Utilities.Log_Debug("getLookingAt about to calc fov");
-                var fov = 0.05*_camera.fov;
-                Utilities.Log_Debug("{0}: distance= {1}, theta= {2}, visibleWidth= {3}, fov= {4}", obj.theName,
+                double fov = 0.05*_camera.fov;
+                Utilities.Log_Debug("{0}: distance= {1}, theta= {2}, visibleWidth= {3}, fov= {4}", obj.name,
                     distance.ToString(), theta.ToString(), visibleWidth.ToString(), fov.ToString());
                 if (theta < _camera.fov/2)
                 {
-                    Utilities.Log_Debug("Looking at: {0}", obj.theName);
+                    Utilities.Log_Debug("Looking at: {0}", obj.name);
                     if (visibleWidth > fov)
                     {
-                        Utilities.Log_Debug("Can see: {0}", obj.theName);
-                        result.Add(obj);
+                        Utilities.Log_Debug("Can see: {0}", obj.name);
+                        lookingAtObjects.Add(obj);
                     }
                 }
-            }
-            return result;
+            }            
         }
 
         public override void OnSave(ConfigNode node)
         {
             Utilities.Log_Debug("OnSave Telescope");
-            foreach (var data in _scienceData)
+            foreach (ScienceData data in _scienceData)
             {
                 data.Save(node.AddNode("ScienceData"));
             }
@@ -770,13 +832,13 @@ namespace TarsierSpaceTech
             Utilities.Log_Debug("OnLoad Telescope");
             if (node.HasNode("SCIENCE"))
             {
-                var science = node.GetNode("SCIENCE");
-                foreach (var n in science.GetNodes("DATA"))
+                ConfigNode science = node.GetNode("SCIENCE");
+                foreach (ConfigNode n in science.GetNodes("DATA"))
                 {
                     _scienceData.Add(new ScienceData(n));
                 }
             }
-            foreach (var n in node.GetNodes("ScienceData"))
+            foreach (ConfigNode n in node.GetNodes("ScienceData"))
             {
                 _scienceData.Add(new ScienceData(n));
             }
@@ -797,18 +859,18 @@ namespace TarsierSpaceTech
         {
             GUILayout.BeginVertical();
             GUILayout.BeginHorizontal();
-            GUILayout.Label(new GUIContent("Zoom", "Set Zoom level on camera"), GUILayout.ExpandWidth(false));
+            GUILayout.Label(new GUIContent(cacheautoLOC_TST_0088, cacheautoLOC_TST_0089), GUILayout.ExpandWidth(false)); //#autoLOC_TST_0088 = Zoom #autoLOC_TST_0089 = Set Zoom level on camera
             _camera.ZoomLevel = GUILayout.HorizontalSlider(_camera.ZoomLevel, -1, maxZoom, GUILayout.ExpandWidth(true));
             GUILayout.Label(getZoomString(_camera.ZoomLevel), GUILayout.ExpandWidth(false), GUILayout.Width(60));
             GUILayout.EndHorizontal();
-            var texture2D = _camera.Texture2D;
-            var imageRect = GUILayoutUtility.GetRect(texture2D.width, texture2D.height);
-            var center = imageRect.center;
+            Texture2D texture2D = _camera.Texture2D;
+            Rect imageRect = GUILayoutUtility.GetRect(texture2D.width, texture2D.height);
+            Vector2 center = imageRect.center;
             imageRect.width = texture2D.width;
             imageRect.height = texture2D.height;
             imageRect.center = center;
             GUI.DrawTexture(imageRect, texture2D);
-            var rect = new Rect(0, 0, 40, 40);
+            Rect rect = new Rect(0, 0, 40, 40);
             if (_showTarget)
             {
                 Transform cameraTransform = null;
@@ -828,13 +890,13 @@ namespace TarsierSpaceTech
                 if (cameraTransform != null)
                 {
                     Vector3d r = targetTransform.position - cameraTransform.position;
-                    var dx = Vector3d.Dot(cameraTransform.right.normalized, r.normalized);
-                    var thetax = 90 - Math.Acos(dx)*Mathf.Rad2Deg;
-                    var dy = Vector3d.Dot(cameraTransform.up.normalized, r.normalized);
-                    var thetay = 90 - Math.Acos(dy)*Mathf.Rad2Deg;
-                    var dz = Vector3d.Dot(cameraTransform.forward.normalized, r.normalized);
-                    var xpos = texture2D.width*thetax/_camera.fov;
-                    var ypos = texture2D.height*thetay/_camera.fov;
+                    double dx = Vector3d.Dot(cameraTransform.right.normalized, r.normalized);
+                    double thetax = 90 - Math.Acos(dx)*Mathf.Rad2Deg;
+                    double dy = Vector3d.Dot(cameraTransform.up.normalized, r.normalized);
+                    double thetay = 90 - Math.Acos(dy)*Mathf.Rad2Deg;
+                    double dz = Vector3d.Dot(cameraTransform.forward.normalized, r.normalized);
+                    double xpos = texture2D.width*thetax/_camera.fov;
+                    double ypos = texture2D.height*thetay/_camera.fov;
                     if (dz > 0 && Math.Abs(xpos) < texture2D.width/2 && Math.Abs(ypos) < texture2D.height/2)
                     {
                         rect.center = imageRect.center + new Vector2((float) xpos, -(float) ypos);
@@ -843,35 +905,33 @@ namespace TarsierSpaceTech
                 }
             }
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button(new GUIContent("Reset Zoom", "Reset the Camera Zoom Level"))) _camera.ZoomLevel = 0;
+            if (GUILayout.Button(new GUIContent(cacheautoLOC_TST_0090, cacheautoLOC_TST_0091))) _camera.ZoomLevel = 0; //#autoLOC_TST_0090 = Reset Zoom #autoLOC_TST_0091 = Reset the Camera Zoom Level
             if (
                 GUILayout.Button(windowState == WindowState.Small
-                    ? new GUIContent("Large", "Set Large Window Size")
-                    : new GUIContent("Small", "set Small Window Size")))
+                    ? new GUIContent(cacheautoLOC_TST_0035, cacheautoLOC_TST_0036) : 
+                    new GUIContent(cacheautoLOC_TST_0037, cacheautoLOC_TST_0038))) //#autoLOC_TST_0035 = Large #autoLOC_TST_0036 = Set Large Window Size #autoLOC_TST_0037 = Small #autoLOC_TST_0038 = set Small Window Size
             {
                 windowState = windowState == WindowState.Small ? WindowState.Large : WindowState.Small;
-                var w = windowState == WindowState.Small ? GUI_WIDTH_SMALL : GUI_WIDTH_LARGE;
+                int w = windowState == WindowState.Small ? GUI_WIDTH_SMALL : GUI_WIDTH_LARGE;
                 _camera.changeSize(w, w);
                 windowPos.height = 0;
             }
             if (
-                GUILayout.Button(showGalTargetsWindow
-                    ? new GUIContent("Hide Galaxies", "Hide the Galaxies Window")
-                    : new GUIContent("Show Galaxies", "Show the Galaxies Window")))
+                GUILayout.Button(showGalTargetsWindow ? new GUIContent(cacheautoLOC_TST_0092, cacheautoLOC_TST_0093)
+                    : new GUIContent(cacheautoLOC_TST_0094, cacheautoLOC_TST_0095))) //#autoLOC_TST_0092 = Hide Galaxies #autoLOC_TST_0093 = Hide the Galaxies Window #autoLOC_TST_0094 = Show Galaxies #autoLOC_TST_0095 = Show the Galaxies Window
                 showGalTargetsWindow = !showGalTargetsWindow;
             if (
                 GUILayout.Button(showBodTargetsWindow
-                    ? new GUIContent("Hide Bodies", "Hide the Celestial Bodies Window")
-                    : new GUIContent("Show Bodies", "Show the Celestial Bodies Window")))
+                    ? new GUIContent(cacheautoLOC_TST_0096, cacheautoLOC_TST_0097)
+                    : new GUIContent(cacheautoLOC_TST_0098, cacheautoLOC_TST_0099))) //#autoLOC_TST_0096 = Hide Bodies #autoLOC_TST_0097 = Hide the Celestial Bodies Window #autoLOC_TST_0098 = Show Bodies #autoLOC_TST_0099 = Show the Celestial Bodies Window
                 showBodTargetsWindow = !showBodTargetsWindow;
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button(new GUIContent("Hide", "Hide this Window"))) hideGUI();
-            _showTarget = GUILayout.Toggle(_showTarget, new GUIContent("Show Target", "Show/Hide the Targeting Reticle"));
+            if (GUILayout.Button(new GUIContent(cacheautoLOC_TST_0100, cacheautoLOC_TST_0101))) hideGUI(); //#autoLOC_TST_0100 = Hide #autoLOC_TST_0101 = Hide this Window
+            _showTarget = GUILayout.Toggle(_showTarget, new GUIContent(cacheautoLOC_TST_0102, cacheautoLOC_TST_0103)); //#autoLOC_TST_0102 = Show Target #autoLOC_TST_0103 = Show/Hide the Targeting Reticle
             _saveToFile = GUILayout.Toggle(_saveToFile,
-                new GUIContent("Save To File",
-                    "If this is on, picture files will be saved to GameData/TarsierSpaceTech/PluginData/TarsierSpaceTech"));
-            if (GUILayout.Button(new GUIContent("Take Picture", "Take a Picture with the Camera")))
+                new GUIContent(cacheautoLOC_TST_0104, cacheautoLOC_TST_0105)); //#autoLOC_TST_0104 = Save To File #autoLOC_TST_0105 = If this is on, picture files will be saved to GameData/TarsierSpaceTech/PluginData/TarsierSpaceTech
+            if (GUILayout.Button(new GUIContent(cacheautoLOC_TST_0106, cacheautoLOC_TST_0107))) //#autoLOC_TST_0106 = Take Picture #autoLOC_TST_0107 = Take a Picture with the Camera
                 takePicture(_saveToFile);
             GUILayout.EndHorizontal();
             GUILayout.EndVertical();
@@ -887,36 +947,42 @@ namespace TarsierSpaceTech
                 GUILayout.Width(GUI_WIDTH_SMALL));
 
             filterContractTargets = GUILayout.Toggle(filterContractTargets,
-                new GUIContent("Show only contract targets",
-                    "If selected only targets that are the subject of a current contract will be shown"));
+                new GUIContent(cacheautoLOC_TST_0108, cacheautoLOC_TST_0109)); //#autoLOC_TST_0108 = Show only contract targets #autoLOC_TST_0109 = If selected only targets that are the subject of a current contract will be shown
             //RSTUtils.Utilities.Log_Debug(String.Format(" - TargettingWindow - TSTBodies.Count = {0}", FlightGlobals.Bodies.Count));			
-            var newTarget = 0;
-            if (isRBactive && RBWrapper.APIDBReady && RBWrapper.APIFLReady && RBmoduleTrackBodies.enabled)
+            int newTarget = -1;
+            for (int i = 0; i < cbTargetList.Count; i++)
             {
-                //var filterRBTargets = isRBactive;
-                newTarget = FlightGlobals.Bodies.
-                    FindIndex(
-                        g => g.Radius > 100 && (TSTProgressTracker.HasTelescopeCompleted(g) ||
-                             (ContractSystem.Instance &&
-                              ContractSystem.Instance.GetCurrentActiveContracts<TSTTelescopeContract>()
-                                  .Any(t => t.target.name == g.name)))
-                            ? GUILayout.Button(g.theName)
-                            : (filterContractTargets
-                                ? false
-                                : (RBmoduleTrackBodies.TrackedBodies[g] ? g.Radius > 100 ? GUILayout.Button(g.theName) : false : false)));
+                //If Career Game and Not Progress completed on this body skip it. 
+                if (!TSTProgressTracker.HasTelescopeCompleted(cbTargetList[i]) && HighLogic.CurrentGame.Mode == Game.Modes.CAREER)
+                {
+                    continue;
+                }
+                //If we are filtering the list to only contract targets and this body is not in the list skip it (career game only).
+                if (HighLogic.CurrentGame.Mode == Game.Modes.CAREER && filterContractTargets && !contractTargets.Contains(cbTargetList[i].name))
+                {
+                    continue;
+                }
+                //If ResearchBodies is installed and enabled, check if body is researched, if not skip it.
+                if (TSTMstStgs.Instance.isRBloaded && RBWrapper.RBactualAPI.enabled)
+                {
+                    if (!TSTMstStgs.Instance.RBCelestialBodies[cbTargetList[i]].isResearched)
+                    {
+                        continue;
+                    }
+                }
+                //Now we draw the button and if they click find and set the index.
+                if (GUILayout.Button(cbTargetList[i].displayName.LocalizeRemoveGender()))
+                {
+                    for (int j = 0; j < FlightGlobals.Bodies.Count; j++)
+                    {
+                        if (FlightGlobals.Bodies[j] == cbTargetList[i])
+                        {
+                            newTarget = j;
+                            break;
+                        }
+                    }
+                }
             }
-            else
-            {
-                newTarget = FlightGlobals.Bodies.
-                    FindIndex(
-                        g => g.Radius > 100 && (TSTProgressTracker.HasTelescopeCompleted(g) ||
-                             (ContractSystem.Instance &&
-                              ContractSystem.Instance.GetCurrentActiveContracts<TSTTelescopeContract>()
-                                  .Any(t => t.target.name == g.name)))
-                            ? GUILayout.Button(g.theName)
-                            : (filterContractTargets ? false : g.Radius > 100 ? GUILayout.Button(g.theName) : false));
-            }
-
             //RSTUtils.Utilities.Log_Debug(String.Format(" - TargettingWindow - newTarget = {0}", newTarget));
 
             if (newTarget != -1 && newTarget != selectedTargetIndex)
@@ -929,8 +995,7 @@ namespace TarsierSpaceTech
                 if (FlightGlobals.ActiveVessel.mainBody.name == bodyTarget.name)
                 {
                     Utilities.Log_Debug("Cannot Target: {0} : {1} in it's SOI", newTarget.ToString(), bodyTarget.name);
-                    ScreenMessages.PostScreenMessage("Cannot Target " + bodyTarget.theName + " as in it's SOI", 3f,
-                        ScreenMessageStyle.UPPER_CENTER);
+                    ScreenMessages.PostScreenMessage(Localizer.Format("#autoLOC_TST_0110", bodyTarget.displayName), 5f, ScreenMessageStyle.UPPER_CENTER); //#autoLOC_TST_0110 = Cannot Target <<1>> as in it's SOI
                 }
                 else
                 {
@@ -939,13 +1004,12 @@ namespace TarsierSpaceTech
                     Utilities.Log_Debug("Targetting: {0} : {1}, layer= {2}", newTarget.ToString(), bodyTarget.name,
                         bodyTarget.gameObject.layer.ToString());
                     Utilities.Log_Debug("pos=" + bodyTarget.position);
-                    ScreenMessages.PostScreenMessage("Target: " + bodyTarget.theName, 3f,
-                        ScreenMessageStyle.UPPER_CENTER);
+                    ScreenMessages.PostScreenMessage(Localizer.Format("#autoLOC_TST_0111", bodyTarget.displayName), 5f, ScreenMessageStyle.UPPER_CENTER); //#autoLOC_TST_0111 = Target: <<1>>
                 }
             }
             GUILayout.EndScrollView();
             GUILayout.Space(10);
-            showBodTargetsWindow = !GUILayout.Button(new GUIContent("Hide", "Hide this Window"));
+            showBodTargetsWindow = !GUILayout.Button(new GUIContent(cacheautoLOC_TST_0100, cacheautoLOC_TST_0101)); //#autoLOC_TST_0100 = Hide #autoLOC_TST_0101 = Hide this Window
             GUILayout.EndVertical();
             if (TSTMstStgs.Instance.TSTsettings.Tooltips)
                 Utilities.SetTooltipText();
@@ -955,43 +1019,44 @@ namespace TarsierSpaceTech
         private void TargettingGalWindow(int windowID)
         {
             GUILayout.BeginVertical();
-            GalscrollViewVector = GUILayout.BeginScrollView(GalscrollViewVector, GUILayout.Height(300),
-                GUILayout.Width(GUI_WIDTH_SMALL));
+            GalscrollViewVector = GUILayout.BeginScrollView(GalscrollViewVector, GUILayout.Height(300),GUILayout.Width(GUI_WIDTH_SMALL));
             filterContractTargets = GUILayout.Toggle(filterContractTargets,
-                new GUIContent("Show only contract targets",
-                    "If selected only targets that are the subject of a current contract will be shown"));
+                new GUIContent(cacheautoLOC_TST_0108, cacheautoLOC_TST_0109)); //#autoLOC_TST_0108 = Show only contract targets #autoLOC_TST_0109 = If selected only targets that are the subject of a current contract will be shown
             //RSTUtils.Utilities.Log_Debug(String.Format(" - TargettingWindow - TSTGalaxies.Galaxies.Count = {0}", TSTGalaxies.Galaxies.Count));			
-
-            var newTarget = 0;
-            if (isRBactive && RBWrapper.APIDBReady && RBWrapper.APIFLReady && RBmoduleTrackBodies.enabled)
+            int newTarget = -1;
+            for (int i = 0; i < galaxyTargetList.Count; i++)
             {
-                var filterRBTargets = isRBactive;
-                newTarget = TSTGalaxies.Galaxies.
-                    FindIndex(
-                        g => TSTProgressTracker.HasTelescopeCompleted(g) ||
-                             (ContractSystem.Instance &&
-                              ContractSystem.Instance.GetCurrentActiveContracts<TSTTelescopeContract>()
-                                  .Any(t => t.target.name == g.name))
-                            ? GUILayout.Button(g.theName)
-                            : (filterContractTargets
-                                ? false
-                                : (RBmoduleTrackBodies.TrackedBodies[
-                                    TSTGalaxies.CBGalaxies.Find(x => x.theName == g.theName)]
-                                    ? GUILayout.Button(g.theName)
-                                    : false)));
+                //If Career Game and Not Progress completed on this body skip it. 
+                if (!TSTProgressTracker.HasTelescopeCompleted(galaxyTargetList[i]) && HighLogic.CurrentGame.Mode == Game.Modes.CAREER)
+                {
+                    continue;
+                }
+                //If we are filtering the list to only contract targets and this body is not in the list skip it (career game only).
+                if (HighLogic.CurrentGame.Mode == Game.Modes.CAREER && filterContractTargets && !contractTargets.Contains(galaxyTargetList[i].name))
+                {
+                    continue;
+                }                
+                //If ResearchBodies is installed and enabled, check if body is researched, if not skip it.
+                if (TSTMstStgs.Instance.isRBloaded && RBWrapper.RBactualAPI.enabled)
+                {
+                    if (!TSTMstStgs.Instance.RBCelestialBodies[galaxyTargetList[i]].isResearched)
+                    {
+                        continue;
+                    }
+                }
+                //Now we draw the button and if they click find and set the index.
+                if (GUILayout.Button(galaxyTargetList[i].displayName.LocalizeRemoveGender()))
+                {
+                    for (int j = 0; j < FlightGlobals.Bodies.Count; j++)
+                    {
+                        if (FlightGlobals.Bodies[j] == cbTargetList[i])
+                        {
+                            newTarget = j;
+                            break;
+                        }
+                    }
+                }
             }
-            else
-            {
-                newTarget = TSTGalaxies.Galaxies.
-                    FindIndex(
-                        g => TSTProgressTracker.HasTelescopeCompleted(g) ||
-                             (ContractSystem.Instance &&
-                              ContractSystem.Instance.GetCurrentActiveContracts<TSTTelescopeContract>()
-                                  .Any(t => t.target.name == g.name))
-                            ? GUILayout.Button(g.theName)
-                            : (filterContractTargets ? false : GUILayout.Button(g.theName)));
-            }
-
             //RSTUtils.Utilities.Log_Debug(String.Format(" - TargettingWindow - newTarget = {0}", newTarget));
 
             if (newTarget != -1 && newTarget != selectedTargetIndex)
@@ -1005,11 +1070,11 @@ namespace TarsierSpaceTech
                 Utilities.Log_Debug("Targetting: {0} : {1},layer= {2},scaledpos= {3}", newTarget.ToString(),
                     galaxyTarget.name, galaxyTarget.gameObject.layer.ToString(), galaxyTarget.scaledPosition.ToString());
                 Utilities.Log_Debug("pos= {0}", galaxyTarget.position.ToString());
-                ScreenMessages.PostScreenMessage("Target: " + galaxyTarget.theName, 3f, ScreenMessageStyle.UPPER_CENTER);
+                ScreenMessages.PostScreenMessage(Localizer.Format("#autoLOC_TST_0111", galaxyTarget.displayName), 5f, ScreenMessageStyle.UPPER_CENTER); //#autoLOC_TST_0111 = Target: <<1>>
             }
             GUILayout.EndScrollView();
             GUILayout.Space(10);
-            showGalTargetsWindow = !GUILayout.Button(new GUIContent("Hide", "Hide this Window"));
+            showGalTargetsWindow = !GUILayout.Button(new GUIContent(cacheautoLOC_TST_0100, cacheautoLOC_TST_0101)); //#autoLOC_TST_0100 = Hide #autoLOC_TST_0101 = Hide this Window
             GUILayout.EndVertical();
             if (TSTMstStgs.Instance.TSTsettings.Tooltips)
                 Utilities.SetTooltipText();
@@ -1019,9 +1084,10 @@ namespace TarsierSpaceTech
 
         public void OnGUI()
         {
+            if (Time.timeSinceLevelLoad < 2f) return;
             if (Utilities.GameModeisFlight)
             {
-                if (!_inEditor && _camera != null)
+                if (!_inEditor && _camera != null && !Utilities.isPauseMenuOpen)
                 {
                     if (!Textures.StylesSet) Textures.SetupStyles();
 
@@ -1053,7 +1119,7 @@ namespace TarsierSpaceTech
             Events["eventShowGUI"].active = true;
         }
 
-        [KSPEvent(active = true, guiActive = true, name = "eventShowGUI", guiName = "Show GUI")]
+        [KSPEvent(active = true, guiActive = true, name = "eventShowGUI", guiName = "#autoLOC_TST_0114")] //#autoLOC_TST_0114 = Show GUI
         public void eventShowGUI()
         {
             Events["eventShowGUI"].active = false;
@@ -1085,126 +1151,101 @@ namespace TarsierSpaceTech
             ScienceExperiment experiment;
             ScienceSubject subject;
             ScienceData data;
-            var experimentSituation = getExperimentSituation();
+            ExperimentSituations situation = ScienceUtil.GetExperimentSituation(vessel);            
+            string tgtName;
+            string tgtdisplayName;
             try
-            {
+            {                
+                experiment = ResearchAndDevelopment.GetExperiment("TarsierSpaceTech.SpaceTelescope");
+                if (experiment == null)
+                {
+                    Utilities.Log("Unable to find experiment TarsierSpaceTech.SpaceTelescope, Are you missing a config file? Report on forums.");
+                    ScreenMessages.PostScreenMessage(Localizer.Format("#autoLOC_TST_0115"), 5f, ScreenMessageStyle.UPPER_CENTER); //#autoLOC_TST_0115 = TST Unable to find Experiment - Internal Failure. See Log.
+                    return;
+                }
+                Utilities.Log_Debug("Got experiment");
                 if (galaxy != null)
                 {
-                    Utilities.Log_Debug("Doing Science for {0}", galaxy.theName);
-                    experiment = ResearchAndDevelopment.GetExperiment("TarsierSpaceTech.SpaceTelescope");
-                    if (experiment == null)
-                    {
-                        Utilities.Log("Unable to find experiment TarsierSpaceTech.SpaceTelescope, Are you missing a config file? Report on forums.");
-                        ScreenMessages.PostScreenMessage("TST Unable to find Experiment - Internal Failure. See Log.", 3f,
-                            ScreenMessageStyle.UPPER_CENTER);
-                        return;
-                    }
-                    Utilities.Log_Debug("Got experiment");
-
-                    subject = ResearchAndDevelopment.GetExperimentSubject(experiment, experimentSituation,
-                    Sun.Instance.sun, "LookingAt" + galaxy.name);
-                    subject.title = "Space Telescope picture of " + galaxy.theName;
-                    Utilities.Log_Debug("Got subject, determining science data using {0}", part.name);
+                    tgtName = galaxy.name;
+                    tgtdisplayName = galaxy.displayName;
                 }
                 else
                 {
-                    Utilities.Log_Debug("Doing Science for {0}", planet.theName);
-                    experiment = ResearchAndDevelopment.GetExperiment("TarsierSpaceTech.SpaceTelescope");
-                    if (experiment == null)
-                    {
-                        Utilities.Log("Unable to find experiment TarsierSpaceTech.SpaceTelescope, Are you missing a config file? Report on forums.");
-                        ScreenMessages.PostScreenMessage("TST Unable to find Experiment - Internal Failure. See Log.", 3f,
-                            ScreenMessageStyle.UPPER_CENTER);
-                        return;
-                    }
-                    Utilities.Log_Debug("Got experiment");
-
-                    subject = ResearchAndDevelopment.GetExperimentSubject(experiment, experimentSituation, planet,
-                    "LookingAt" + planet.name);
-                    subject.title = "Space Telescope picture of " + planet.theName;
-                    Utilities.Log_Debug("Got subject, determining science data using {0}", part.name);
+                    tgtName = planet.name;
+                    tgtdisplayName = planet.displayName;
                 }
+                Utilities.Log_Debug("Doing Science for {0}", tgtName);                
 
-                
-                if (experiment.IsAvailableWhile(experimentSituation, vessel.mainBody))
+                if (experiment.IsAvailableWhile(situation, vessel.mainBody))
                 {
+                    subject = ResearchAndDevelopment.GetExperimentSubject(experiment, situation, vessel.mainBody, "LookingAt" + tgtName, "");
+                    subject.title = Localizer.Format("#autoLOC_TST_0116", tgtdisplayName); //#autoLOC_TST_0116 = Space Telescope picture of <1>>
+                    Utilities.Log_Debug("Got subject, determining science data using {0}", part.name);
+
                     if (part.name == "tarsierSpaceTelescope")
                     {
                         if (galaxy != null)
                         {
-                            data = new ScienceData(experiment.baseValue/2*subject.dataScale, xmitDataScalar, labBoostScalar,
-                                subject.id, subject.title, false, part.flightID);
-
-                            Utilities.Log_Debug("Got data");
-                            data.title = "Tarsier Space Telescope: Orbiting " + vessel.mainBody.theName + " looking at " +
-                                         galaxy.theName;
-                            _scienceData.Add(data);
-                            Utilities.Log_Debug("Added Data Amt= {0}, TransmitValue= {1}, LabBoost= {2}, LabValue= {3}",
-                                data.dataAmount.ToString(), data.transmitValue.ToString(), data.labBoost.ToString(),
-                                data.labValue.ToString());
-                            ScreenMessages.PostScreenMessage("Collected Science for " + galaxy.theName, 3f,
-                                ScreenMessageStyle.UPPER_CENTER);
+                            data = new ScienceData(experiment.baseValue/2*subject.dataScale, xmitDataScalar,labBoostScalar,subject.id, subject.title, false, part.flightID);
                         }
                         else
                         {
-                            data = new ScienceData(experiment.baseValue * 0.8f * subject.dataScale, xmitDataScalar,
-                            labBoostScalar, subject.id, subject.title, false, part.flightID);
-                            Utilities.Log_Debug("Got data");
-                            data.title = "Tarsier Space Telescope: Oriting " + vessel.mainBody.theName + " looking at " +
-                                         planet.theName;
-                            _scienceData.Add(data);
-                            Utilities.Log_Debug("Added Data Amt= {0}, TransmitValue= {1}, LabBoost= {2}, LabValue= {3}",
-                                data.dataAmount.ToString(), data.transmitValue.ToString(), data.labBoost.ToString(),
-                                data.labValue.ToString());
-                            ScreenMessages.PostScreenMessage("Collected Science for " + planet.theName, 3f,
-                                ScreenMessageStyle.UPPER_CENTER);
+                            data = new ScienceData(experiment.baseValue * 0.8f * subject.dataScale, xmitDataScalar,labBoostScalar, subject.id, subject.title, false, part.flightID);
                         }
                     }
                     else
                     {
                         if (galaxy != null)
                         {
-                            data = new ScienceData(experiment.baseValue * subject.dataScale, xmitDataScalar, labBoostScalar,
-                             subject.id, subject.title, false, part.flightID);
-                            Utilities.Log_Debug("Got data");
-                            data.title = "Tarsier Space Telescope: Orbiting " + vessel.mainBody.theName + " looking at " +
-                                         galaxy.theName;
-                            _scienceData.Add(data);
-                            Utilities.Log_Debug("Added Data Amt= {0}, TransmitValue= {1}, LabBoost= {2}, LabValue= {3}",
-                                data.dataAmount.ToString(), data.transmitValue.ToString(), data.labBoost.ToString(),
-                                data.labValue.ToString());
-                            ScreenMessages.PostScreenMessage("Collected Science for " + galaxy.theName, 3f,
-                                ScreenMessageStyle.UPPER_CENTER);
+                            data = new ScienceData(experiment.baseValue * subject.dataScale, xmitDataScalar, labBoostScalar,subject.id, subject.title, false, part.flightID);
                         }
                         else
                         {
-                            data = new ScienceData(experiment.baseValue * subject.dataScale, xmitDataScalar, labBoostScalar,
-                            subject.id, subject.title, false, part.flightID);
-                            Utilities.Log_Debug("Got data");
-                            data.title = "Tarsier Space Telescope: Oriting " + vessel.mainBody.theName + " looking at " +
-                                         planet.theName;
-                            _scienceData.Add(data);
-                            Utilities.Log_Debug("Added Data Amt= {0}, TransmitValue= {1}, LabBoost= {2}, LabValue= {3}",
-                                data.dataAmount.ToString(), data.transmitValue.ToString(), data.labBoost.ToString(),
-                                data.labValue.ToString());
-                            ScreenMessages.PostScreenMessage("Collected Science for " + planet.theName, 3f,
-                                ScreenMessageStyle.UPPER_CENTER);
+                            data = new ScienceData(experiment.baseValue * subject.dataScale, xmitDataScalar, labBoostScalar,subject.id, subject.title, false, part.flightID);
                         }
                     }
+                    Utilities.Log_Debug("Got data");
+                    data.title = Localizer.Format("#autoLOC_TST_0117", vessel.mainBody.displayName, tgtdisplayName); //#autoLOC_TST_0117 = Tarsier Space Telescope: Orbiting <<1>> looking at <<2>>
+                    _scienceData.Add(data);
+                    Utilities.Log_Debug("Added Data Amt= {0}, TransmitValue= {1}, LabBoost= {2}, LabValue= {3}",
+                        data.dataAmount.ToString(), data.baseTransmitValue.ToString(), data.transmitBonus.ToString(),
+                        data.labValue.ToString());
+                    //If ResearchBodies is installed check if body is already found or not, if it isn't change the screen message to say "Unknown Body"
+                    if (Utilities.IsResearchBodiesInstalled && RBWrapper.RBactualAPI.enabled)
+                    {
+                        KeyValuePair<CelestialBody, RBWrapper.CelestialBodyInfo> keyvalue = new KeyValuePair<CelestialBody, RBWrapper.CelestialBodyInfo>();
+                        foreach (KeyValuePair<CelestialBody, RBWrapper.CelestialBodyInfo> kvp in TSTMstStgs.Instance.RBCelestialBodies)
+                        {
+                            if (kvp.Key.name == tgtName)
+                            {
+                                keyvalue = kvp;
+                                break;
+                            }
+                        }
+                        if (keyvalue.Key != null && keyvalue.Value != null)
+                        {
+                            if (!keyvalue.Value.isResearched)
+                            {
+                                tgtdisplayName = Localizer.Format("#autoLOC_TST_0118"); //#autoLOC_TST_0118 = Unknown Body
+                            }
+                        }
+                    }
+                    ScreenMessages.PostScreenMessage(Localizer.Format("#autoLOC_238419", part.partInfo.title, data.dataAmount.ToString(), subject.title), 8f, ScreenMessageStyle.UPPER_LEFT);
+                    ReviewDataItem(data);                    
                 }
                 else
                 {
-                    ScreenMessages.PostScreenMessage("Cannot take picture whilst " + experimentSituation, 3f,
-                            ScreenMessageStyle.UPPER_CENTER);
+                    ScreenMessages.PostScreenMessage(Localizer.Format("#autoLOC_238424", experiment.experimentTitle), 5f, ScreenMessageStyle.UPPER_CENTER);
+                    ScreenMessages.PostScreenMessage(Localizer.Format("#autoLOC_TST_0119", situation.displayDescription()), 5f, ScreenMessageStyle.UPPER_CENTER); //#autoLOC_TST_0119 = Cannot take picture whilst <<1>>
                 }
             }
             catch (Exception ex)
             {
                 if (galaxy != null)
-                    Utilities.Log("An error occurred attempting to capture science of {0}", galaxy.theName);
+                    Utilities.Log("An error occurred attempting to capture science of {0}", galaxy.name);
                 else if (planet != null)
                 {
-                    Utilities.Log("An error occurred attempting to capture science of {0}", planet.theName);
+                    Utilities.Log("An error occurred attempting to capture science of {0}", planet.name);
                 }
                 else
                 {
@@ -1214,38 +1255,7 @@ namespace TarsierSpaceTech
                 //throw;
             }
         }
-        
-        private ExperimentSituations getExperimentSituation()
-        {
-            try
-            {
-                switch (vessel.situation)
-                {
-                    case Vessel.Situations.LANDED:
-                    case Vessel.Situations.PRELAUNCH:
-                        return ExperimentSituations.SrfLanded;
-                    case Vessel.Situations.SPLASHED:
-                        return ExperimentSituations.SrfSplashed;
-                    case Vessel.Situations.FLYING:
-                        return vessel.altitude < vessel.mainBody.scienceValues.flyingAltitudeThreshold
-                            ? ExperimentSituations.FlyingLow
-                            : ExperimentSituations.FlyingHigh;
-                    default:
-                        return vessel.altitude < vessel.mainBody.scienceValues.spaceAltitudeThreshold
-                            ? ExperimentSituations.InSpaceLow
-                            : ExperimentSituations.InSpaceHigh;
-                }
-            }
-            catch (Exception ex)
-            {
-                Utilities.Log("An error occurred attempting to get active vessel situation");
-                Utilities.Log("Err: " + ex);
-                return ExperimentSituations.SrfLanded;
-                //throw;
-            }
-            
-        }
-
+          
         private string getZoomString(float zoom)
         {
             string[] unicodePowers =
@@ -1253,10 +1263,10 @@ namespace TarsierSpaceTech
                 "\u2070", "\u00B9", "\u00B2", "\u00B3", "\u2074", "\u2075", "\u2076", "\u2077",
                 "\u2078", "\u2079"
             };
-            var zStr = "x";
-            var z = Mathf.Pow(10, zoom);
-            var magnitude = Mathf.Pow(10, Mathf.Floor(zoom));
-            var msf = Mathf.Floor(z/magnitude);
+            string zStr = "x";
+            float z = Mathf.Pow(10, zoom);
+            float magnitude = Mathf.Pow(10, Mathf.Floor(zoom));
+            float msf = Mathf.Floor(z/magnitude);
             if (zoom >= 3)
             {
                 zStr += msf + "x10" + unicodePowers[Mathf.FloorToInt(zoom)];
@@ -1270,7 +1280,15 @@ namespace TarsierSpaceTech
 
         public override string GetInfo()
         {
-            return base.GetInfo();
+            string infoStr = "";
+            infoStr += Localizer.Format("#autoLOC_TST_0120", XKCDColors.HexFormat.Cyan); //#autoLOC_TST_0120 = <color=<<1>>>Space Telescope</color>\nCan take pictures of heavenly bodies in the sky.\n
+            infoStr += Localizer.Format("#autoLOC_TST_0121", maxZoom); //#autoLOC_TST_0121 = Maximum Camera Zoom: <<1>>
+            infoStr += "\n\n";
+            infoStr += Localizer.Format("#autoLOC_TST_0122", XKCDColors.HexFormat.Cyan); //#autoLOC_TST_0122 = <color=<<1>>>Space Telescope Picture</color>\n
+            infoStr += Localizer.Format("#autoLOC_238797", true);    
+            infoStr += Localizer.Format("#autoLOC_238798", true);    
+            infoStr += Localizer.Format("#autoLOC_238799", true);
+            return infoStr;
         }
 
         public enum WindowState
@@ -1280,10 +1298,10 @@ namespace TarsierSpaceTech
             Hidden
         }
 
-        [KSPEvent(active = false, guiActive = true, name = "eventReviewScience", guiName = "Check Results")]
+        [KSPEvent(active = false, guiActive = true, name = "eventReviewScience", guiName = "#autoLOC_TST_0050")] //#autoLOC_TST_0050 = Check Results
         public void eventReviewScience()
         {
-            foreach (var data in _scienceData)
+            foreach (ScienceData data in _scienceData)
             {
                 ReviewDataItem(data);
                 updateAvailableEvents();
@@ -1302,17 +1320,23 @@ namespace TarsierSpaceTech
 
         private void _onPageTransmit(ScienceData data)
         {
-            var transmitters = vessel.FindPartModulesImplementing<IScienceDataTransmitter>();
-            if (transmitters.Count > 0 && _scienceData.Contains(data))
+            IScienceDataTransmitter transmitter = ScienceUtil.GetBestTransmitter(vessel);
+
+            if (transmitter != null)
             {
-                transmitters.First().TransmitData(new List<ScienceData> {data});
+                List<ScienceData> dataToSend = new List<ScienceData>();
+                dataToSend.Add(data);
+                transmitter.TransmitData(dataToSend);
                 _scienceData.Remove(data);
+                updateAvailableEvents();
             }
-            updateAvailableEvents();
+            else
+            {
+                ScreenMessages.PostScreenMessage(Localizer.Format("#autoLOC_TST_0079"), 3f, ScreenMessageStyle.UPPER_CENTER);
+            }
         }
 
-        [KSPEvent(active = true, externalToEVAOnly = true, guiActiveUnfocused = true, guiName = "Collect Data",
-            unfocusedRange = 2)]
+        [KSPEvent(active = true, externalToEVAOnly = true, guiActiveUnfocused = true, guiName = "#autoLOC_TST_0044",unfocusedRange = 2)] //#autoLOC_TST_0044 = Collect Data
         public void CollectScience()
         {
             List<ModuleScienceContainer> containers = FlightGlobals.ActiveVessel.FindPartModulesImplementing<ModuleScienceContainer>();
@@ -1323,16 +1347,16 @@ namespace TarsierSpaceTech
                     if (container.StoreData(new List<IScienceDataContainer> { this }, false))
                     {
                         //ScreenMessages.PostScreenMessage("Transferred Data to " + vessel.vesselName, 3f, ScreenMessageStyle.UPPER_CENTER);
-                        ScreenMessages.PostScreenMessage("<color=#99ff00ff>[" + base.part.partInfo.title + "]: All Items Collected.</color>", 5f, ScreenMessageStyle.UPPER_LEFT);
+                        ScreenMessages.PostScreenMessage(Localizer.Format("#autoLOC_TST_0045", part.partInfo.title), 5f, ScreenMessageStyle.UPPER_LEFT); //#autoLOC_TST_0045 = <color=#99ff00ff>[<<1>>]: All Items Collected.</color>
                     }
                     else
                     {
-                        ScreenMessages.PostScreenMessage("<color=orange>[" + base.part.partInfo.title + "]: Not all items could be Collected.</color>", 5f, ScreenMessageStyle.UPPER_LEFT);
+                        ScreenMessages.PostScreenMessage(Localizer.Format("#autoLOC_TST_0046", part.partInfo.title), 5f, ScreenMessageStyle.UPPER_LEFT); //#autoLOC_TST_0046 = <color=orange>[<<1>>]: Not all items could be Collected.</color>
                     }
                 }
                 else
                 {
-                    ScreenMessages.PostScreenMessage("<color=#99ff00ff>[" + base.part.partInfo.title + "]: Nothing to Collect.</color>", 3f, ScreenMessageStyle.UPPER_CENTER);
+                    ScreenMessages.PostScreenMessage(Localizer.Format("#autoLOC_TST_0047", part.partInfo.title), 3f, ScreenMessageStyle.UPPER_CENTER); //#autoLOC_TST_0047 = <color=#99ff00ff>[<<1>>]: Nothing to Collect.</color>
                 }
             }
             updateAvailableEvents();
@@ -1392,20 +1416,52 @@ namespace TarsierSpaceTech
 
         public void ReviewDataItem(ScienceData data)
         {
-            var labSearch = new ScienceLabSearch(FlightGlobals.ActiveVessel, data);
-            var page = new ExperimentResultDialogPage(
+            ScienceLabSearch labSearch = new ScienceLabSearch(FlightGlobals.ActiveVessel, data);
+            ExperimentResultDialogPage page = new ExperimentResultDialogPage(
                 part,
                 data,
                 xmitDataScalar,
-                data.labBoost,
-                true,
-                "If you transmit this data it will only be worth: " + Mathf.Round(data.transmitValue * 100) + "% of the full science value",
+                data.transmitBonus,
+                false,
+                "",
                 true,
                 labSearch,
                 _onPageDiscard,
                 _onPageKeep,
                 _onPageTransmit,
                 _onPageSendToLab);
+            //If ResearchBodies is installed we check if the body is discovered or not. If it isn't we change the science results page text.
+            if (Utilities.IsResearchBodiesInstalled && RBWrapper.RBactualAPI.enabled)
+            {
+                if (data.subjectID.Contains("TarsierSpaceTech.SpaceTelescope"))
+                {                    
+                    int index = data.subjectID.IndexOf("LookingAt");
+                    if (index != -1)
+                    {
+                        string[] tmpIDelements = data.subjectID.Split('@');
+                        string[] valuesasarray = { "LookingAt" };
+                        string[] splitvars = tmpIDelements[1].Split(valuesasarray, StringSplitOptions.None);
+                        string bodyName = splitvars[1];  
+                        KeyValuePair<CelestialBody, RBWrapper.CelestialBodyInfo> keyvalue = new KeyValuePair<CelestialBody, RBWrapper.CelestialBodyInfo>();
+                        foreach (KeyValuePair<CelestialBody, RBWrapper.CelestialBodyInfo> kvp in TSTMstStgs.Instance.RBCelestialBodies)
+                        {
+                            if (kvp.Key.name == bodyName)
+                            {
+                                keyvalue = kvp;
+                                break;
+                            }
+                        }
+                        if (keyvalue.Key != null && keyvalue.Value != null)
+                        {
+                            if (!keyvalue.Value.isResearched)
+                            {
+                                page.resultText = Localizer.Format("#autoLOC_TST_0123"); //#autoLOC_TST_0123 = We have collected a picture of a previously unknown body. If we return or transmit this data to home we will learn more about it.
+                                page.title = Localizer.Format("#autoLOC_TST_0124"); //#autoLOC_TST_0124 = Space Telescope picture of Unknown Body
+                            }
+                        }
+                    }                    
+                }
+            }
             ExperimentsResultDialog.DisplayResult(page);
         }
 
@@ -1460,9 +1516,9 @@ namespace TarsierSpaceTech
                 get { return galaxy == null ? body.name : galaxy.name; }
             }
 
-            public string theName
+            public string displayName
             {
-                get { return galaxy == null ? body.theName : galaxy.theName; }
+                get { return galaxy == null ? body.displayName : galaxy.displayName; }
             }
 
             public static implicit operator TargetableObject(TSTGalaxy galaxy)

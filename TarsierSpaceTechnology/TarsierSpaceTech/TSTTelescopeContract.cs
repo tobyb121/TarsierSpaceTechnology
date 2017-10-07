@@ -22,11 +22,10 @@
  *
  */
 
-using System.Linq;
 using Contracts;
 using Contracts.Agents;
 using RSTUtils;
-using UnityEngine;
+using KSP.Localization;
 
 namespace TarsierSpaceTech
 {
@@ -49,30 +48,43 @@ namespace TarsierSpaceTech
 
         protected override string GetDescription()
         {
-            return TextGen.GenerateBackStories(agent.Name, agent.GetMindsetString(), "Space Telescope", target.name, "test", MissionSeed);
+            return TextGen.GenerateBackStories(Localizer.Format("#autoLOC_TST_0052"), agent.Name, Localizer.Format("#autoLOC_TST_0058"), target.name, MissionSeed, true, true, true); //#autoLOC_TST_0052 = Exploration #autoLOC_TST_0058 = Space Telescope
         }
 
         protected override string GetTitle()
         {
-            return "Take a picture of "+target.theName;
+            return Localizer.Format("#autoLOC_TST_0059",target.displayName); //#autoLOC_TST_0059 = Take a picture of <<1>>
         }
 
         protected override string MessageCompleted()
         {
-            return "Great picture";
+            return Localizer.Format("#autoLOC_TST_0060"); //#autoLOC_TST_0060 = Great picture
         }
 
         public override bool MeetRequirements()
         {
             AvailablePart ap1 = PartLoader.getPartInfoByName("tarsierSpaceTelescope");
             AvailablePart ap2 = PartLoader.getPartInfoByName("tarsierAdvSpaceTelescope");
-            return ResearchAndDevelopment.PartTechAvailable(ap1)||ResearchAndDevelopment.PartTechAvailable(ap2);
+            if (ap1 != null && ap2 != null)
+            {
+                return ResearchAndDevelopment.PartTechAvailable(ap1) || ResearchAndDevelopment.PartTechAvailable(ap2);
+            }
+            if (ap1 != null && ap2 == null)
+            {
+                return ResearchAndDevelopment.PartTechAvailable(ap1);
+            }
+            if (ap1 == null && ap2 != null)
+            {
+                return ResearchAndDevelopment.PartTechAvailable(ap2);
+            }
+            Utilities.Log("It appears the TST telescope parts are missing. Cannot check Contract Requirements");
+            return false;
         }
 
         protected override string GetSynopsys()
         {
             
-            return "Use a space telescope to take a picture of "+target.theName;
+            return Localizer.Format("#autoLOC_TST_0061", target.displayName); //#autoLOC_TST_0061 = Use a space telescope to take a picture of <<1>>
         }
 
         public TSTSpaceTelescope.TargetableObject target
@@ -150,18 +162,18 @@ namespace TarsierSpaceTech
             param2.matchFields.Add("LookingAt" + target.name);
             AddParameter(param2);
             Utilities.Log_Debug("Created Science Param");
-            prestige = TSTProgressTracker.getTelescopePrestige(target.name);
+            prestige = TSTProgressTracker.getTelescopePrestige(target);
             if (TSTProgressTracker.HasTelescopeCompleted(target))
             {
-                SetFunds(10, 15, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
-                SetReputation(5, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
-                SetReputation(5, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
+                SetScience(TSTMstStgs.Instance.TSTsettings.scienceDiscoveredScope, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
+                SetFunds(TSTMstStgs.Instance.TSTsettings.fundsdiscoveredScope * 0.75f, TSTMstStgs.Instance.TSTsettings.fundsdiscoveredScope, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
+                SetReputation(TSTMstStgs.Instance.TSTsettings.repDiscoveredScope, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
             }
             else
             {
-                SetScience(30, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
-                SetFunds(75, 150, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
-                SetReputation(20, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
+                SetScience(TSTMstStgs.Instance.TSTsettings.scienceUndiscoveredScope, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
+                SetFunds(TSTMstStgs.Instance.TSTsettings.fundsUndiscoveredScope * 0.75f, TSTMstStgs.Instance.TSTsettings.fundsUndiscoveredScope, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
+                SetReputation(TSTMstStgs.Instance.TSTsettings.repUndiscoveredScope, target.type == typeof(TSTGalaxy) ? null : (CelestialBody)target.BaseObject);
             }
             return true;
         }

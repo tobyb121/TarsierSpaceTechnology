@@ -24,6 +24,7 @@
 
 using Contracts;
 using RSTUtils;
+using KSP.Localization;
 
 namespace TarsierSpaceTech
 {
@@ -31,7 +32,7 @@ namespace TarsierSpaceTech
     {
         protected override string GetTitle()
         {
-            return "Take a picture of " + target.theName + " using a Space Telescope";
+            return Localizer.Format("#autoLOC_TST_0062", target.displayName); //#autoLOC_TST_0062 = Take a picture of <<1>> using a Space Telescope
         }
 
         protected override string GetNotes()

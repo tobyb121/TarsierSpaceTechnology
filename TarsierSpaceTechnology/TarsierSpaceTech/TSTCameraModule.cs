@@ -22,9 +22,8 @@
  *
  */
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
+using UniLinq;
 using KSP.IO;
 using RSTUtils;
 using UnityEngine;
@@ -63,6 +62,9 @@ namespace TarsierSpaceTech
         private float tmpfov;
         private bool zoomSkyBox = true;
         private float TanRadDfltFOV;
+        private float TanRadFOV;
+        private RenderTexture activeRT;
+        private float staticPressure;
 
         //Const - but we don't use constants for Garbage collector
         private double KPtoAtms = 0.009869232;
@@ -85,8 +87,8 @@ namespace TarsierSpaceTech
             get { return _nearCam.fov; }
             set
             {
-                float z = Mathf.Tan(value / Mathf.Rad2Deg) / Mathf.Tan(Mathf.Deg2Rad * CameraHelper.DEFAULT_FOV);
-                _zoomLevel = -Mathf.Log10(z);
+                TanRadFOV = Mathf.Tan(value / Mathf.Rad2Deg) / Mathf.Tan(Mathf.Deg2Rad * CameraHelper.DEFAULT_FOV);
+                _zoomLevel = -Mathf.Log10(TanRadFOV);
                 _nearCam.fov = value;
                 _farCam.fov = value;
                 _scaledSpaceCam.fov = value;
@@ -243,7 +245,7 @@ namespace TarsierSpaceTech
 
         internal Texture2D draw()
         {
-            RenderTexture activeRT = RenderTexture.active;
+           activeRT = RenderTexture.active;
             RenderTexture.active = _renderTexture;
             
             //Render the Skybox
@@ -262,13 +264,13 @@ namespace TarsierSpaceTech
             //set exposure back to what it was
             for (int i = 0; i < skyboxRenderers.Length; i++)
             {
-                var sr = skyboxRenderers[i];
+                Renderer sr = skyboxRenderers[i];
                 sr.material.SetColor(PropertyIDs._Color, origColor);
             }
 
             //Render ScaledSpace
             //Render Atmospheres
-            foreach (var afg in atmospheres)
+            foreach (AtmosphereFromGround afg in atmospheres)
             {
                 //cache the atmosphere info
                 if (!atmoInfo.ContainsKey(afg))
@@ -291,12 +293,12 @@ namespace TarsierSpaceTech
             _scaledSpaceCam.camera.Render(); // render the ScaledSpaceCam
 
             //reset atmoInfo
-            foreach (var afg in atmospheres)
+            foreach (AtmosphereFromGround afg in atmospheres)
             {
                 //reset the atmosphere info from the cache
                 if (atmoInfo.ContainsKey(afg))
                 {
-                    var info = atmoInfo[afg];
+                    Vector4 info = atmoInfo[afg];
                     afg.cameraPos = new Vector3(info.x, info.y, info.z);
                     afg.cameraHeight = info.z;
                     afg.cameraHeight2 = info.z * info.z;
@@ -314,7 +316,7 @@ namespace TarsierSpaceTech
                 
         internal Texture2D drawFS() // Same as Draw() but for fullscreencameras
         {
-            RenderTexture activeRT = RenderTexture.active;
+            activeRT = RenderTexture.active;
             RenderTexture.active = _renderTextureFS;
             _galaxyCamFS.reset();
             _scaledSpaceCamFS.reset();              
@@ -338,13 +340,13 @@ namespace TarsierSpaceTech
             //set exposure back to what it was
             for (int i = 0; i < skyboxRenderers.Length; i++)
             {
-                var sr = skyboxRenderers[i];
+                Renderer sr = skyboxRenderers[i];
                 sr.material.SetColor(PropertyIDs._Color, origColor);
             }
 
             //Render ScaledSpace
             //Render Atmospheres
-            foreach (var afg in atmospheres)
+            foreach (AtmosphereFromGround afg in atmospheres)
             {
                 //cache the atmosphere info
                 if (!atmoInfo.ContainsKey(afg))
@@ -367,12 +369,12 @@ namespace TarsierSpaceTech
             _scaledSpaceCamFS.camera.Render(); // render the ScaledSpaceCam
 
             //reset atmoInfo
-            foreach (var afg in atmospheres)
+            foreach (AtmosphereFromGround afg in atmospheres)
             {
                 //reset the atmosphere info from the cache
                 if (atmoInfo.ContainsKey(afg))
                 {
-                    var info = atmoInfo[afg];
+                    Vector4 info = atmoInfo[afg];
                     afg.cameraPos = new Vector3(info.x, info.y, info.z);
                     afg.cameraHeight = info.z;
                     afg.cameraHeight2 = info.z * info.z;
@@ -425,8 +427,8 @@ namespace TarsierSpaceTech
 
         private float CalculateExposure(Vector3d cameraWorldPos)
         {
-            float pressure = (float)(FlightGlobals.getStaticPressure(cameraWorldPos) * KPtoAtms);
-            return Mathf.Lerp(SkyboxExposure, 0f, pressure);
+            staticPressure = (float)(FlightGlobals.getStaticPressure(cameraWorldPos) * KPtoAtms);
+            return Mathf.Lerp(SkyboxExposure, 0f, staticPressure);
         }
     }
 

@@ -1,30 +1,20 @@
 ﻿/*
  * RBWrapper.cs
- * (C) Copyright 2015, Jamie Leighton
- * Tarsier Space Technologies
- * The original code and concept of TarsierSpaceTech rights go to Tobyb121 on the Kerbal Space Program Forums, which was covered by the MIT license.
- * Original License is here: https://github.com/JPLRepo/TarsierSpaceTechnology/blob/master/LICENSE
- * As such this code continues to be covered by MIT license.
+ * (C) Copyright 2016, Jamie Leighton 
+ * License Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International
+ * http://creativecommons.org/licenses/by-nc-sa/4.0/
  * Kerbal Space Program is Copyright (C) 2013 Squad. See http://kerbalspaceprogram.com/. This
  * project is in no way associated with nor endorsed by Squad.
  *
- *  This file is part of TarsierSpaceTech.
- *
- *  TarsierSpaceTech is free software: you can redistribute it and/or modify
- *  it under the terms of the MIT License 
- *
- *  TarsierSpaceTech is distributed in the hope that it will be useful,
+ *  ResearchBodies is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
- *
- *  You should have received a copy of the MIT License
- *  along with TarsierSpaceTech.  If not, see <http://opensource.org/licenses/MIT>.
  *
  */
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using Object = System.Object;
@@ -36,213 +26,202 @@ namespace TarsierSpaceTech
     /// </summary>
     public class RBWrapper
     {
+        protected static Type RBAPIType;
         protected static Type RBSCAPIType;
         protected static Type RBDBAPIType;
-        protected static Type RBFLAPIType;
+        protected static Type RBDBCelestialBodyType;
+        protected static Object actualRB;
         protected static Object actualRBSC;
         protected static Object actualRBDB;
-        protected static Object actualRBFL;
 
         /// <summary>
         /// This is the ResearchBodies API object
         ///
         /// SET AFTER INIT
         /// </summary>
-        public static RBSCAPI RBSCactualAPI;
-        public static RBDBAPI RBDBactualAPI;
+        public static RBAPI RBactualAPI;
+        
 
         /// <summary>
         /// Whether we found the ResearchBodies API assembly in the loadedassemblies.
         ///
         /// SET AFTER INIT
         /// </summary>
+        public static Boolean AssemblyRBExists { get { return (RBAPIType != null); } }
         public static Boolean AssemblySCExists { get { return (RBSCAPIType != null); } }
         public static Boolean AssemblyDBExists { get { return (RBDBAPIType != null); } }
-        public static Boolean AssemblyFLExists { get { return (RBFLAPIType != null); } }
-
+        
         /// <summary>
         /// Whether we managed to hook the running Instance from the assembly.
         ///
         /// SET AFTER INIT
         /// </summary>
+        public static Boolean InstanceExists { get { return (actualRB != null); } }
         public static Boolean InstanceSCExists { get { return (actualRBSC != null); } }
         public static Boolean InstanceDBExists { get { return (actualRBDB != null); } }
-        public static Boolean InstanceFLExists { get { return (actualRBFL != null); } }
-
+        
         /// <summary>
         /// Whether we managed to wrap all the methods/functions from the instance.
         ///
         /// SET AFTER INIT
         /// </summary>
-        private static Boolean _RBSCWrapped;
-        private static Boolean _RBDBWrapped;
-        private static Boolean _RBFLWrapped;
+        private static Boolean _RBWrapped;
 
         /// <summary>
-        /// Whether the object has been wrapped
+        /// Whether the objects have been wrapped
         /// </summary>
-        public static Boolean APISCReady { get { return _RBSCWrapped; } }
-        public static Boolean APIDBReady { get { return _RBDBWrapped; } }
-        public static Boolean APIFLReady { get { return _RBFLWrapped; } }
+        public static Boolean APIRBReady { get { return _RBWrapped; } }
 
         /// <summary>
         /// This method will set up the ResearchBodies object and wrap all the methods/functions
         /// </summary>
         /// <returns>Bool success of method</returns>
-        public static Boolean InitRBSCWrapper()
+        public static Boolean InitRBWrapper()
         {
             //reset the internal objects
-            _RBSCWrapped = false;
+            _RBWrapped = false;
+            actualRB = null;
             actualRBSC = null;
+            actualRBDB = null;
+
             LogFormatted_DebugOnly("Attempting to Grab ResearchBodies Types...");
 
             //find the base type
-            RBSCAPIType = AssemblyLoader.loadedAssemblies
-                .Select(a => a.assembly.GetExportedTypes())
-                .SelectMany(t => t)
-                .FirstOrDefault(t => t.FullName == "ResearchBodies.ResearchBodies");
+            RBAPIType = getType("ResearchBodies.ResearchBodies"); 
+
+            if (RBAPIType == null)
+            {
+                return false;
+            }
+
+            LogFormatted_DebugOnly("ResearchBodies Version:{0}", RBAPIType.Assembly.GetName().Version.ToString());
+            
+            //find the base type
+            RBSCAPIType = getType("ResearchBodies.ResearchBodiesController"); 
 
             if (RBSCAPIType == null)
             {
                 return false;
             }
-            
-            LogFormatted_DebugOnly("ResearchBodies Version:{0}", RBSCAPIType.Assembly.GetName().Version.ToString());
-
-            //now grab the running instance
-            LogFormatted_DebugOnly("Got Assembly Types, grabbing Instances");
-            try
-            {
-                actualRBSC = RBSCAPIType.GetField("ResearchCost", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static).GetValue(null);
-            }
-            catch (Exception)
-            {
-                LogFormatted("No ResearchBodies Instance found");
-                //throw;
-            }
-
-            if (actualRBSC == null)
-            {
-                LogFormatted("Failed grabbing ResearchBodies Instance");
-                return false;
-            }
-
-            //If we get this far we can set up the local object and its methods/functions
-            LogFormatted_DebugOnly("Got Instance, Creating Wrapper Objects");
-            RBSCactualAPI = new RBSCAPI(actualRBSC);
-
-            _RBSCWrapped = true;
-            return true;
-        }
-
-        /// <summary>
-        /// This method will set up the ModuleTrackBodies object and wrap all the methods/functions
-        /// </summary>
-        /// <returns>Bool success of method</returns>
-        public static Boolean InitRBFLWrapper()
-        {
-            //reset the internal objects
-            _RBFLWrapped = false;
-            actualRBFL = null;
-            LogFormatted("Attempting to Grab ResearchBodies Types...");
 
             //find the base type
-            RBFLAPIType = AssemblyLoader.loadedAssemblies
-                .Select(a => a.assembly.GetExportedTypes())
-                .SelectMany(t => t)
-                .FirstOrDefault(t => t.FullName == "ResearchBodies.ModuleTrackBodies");
-
-            if (RBFLAPIType == null)
-            {
-                return false;
-            }
-
-            LogFormatted("ResearchBodies Version:{0}", RBFLAPIType.Assembly.GetName().Version.ToString());
-                      
-                       
-
-            _RBFLWrapped = true;
-            return true;
-        }
-
-        /// <summary>
-        /// This method will set up the DAtabase object and wrap all the methods/functions
-        /// </summary>
-        /// <returns>Bool success of method</returns>
-        public static Boolean InitRBDBWrapper()
-        {
-            //reset the internal objects
-            _RBDBWrapped = false;
-            actualRBDB = null;
-            LogFormatted_DebugOnly("Attempting to Grab ResearchBodies Database Types...");
-
-            //find the base type
-            RBDBAPIType = AssemblyLoader.loadedAssemblies
-                .Select(a => a.assembly.GetExportedTypes())
-                .SelectMany(t => t)
-                .FirstOrDefault(t => t.FullName == "ResearchBodies.Database");
+            RBDBAPIType = getType("ResearchBodies.Database"); 
 
             if (RBDBAPIType == null)
             {
                 return false;
             }
 
-            LogFormatted_DebugOnly("ResearchBodies Version:{0}", RBDBAPIType.Assembly.GetName().Version.ToString());
+            //find the CelestialBodyInfo type
+            RBDBCelestialBodyType = getType("ResearchBodies.CelestialBodyInfo");
 
-            //now grab the running instance
+            if (RBDBCelestialBodyType == null)
+            {
+                return false;
+            }
+
+            //now grab the running instances
             LogFormatted_DebugOnly("Got Assembly Types, grabbing Instances");
             try
             {
-                actualRBDB = RBDBAPIType.GetMember("GetIgnoredBodies", BindingFlags.Public | BindingFlags.Static);
+                actualRB = RBAPIType.GetField("Instance", BindingFlags.Public | BindingFlags.Static).GetValue(null);
             }
             catch (Exception)
             {
-                LogFormatted("No ResearchBodies Database Instance found");
+                LogFormatted("No ResearchBodies.ResearchBodies Instance found");
+                //throw;
+            }
+
+            if (actualRB == null)
+            {
+                LogFormatted("Failed grabbing ResearchBodies.ResearchBodies Instance");
+                return false;
+            }
+
+            try
+            {
+                actualRBSC = RBSCAPIType.GetField("instance", BindingFlags.Public | BindingFlags.Static).GetValue(null);
+            }
+            catch (Exception)
+            {
+                LogFormatted("No ResearchBodies.ResearchBodiesController Instance found");
+                //throw;
+            }
+
+            if (actualRBSC == null)
+            {
+                LogFormatted("Failed grabbing ResearchBodies.ResearchBodiesController Instance");
+                return false;
+            }
+
+            try
+            {
+                actualRBDB = RBDBAPIType.GetField("instance", BindingFlags.Public | BindingFlags.Static).GetValue(null);
+            }
+            catch (Exception)
+            {
+                LogFormatted("No ResearchBodies.Database Instance found");
                 //throw;
             }
 
             if (actualRBDB == null)
             {
-                LogFormatted("Failed grabbing ResearchBodies Database Instance");
+                LogFormatted("Failed grabbing ResearchBodies.Database Instance");
                 return false;
             }
 
             //If we get this far we can set up the local object and its methods/functions
             LogFormatted_DebugOnly("Got Instance, Creating Wrapper Objects");
-            RBDBactualAPI = new RBDBAPI(actualRBDB);
-
-            _RBDBWrapped = true;
+            RBactualAPI = new RBAPI(actualRB, actualRBSC, actualRBDB);
+            _RBWrapped = true;
             return true;
+        }
+
+        internal static Type getType(string name)
+        {
+            Type type = null;
+            AssemblyLoader.loadedAssemblies.TypeOperation(t =>
+
+            {
+                if (t.FullName == name)
+                    type = t;
+            }
+            );
+
+            if (type != null)
+            {
+                return type;
+            }
+            return null;
         }
 
         /// <summary>
         /// The Type that is an analogue of the real ResearchBodies. This lets you access all the API-able properties and Methods of ResearchBodies
         /// </summary>
-        public class RBSCAPI
+        public class RBAPI
         {
-            internal RBSCAPI(Object a)
+            internal RBAPI(Object actualRB, Object actualRBSC, Object actualRBDB)
             {
                 //store the actual object
-                APIactualRBSC = a;
+                APIactualRB = actualRB;
+                APIactualRBSC = actualRBSC;
+                APIactualRBDB = actualRBDB;
 
                 //these sections get and store the reflection info and actual objects where required. Later in the properties we then read the values from the actual objects
                 //for events we also add a handler
 
                 //WORK OUT THE STUFF WE NEED TO HOOK FOR PEOPLE HERE
 
-                LogFormatted_DebugOnly("Getting enabled field");
-                SCenabledField = RBSCAPIType.GetField("enable", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-                LogFormatted_DebugOnly("Success: " + (SCenabledField != null));
-
-                LogFormatted_DebugOnly("Getting TrackedBodies field");
-                SCTrackedBodiesField = RBSCAPIType.GetField("TrackedBodies", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-                LogFormatted_DebugOnly("Success: " + (SCTrackedBodiesField != null));
-
-                LogFormatted_DebugOnly("Getting TrackedBodies field");
-                SCResearchStateField = RBSCAPIType.GetField("ResearchState", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-                LogFormatted_DebugOnly("Success: " + (SCResearchStateField != null));
-
                 //Methods
+
+                LogFormatted_DebugOnly("Getting enabled Method");
+                enabledMethod = RBAPIType.GetMethod("get_Enabled", BindingFlags.Public | BindingFlags.Static);
+                LogFormatted_DebugOnly("Success: " + (enabledMethod != null));
+
+                LogFormatted_DebugOnly("Getting FoundBody Method");
+                FoundBodyMethod = RBSCAPIType.GetMethod("FoundBody", BindingFlags.Public | BindingFlags.Static);
+                LogFormatted_DebugOnly("Success: " + (FoundBodyMethod != null));
+
                 LogFormatted_DebugOnly("Getting Research Method");
                 ResearchMethod = RBSCAPIType.GetMethod("Research", BindingFlags.Public | BindingFlags.Static);
                 LogFormatted_DebugOnly("Success: " + (ResearchMethod != null));
@@ -255,71 +234,65 @@ namespace TarsierSpaceTech
                 StopResearchPlanMethod = RBSCAPIType.GetMethod("StopResearchPlan", BindingFlags.Public | BindingFlags.Static);
                 LogFormatted_DebugOnly("Success: " + (StopResearchPlanMethod != null));
 
-                LogFormatted_DebugOnly("Getting LoadBodyLook Method");
-                LoadBodyLookMethod = RBSCAPIType.GetMethod("LoadBodyLook", BindingFlags.Public | BindingFlags.Static);
-                LogFormatted_DebugOnly("Success: " + (LoadBodyLookMethod != null));
-                
+                LogFormatted_DebugOnly("Getting CelestialBodies field");
+                CelestialBodiesField = RBDBAPIType.GetField("CelestialBodies", BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
+                LogFormatted_DebugOnly("Success: " + (CelestialBodiesField != null));
+
             }
 
+            private Object APIactualRB;
             private Object APIactualRBSC;
-
-            private FieldInfo SCenabledField;
-
-            /// <summary>
-            /// get the value of the enabled field
-            /// </summary>
-            /// <returns>Bool enabled field</returns>
-            public Boolean enabled
-            {
-                get
-                {
-                    if (SCenabledField == null)
-                        return false;
-
-                    return (Boolean)SCenabledField.GetValue(null);
-                }
-            }
-
-            private FieldInfo SCTrackedBodiesField;
-
-            /// <summary>
-            /// Get the TrackedBodies dictionary
-            /// </summary>
-            /// <returns>TrackedBodies dictionary</returns>
-            public Dictionary<CelestialBody, bool> TrackedBodies
-            {
-                get
-                {
-                    if (SCTrackedBodiesField == null)
-                        return new Dictionary<CelestialBody, bool>();
-
-                    return (Dictionary<CelestialBody, bool>)SCTrackedBodiesField.GetValue(null);
-                }
-            }
-
-            private FieldInfo SCResearchStateField;
-
-            /// <summary>
-            /// Get the ResearchState Dictionary
-            /// </summary>
-            /// <returns>ResearchState dictionary</returns>
-            public Dictionary<CelestialBody, int> ResearchState
-            {
-                get
-                {
-                    if (SCResearchStateField == null)
-                        return new Dictionary<CelestialBody, int>();
-
-                    return (Dictionary<CelestialBody, int>)SCResearchStateField.GetValue(null);
-                }
-            }
+            private Object APIactualRBDB;
 
             #region Methods
+
+            private MethodInfo enabledMethod;
+
+            internal bool enabled
+            {
+                get
+                {
+                    return (bool)enabledMethod.Invoke(APIactualRB, null);
+                }
+            }
+
+            private MethodInfo FoundBodyMethod;
+
+            /// <summary>
+            /// Set a Celestial Body to isResearched (Found it!)
+            /// </summary>
+            /// <param name="scienceReward">The amount of science points to reward (is added to the base Science points reward)</param>
+            /// <param name="bodyFound">The celestialbody found</param>
+            /// <param name="withParent">True if found with parent body, otherwise false</param>
+            /// <param name="parentBody">The parent celestial body if found (withParent = True), otherwise returns null</param>
+            /// <returns>Bool indicating Success of call</returns>
+            internal bool FoundBody(int scienceReward, CelestialBody bodyFound, out bool withParent, out CelestialBody parentBody)
+            {
+                try
+                {
+                    withParent = false;
+                    parentBody = null;
+                    object[] args = new object[] { scienceReward, bodyFound, withParent, parentBody };
+                    bool result = (bool)FoundBodyMethod.Invoke(APIactualRBSC, args);
+                    withParent = (bool) args[2];
+                    parentBody = (CelestialBody) args[3];
+                    return result;
+                }
+                catch (Exception ex)
+                {
+                    LogFormatted("Unable to invoke Research Method");
+                    LogFormatted("Exception: {0}", ex);
+                    withParent = false;
+                    parentBody = null;
+                    return false;
+                    //throw;
+                }
+            }
 
             private MethodInfo ResearchMethod;
 
             /// <summary>
-            /// Add Research points to a celstialbody
+            /// Add Research points to a celestialbody
             /// </summary>
             /// <param name="body">The celestialbody</param>
             /// /// <param name="researchToAdd">How much research to add for the celestialbody</param>
@@ -342,7 +315,7 @@ namespace TarsierSpaceTech
             private MethodInfo LaunchResearchPlanMethod;
 
             /// <summary>
-            /// Start a Researchlan for a celestialbody
+            /// Start a ResearchPlan for a celestialbody
             /// </summary>
             /// <param name="cb">The celestialbody</param>
             /// <returns>Bool indicating Success of call</returns>
@@ -385,200 +358,252 @@ namespace TarsierSpaceTech
                 }
             }
 
-            private MethodInfo LoadBodyLookMethod;
+            #endregion Methods
+
+            private object actualCelestialBodies;
+            private FieldInfo CelestialBodiesField;
 
             /// <summary>
-            /// Load Body Look
+            /// The dictionary of CelestialBodies information
             /// </summary>
-            /// <returns>Bool indicating success of call</returns>
-            internal bool LoadBodyLook()
+            /// <returns>
+            /// Dictionary <CelestialBody, CelestialBodyInfo> of ResearchBodies CelestialBody Information
+            /// </returns>
+            internal Dictionary<CelestialBody, CelestialBodyInfo> CelestialBodies
             {
+                get
+                {
+                    Dictionary<CelestialBody, CelestialBodyInfo> returnvalue = new Dictionary<CelestialBody, CelestialBodyInfo>();
+                    if (CelestialBodiesField == null)
+                    {
+                        LogFormatted("Error getting CelestialBodyInfo - Reflection Method is Null");
+                        return returnvalue;
+                    }
+
+                    actualCelestialBodies = null;
+                    actualCelestialBodies = CelestialBodiesField.GetValue(APIactualRBDB);
+                    returnvalue = ExtractCelestialBodiesInfoDict(actualCelestialBodies);
+                    return returnvalue;
+                }
+            }
+
+            /// <summary>
+            /// This converts the actualCelestialBodies actual object to a new dictionary for consumption
+            /// </summary>
+            /// <param name="actualCelestialBodies"></param>
+            /// <returns>
+            /// Dictionary <CelestialBody, CelestialBodyInfo> of CelestialBody Info
+            /// </returns>
+            private Dictionary<CelestialBody, CelestialBodyInfo> ExtractCelestialBodiesInfoDict(Object actualCelestialBodies)
+            {
+                Dictionary<CelestialBody, CelestialBodyInfo> DictToReturn = new Dictionary<CelestialBody, CelestialBodyInfo>();
                 try
                 {
-                    LoadBodyLookMethod.Invoke(APIactualRBSC, null);
-                    return true;
+                    foreach (Object item in (IDictionary)actualCelestialBodies)
+                    {
+                        Type typeitem = item.GetType();
+                        PropertyInfo[] itemprops = typeitem.GetProperties(BindingFlags.Instance | BindingFlags.Public);
+                        CelestialBody itemkey = (CelestialBody)itemprops[0].GetValue(item, null);
+                        object itemvalue = (object)itemprops[1].GetValue(item, null);
+                        CelestialBodyInfo itemCBinfo = new CelestialBodyInfo(itemvalue);
+                        DictToReturn[itemkey] = itemCBinfo;
+                    }
                 }
                 catch (Exception ex)
                 {
-                    LogFormatted("Unable to invoke StopResearchPlan Method");
-                    LogFormatted("Exception: {0}", ex);
-                    return false;
-                    //throw;
+                    LogFormatted("Unable to extract CelestialBodies Dictionary: {0}", ex.Message);
                 }
+                return DictToReturn;
             }
-
-            #endregion Methods
         }
 
         /// <summary>
-        /// The Type that is an analogue of the real ResearchBodies. This lets you access all the API-able properties and Methods of ModuleTrackBodies
+        /// The Type that is an analogue of the real ResearchBodies.CelestialBodyInfo class. 
         /// </summary>
-        public class ModuleTrackBodies
+        public class CelestialBodyInfo
         {
-            internal ModuleTrackBodies(Object a)
+            internal CelestialBodyInfo(Object a)
             {
                 //store the actual object
-                APIactualRBFL = a;
+                APIactualCelestialBodyInfo = a;
 
                 //these sections get and store the reflection info and actual objects where required. Later in the properties we then read the values from the actual objects
                 //for events we also add a handler
 
                 //WORK OUT THE STUFF WE NEED TO HOOK FOR PEOPLE HERE
+                //LogFormatted("Getting body field");
+                bodyField = RBDBCelestialBodyType.GetField("body", BindingFlags.Public | BindingFlags.Instance);
+                //LogFormatted_DebugOnly("Success: " + (bodyField != null));
 
-                LogFormatted("Getting enabled field");
-                FLenabledField = RBFLAPIType.GetField("enable", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-                LogFormatted_DebugOnly("Success: " + (FLenabledField != null));
+                //LogFormatted("Getting isResearched field");
+                isResearchedField = RBDBCelestialBodyType.GetField("isResearched", BindingFlags.Public | BindingFlags.Instance);
+                //LogFormatted_DebugOnly("Success: " + (isResearchedField != null));
 
-                LogFormatted("Getting TrackedBodies field");
-                FLTrackedBodiesField = RBFLAPIType.GetField("TrackedBodies", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-                LogFormatted_DebugOnly("Success: " + (FLTrackedBodiesField != null));
+                //LogFormatted("Getting researchState field");
+                researchStateField = RBDBCelestialBodyType.GetField("researchState", BindingFlags.Public | BindingFlags.Instance);
+                //LogFormatted_DebugOnly("Success: " + (researchStateField != null));
 
-                LogFormatted("Getting TrackedBodies field");
-                FLResearchStateField = RBFLAPIType.GetField("ResearchState", BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic);
-                LogFormatted_DebugOnly("Success: " + (FLResearchStateField != null));
+                //LogFormatted("Getting ignore field");
+                ignoreField = RBDBCelestialBodyType.GetField("ignore", BindingFlags.Public | BindingFlags.Instance);
+                //LogFormatted_DebugOnly("Success: " + (ignoreField != null));
 
-                LogFormatted("Getting TrackedBodies field");
-                FLScienceRewardField = RBFLAPIType.GetField("scienceReward", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-                LogFormatted_DebugOnly("Success: " + (FLScienceRewardField != null));
+                //LogFormatted("Getting priority field");
+                priorityField = RBDBCelestialBodyType.GetField("priority", BindingFlags.Public | BindingFlags.Instance);
+                //LogFormatted_DebugOnly("Success: " + (priorityField != null));
 
+                //LogFormatted("Getting discoveryMessage field");
+                discoveryMessageField = RBDBCelestialBodyType.GetField("discoveryMessage", BindingFlags.Public | BindingFlags.Instance);
+                //LogFormatted_DebugOnly("Success: " + (discoveryMessageField != null));
 
+                //LogFormatted("Getting KOPbarycenter field");
+                KOPbarycenterField = RBDBCelestialBodyType.GetField("KOPbarycenter", BindingFlags.Public | BindingFlags.Instance);
+                //LogFormatted_DebugOnly("Success: " + (KOPbarycenterField != null));
+
+                //LogFormatted("Getting KOPrelbarycenterBody field");
+                KOPrelbarycenterBodyField = RBDBCelestialBodyType.GetField("KOPrelbarycenterBody", BindingFlags.Public | BindingFlags.Instance);
+                //LogFormatted_DebugOnly("Success: " + (KOPrelbarycenterBodyField != null));
             }
 
-            private Object APIactualRBFL;
+            private Object APIactualCelestialBodyInfo;
 
-            private FieldInfo FLenabledField;
+            private FieldInfo bodyField;
 
             /// <summary>
-            /// Whether the enabled field is set
+            /// The name of the celestialbody (found)
             /// </summary>
-            /// <returns>Bool value of enabled field</returns>
-            public Boolean enabled
+            /// <returns>String value of body field</returns>
+            public string body
             {
                 get
                 {
-                    if (FLenabledField == null)
+                    if (bodyField == null)
+                        return "";
+
+                    return (string)bodyField.GetValue(APIactualCelestialBodyInfo);
+                }
+            }
+
+            private FieldInfo isResearchedField;
+
+            /// <summary>
+            /// Whether the body has been researched (found)
+            /// </summary>
+            /// <returns>Bool value of isResearched field</returns>
+            public Boolean isResearched
+            {
+                get
+                {
+                    if (isResearchedField == null)
                         return false;
 
-                    return (Boolean)FLenabledField.GetValue(APIactualRBFL);
+                    return (Boolean)isResearchedField.GetValue(APIactualCelestialBodyInfo);
                 }
             }
 
-            private FieldInfo FLTrackedBodiesField;
+            private FieldInfo researchStateField;
 
             /// <summary>
-            /// Get the TrackedBodies dictionary
+            /// Integer value of research percent
             /// </summary>
-            /// <returns>TrackedBodies dictionary</returns>
-            public Dictionary<CelestialBody, bool> TrackedBodies
+            /// <returns>Int value of researchState field</returns>
+            public int researchState
             {
                 get
                 {
-                    if (FLTrackedBodiesField == null)
-                        return new Dictionary<CelestialBody, bool>();
-
-                    return (Dictionary<CelestialBody, bool>)FLTrackedBodiesField.GetValue(APIactualRBFL);
-                }
-            }
-
-            private FieldInfo FLResearchStateField;
-
-            /// <summary>
-            /// Get the ResearchState Dictionary
-            /// </summary>
-            /// <returns>ResearchState dictionary</returns>
-            public Dictionary<CelestialBody, int> ResearchState
-            {
-                get
-                {
-                    if (FLResearchStateField == null)
-                        return new Dictionary<CelestialBody, int>();
-
-                    return (Dictionary<CelestialBody, int>)FLResearchStateField.GetValue(APIactualRBFL);
-                }
-            }
-
-            private FieldInfo FLScienceRewardField;
-
-            /// <summary>
-            /// The Science Reward field
-            /// </summary>
-            /// <returns>int value of ScienceReward field or 0</returns>
-            public int ScienceReward
-            {
-                get
-                {
-                    if (FLScienceRewardField == null)
+                    if (researchStateField == null)
                         return 0;
 
-                    return (int)FLScienceRewardField.GetValue(APIactualRBFL);
+                    return (int)researchStateField.GetValue(APIactualCelestialBodyInfo);
                 }
             }
 
-        }
-
-        /// <summary>
-        /// The Type that is an analogue of the real ResearchBodies. This lets you access all the API-able properties and Methods of Database
-        /// </summary>
-        public class RBDBAPI
-        {
-            internal RBDBAPI(Object a)
-            {
-                //store the actual object
-                APIactualRBDB = a;
-
-                //these sections get and store the reflection info and actual objects where required. Later in the properties we then read the values from the actual objects
-                //for events we also add a handler
-
-                //WORK OUT THE STUFF WE NEED TO HOOK FOR PEOPLE HERE
-
-                LogFormatted_DebugOnly("Getting enableInSandbox field");
-                DBenableInSandboxField = RBDBAPIType.GetField("enableInSandbox", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-                LogFormatted_DebugOnly("Success: " + (DBenableInSandboxField != null));
-
-                LogFormatted_DebugOnly("Getting DiscoveryMessage field");
-                DBDiscoveryMessageField = RBDBAPIType.GetField("DiscoveryMessage", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-                LogFormatted_DebugOnly("Success: " + (DBDiscoveryMessageField != null));
-                                
-            }
-
-            private Object APIactualRBDB;
-
-            private FieldInfo DBenableInSandboxField;
+            private FieldInfo ignoreField;
 
             /// <summary>
-            /// If ResearchBodies is enabled in sandbox mode
+            /// Whether the body is ignored or not (available by default) based on difficulty level
             /// </summary>
-            /// <returns>bool value of enableInSandbox field</returns>
-            public Boolean enableInSandbox
+            /// <returns>Bool value of ignore field</returns>
+            public Boolean ignore
             {
                 get
                 {
-                    if (DBenableInSandboxField == null)
+                    if (ignoreField == null)
                         return false;
 
-                    return (Boolean)DBenableInSandboxField.GetValue(null);
+                    return (Boolean)ignoreField.GetValue(APIactualCelestialBodyInfo);
                 }
             }
 
-            private FieldInfo DBDiscoveryMessageField;
+            private FieldInfo priorityField;
 
             /// <summary>
-            /// DiscoveryMessage dictionary
+            /// Integer value of priority - not currently used
             /// </summary>
-            /// <returns>the DiscoveryMessage dictionary</returns>
-            public Dictionary<string, string> DiscoveryMessage
+            /// <returns>Int value of priority field</returns>
+            public int priority
             {
                 get
                 {
-                    if (DBDiscoveryMessageField == null)
-                        return new Dictionary<string, string>();
+                    if (priorityField == null)
+                        return 0;
 
-                    return (Dictionary<string, string>)DBDiscoveryMessageField.GetValue(null);
+                    return (int)priorityField.GetValue(APIactualCelestialBodyInfo);
                 }
             }
-            
-        }
 
+            private FieldInfo discoveryMessageField;
+
+            /// <summary>
+            /// The discoveryMessage for the celestialbody (when found)
+            /// </summary>
+            /// <returns>String value of discoveryMessage field</returns>
+            public string discoveryMessage
+            {
+                get
+                {
+                    if (discoveryMessageField == null)
+                        return "";
+
+                    return (string)discoveryMessageField.GetValue(APIactualCelestialBodyInfo);
+                }
+            }
+
+            private FieldInfo KOPbarycenterField;
+
+            /// <summary>
+            /// Whether the body has a Kopernicus Barycenter
+            /// </summary>
+            /// <returns>Bool value of KOPbarycenter field</returns>
+            public Boolean KOPbarycenter
+            {
+                get
+                {
+                    if (KOPbarycenterField == null)
+                        return false;
+
+                    return (Boolean)KOPbarycenterField.GetValue(APIactualCelestialBodyInfo);
+                }
+            }
+
+            private FieldInfo KOPrelbarycenterBodyField;
+
+            /// <summary>
+            /// The celestialbody that is the Kopernicus Barycenter
+            /// </summary>
+            /// <returns>CelestialBody value of KOPrelbarycenterBody field</returns>
+            public CelestialBody KOPrelbarycenterBody
+            {
+                get
+                {
+                    if (KOPrelbarycenterBodyField == null)
+                        return null;
+
+                    return (CelestialBody)KOPrelbarycenterBodyField.GetValue(APIactualCelestialBodyInfo);
+                }
+            }
+
+        }
+        
         #region Logging Stuff
 
         /// <summary>

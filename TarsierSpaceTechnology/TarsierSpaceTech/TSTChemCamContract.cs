@@ -24,10 +24,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using UniLinq;
 using Contracts;
 using Contracts.Agents;
 using RSTUtils;
+using KSP.Localization;
 
 namespace TarsierSpaceTech
 {
@@ -50,37 +51,47 @@ namespace TarsierSpaceTech
 
         protected override string GetDescription()
         {
-            return TextGen.GenerateBackStories(agent.Name, agent.GetMindsetString(), "ChemCam", target.name, "test", MissionSeed);
+            return TextGen.GenerateBackStories(Localizer.Format("#autoLOC_TST_0052"), agent.Name, Localizer.Format("#autoLOC_TST_0053") , target.name, MissionSeed, true, true, true); //#autoLOC_TST_0052 = Exploration # autoLOC_TST_0053 = ChemCam 
         }
 
         protected override string GetTitle()
         {
-            return "Analyse the surface composition of " + target.theName;
+            return Localizer.Format("#autoLOC_TST_0054", target.displayName); //#autoLOC_TST_0054 = Analyse the surface composition of <<1>>
         }
 
         protected override string MessageCompleted()
         {
-            return "The data has been collected, please send it back for analysis";
+            return Localizer.Format("#autoLOC_TST_0055"); //#autoLOC_TST_0055 = The data has been collected, please send it back for analysis
         }
 
         public override bool MeetRequirements()
         {
             AvailablePart ap1 = PartLoader.getPartInfoByName("tarsierChemCam");
-            return ResearchAndDevelopment.PartTechAvailable(ap1);
+            if (ap1 != null)
+            {
+                return ResearchAndDevelopment.PartTechAvailable(ap1);
+            }
+            Utilities.Log("It appears the TST ChemCam part is missing. Cannot check Contract Requirements");
+            return false;
         }
 
         protected override string GetSynopsys()
         {
             if (biome != "")
             {
-                return "Use the ChemCam to analyse the surface composition of the " + biome + " on " + target.theName;
+                string biomedisplayName = ScienceUtil.GetBiomedisplayName(target, biome);
+                return Localizer.Format("#autoLOC_TST_0056", biomedisplayName, target.displayName); //#autoLOC_TST_0056 = Use the ChemCam to analyse the surface composition of the <<1>> on <<2>>
             }
-            return "Use the ChemCam to analyse the surface of " + target.theName;
+            return Localizer.Format("#autoLOC_TST_0057", target.displayName); //#autoLOC_TST_0057 = Use the ChemCam to analyse the surface of <<1>>
         }
 
         protected override void OnCompleted()
         {
-            TSTProgressTracker.setChemCamContractComplete(target);
+            string targetname = target.name;
+            if (biome != "")
+                targetname += "," + biome;
+
+            TSTProgressTracker.setChemCamContractComplete(targetname);
         }
 
         private CelestialBody target;
@@ -165,19 +176,19 @@ namespace TarsierSpaceTech
             }
 
             // if ResearchBodies is installed we need to check if the target body has been found. If it has not, then we set the target to default so a contract is not generated at this time.
-            if (TSTMstStgs.Instance.isRBactive)
+            if (TSTMstStgs.Instance.isRBactive && RBWrapper.RBactualAPI.enabled)
             {
                 try
                 {
-                    if (RBWrapper.APISCReady)
+                    if (RBWrapper.APIRBReady)
                     {                        
-                        List<KeyValuePair<CelestialBody, bool>> trackbodyentry = TSTMstStgs.Instance.TrackedBodies.Where(e => e.Key == target).ToList();
+                        List<KeyValuePair<CelestialBody, RBWrapper.CelestialBodyInfo>> trackbodyentry = TSTMstStgs.Instance.RBCelestialBodies.Where(e => e.Key.name == target.name).ToList();
                         if (trackbodyentry.Count != 1)
                         {
                             Utilities.Log("ChemCam Contract cannot find target in ResearchBodies TrackedBodies {0}" , target.name);
                             return false;
                         }
-                        if (trackbodyentry[0].Value == false)
+                        if (trackbodyentry[0].Value.isResearched == false)
                         {
                             Utilities.Log("ChemCam Contract target in ResearchBodies TrackedBodies is still not tracked {0}" , target.name);
                             return false;
@@ -200,22 +211,35 @@ namespace TarsierSpaceTech
             TSTScienceParam param2 = new TSTScienceParam();
             param2.matchFields.Add("TarsierSpaceTech.ChemCam");
             param2.matchFields.Add(target.name);
-            List<string> biomes = ResearchAndDevelopment.GetBiomeTags(target);
+            biome = "";
+            List<string> biomes = ResearchAndDevelopment.GetBiomeTags(target, true);
             if (biomes.Count > 1)
             {
                 do
                 {
                     biome = biomes[r.Next(biomes.Count - 1)];
-                } while (!biome.Contains("Water"));
+                } while (biome.Contains("Water"));
                 param2.matchFields.Add(biome);
             }
             AddParameter(param2);
             ContractPrestige p = TSTProgressTracker.getChemCamPrestige(target); //Get the target prestige level
             if (p != prestige)  //If the prestige is not the required level don't generate.
                 return false;
-            SetFunds(300, 400, target);
-            SetReputation(35, target);
-            SetScience(30, target);
+            string targetname = target.name;
+            if (biome != "")
+                    targetname += "," + biome;
+            if (TSTProgressTracker.HasChemCamCompleted(targetname))
+            {
+                SetFunds(TSTMstStgs.Instance.TSTsettings.fundsdiscoveredChem * 0.75f, TSTMstStgs.Instance.TSTsettings.fundsdiscoveredChem, target);
+                SetReputation(TSTMstStgs.Instance.TSTsettings.repDiscoveredChem, target);
+                SetScience(TSTMstStgs.Instance.TSTsettings.scienceDiscoveredChem, target);
+            }
+            else
+            {
+                SetFunds(TSTMstStgs.Instance.TSTsettings.fundsUndiscoveredChem * 0.75f, TSTMstStgs.Instance.TSTsettings.fundsUndiscoveredChem, target);
+                SetReputation(TSTMstStgs.Instance.TSTsettings.repUndiscoveredChem, target);
+                SetScience(TSTMstStgs.Instance.TSTsettings.scienceUndiscoveredChem, target);
+            }
             if (new Random(MissionSeed).Next(10) > 3)
             {
                 Utilities.Log_Debug("Random Seed False, not generating contract");

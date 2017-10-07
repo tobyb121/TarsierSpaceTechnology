@@ -23,10 +23,11 @@
  */
 
 using System.Collections.Generic;
-using System.Linq;
+using UniLinq;
 using KSP.UI.Screens.Flight.Dialogs;
 using RSTUtils;
 using UnityEngine;
+using KSP.Localization;
 
 namespace TarsierSpaceTech
 {
@@ -34,13 +35,13 @@ namespace TarsierSpaceTech
     {
         public List<ScienceData> scienceData = new List<ScienceData>();       
                 
-        [KSPField(guiActive = true, guiName = "Capacity", isPersistant = true, guiUnits = " Mits")]
+        [KSPField(guiActive = true, guiName = "#autoLOC_TST_0066", isPersistant = true, guiUnits = "#autoLOC_TST_0067")] //#autoLOC_TST_0066 = Capacity #autoLOC_TST_0067 = \u0020Mits
         public float Capacity = 50f;
 
-        [KSPField(guiActive = false, isPersistant = true)]
+        [KSPField(guiActive = true, guiName = "#autoLOC_TST_0276", isPersistant = true, guiUnits = "%")] //#autoLOC_TST_0276 = Data Corruption
         public float corruption = 0.2f;
 
-        [KSPField(guiActive = false, isPersistant = true)]
+        [KSPField(guiActive = true, guiName = "#autoLOC_TST_0277", isPersistant = true, guiFormat = "F3", guiUnits = "#autoLOC_6002100")] //#autoLOC_TST_0277 = Power Usage #autoLOC_6002100 = EC
         public float powerUsage = 0.5f;
 
         [KSPField(guiActive = false, isPersistant = false)]
@@ -63,7 +64,7 @@ namespace TarsierSpaceTech
             }
         }
 
-        [KSPField(guiActive = true, guiName = "Percentage Full", isPersistant = false, guiUnits = " %")]
+        [KSPField(guiActive = true, guiName = "#autoLOC_TST_0068", isPersistant = false, guiFormat = "0", guiUnits = " %")]  //#autoLOC_TST_0068 = Percentage Full
         public float PercentageFull;
 
         public override void OnStart(StartState state)
@@ -72,10 +73,10 @@ namespace TarsierSpaceTech
             Events["fillDrive"].unfocusedRange = EVARange;            
         }
 
-        [KSPEvent(name = "fillDrive", active = true, guiActive = true, externalToEVAOnly = false, guiName = "Fill Hard Drive")]
+        [KSPEvent(name = "fillDrive", active = true, guiActive = true, externalToEVAOnly = false, guiName = "#autoLOC_TST_0069")] //#autoLOC_TST_0069 = Move All Science to Drive
         public void fillDrive()
         {
-            Utilities.Log_Debug("FILLING DRIVE");
+            Utilities.Log_Debug("Filling drive with all the juicy science");
 
             //List<Part> parts = vessel.Parts.Where(p => p.FindModulesImplementing<IScienceDataContainer>().Count > 0).ToList();
             List<Part> parts = FlightGlobals.ActiveVessel.Parts.Where(p => p.FindModulesImplementing<IScienceDataContainer>().Count > 0).ToList();
@@ -97,10 +98,13 @@ namespace TarsierSpaceTech
                             Utilities.Log_Debug("Checking Space: {0} : {1} : {2}" , d.dataAmount.ToString() , _dataAmount.ToString() , Capacity.ToString());
                             if (d.dataAmount + _dataAmount <= Capacity)
                             {
-                                if (Utilities.GetAvailableResource(part, "ElectricCharge") >= d.dataAmount * powerUsage)
+                                float ECAmount = d.dataAmount*powerUsage;
+                                double resAvail = 0;
+                                double restotal = 0;
+                                if (CheatOptions.InfiniteElectricity || Utilities.requireResource(vessel, "ElectricCharge", ECAmount, true, true, false, out resAvail, out restotal)) // GetAvailableResource(part, "ElectricCharge") >= d.dataAmount * powerUsage)
                                 {
-                                    Utilities.Log_Debug("Removing Electric Charge");
-                                    part.RequestResource("ElectricCharge", d.dataAmount * powerUsage);
+                                    //Utilities.Log_Debug("Removing Electric Charge");
+                                    //part.RequestResource("ElectricCharge", d.dataAmount * powerUsage);
                                     Utilities.Log_Debug("Adding Data");
                                     scienceData.Add(d);
                                     d.dataAmount *= (1 - corruption);
@@ -109,15 +113,16 @@ namespace TarsierSpaceTech
                                     Utilities.Log_Debug("Removing Data from source");
                                     container.DumpData(d);
                                     Utilities.Log_Debug("Data Added");
+                                    ScreenMessages.PostScreenMessage(Localizer.Format("#autoLOC_TST_0070", d.title), 10f, ScreenMessageStyle.UPPER_LEFT); //#autoLOC_TST_0070 = Moved <<1>> to TST Drive"
                                 }
                                 else
                                 {
-                                    ScreenMessages.PostScreenMessage("Required " + (d.dataAmount * powerUsage).ToString("00.00") + " ElectricCharge not available to store data" , 3f, ScreenMessageStyle.UPPER_CENTER);
+                                    ScreenMessages.PostScreenMessage(Localizer.Format("#autoLOC_TST_0071", ECAmount.ToString("00.00")), 10f, ScreenMessageStyle.UPPER_CENTER); //#autoLOC_TST_0071 = Required <<1>> ElectricCharge not available to store data
                                 }
                             }
                             else
                             {
-                                ScreenMessages.PostScreenMessage("Not enough storage capacity to store data", 3f, ScreenMessageStyle.UPPER_CENTER);
+                                ScreenMessages.PostScreenMessage(Localizer.Format("#autoLOC_TST_0072"), 10f, ScreenMessageStyle.UPPER_CENTER); //#autoLOC_TST_0072 = Not enough storage capacity to store data
                             }
                         }
                     }
@@ -132,7 +137,74 @@ namespace TarsierSpaceTech
             fillDrive();
         }
 
-        [KSPEvent(name = "reviewScience", active = true, guiActive = false, externalToEVAOnly = false, guiName = "Review Data")]
+        [KSPEvent(name = "expfillDrive", active = true, guiActive = true, externalToEVAOnly = false, guiName = "#autoLOC_TST_0073")] //#autoLOC_TST_0073 = Move Experiments to Drive
+        public void expfillDrive()
+        {
+            Utilities.Log_Debug("Filling drive with non ScienceConverter and Command parts (where crewcapacity > 0) science only");
+
+            //List<Part> parts = vessel.Parts.Where(p => p.FindModulesImplementing<IScienceDataContainer>().Count > 0).ToList();
+            List<Part> parts = FlightGlobals.ActiveVessel.Parts.Where(p => p.FindModulesImplementing<IScienceDataContainer>().Count > 0).ToList();
+            parts.RemoveAll(p => p.FindModulesImplementing<TSTScienceHardDrive>().Count > 0);
+            parts.RemoveAll(p => p.FindModulesImplementing<ModuleScienceConverter>().Count > 0);
+            parts.RemoveAll(p => p.FindModulesImplementing<ModuleCommand>().Count > 0 && p.CrewCapacity > 0);
+            Utilities.Log_Debug("Parts= {0}", parts.Count.ToString());
+            foreach (Part p in parts)
+            {
+                List<IScienceDataContainer> containers = p.FindModulesImplementing<IScienceDataContainer>().ToList();
+                Utilities.Log_Debug("Got experiments: {0}", containers.Count.ToString());
+                foreach (IScienceDataContainer container in containers)
+                {
+                    Utilities.Log_Debug("Checking Data");
+                    ScienceData[] data = container.GetData();
+                    Utilities.Log_Debug("Got Data: {0}", data.Length.ToString());
+                    foreach (ScienceData d in data)
+                    {
+                        if (d != null)
+                        {
+                            Utilities.Log_Debug("Checking Space: {0} : {1} : {2}", d.dataAmount.ToString(), _dataAmount.ToString(), Capacity.ToString());
+                            if (d.dataAmount + _dataAmount <= Capacity)
+                            {
+                                float ECAmount = d.dataAmount * powerUsage;
+                                double resAvail = 0;
+                                double restotal = 0;
+                                if (CheatOptions.InfiniteElectricity || Utilities.requireResource(vessel, "ElectricCharge", ECAmount, true, true, false, out resAvail, out restotal)) //.GetAvailableResource(part, "ElectricCharge") >= d.dataAmount * powerUsage)
+                                {
+                                    //Utilities.Log_Debug("Removing Electric Charge");
+                                    //part.RequestResource("ElectricCharge", d.dataAmount * powerUsage);
+                                    Utilities.Log_Debug("Adding Data");
+                                    scienceData.Add(d);
+                                    d.dataAmount *= (1 - corruption);
+                                    Utilities.Log_Debug("Incrementing stored val");
+                                    _DataAmount += d.dataAmount;
+                                    Utilities.Log_Debug("Removing Data from source");
+                                    container.DumpData(d);
+                                    Utilities.Log_Debug("Data Added");
+                                    ScreenMessages.PostScreenMessage(Localizer.Format("#autoLOC_TST_0074",d.title), 10f, ScreenMessageStyle.UPPER_LEFT); //#autoLOC_TST_0074 = Moved <<1>> to TST Drive
+                                }
+                                else
+                                {
+                                    ScreenMessages.PostScreenMessage(Localizer.Format("#autoLOC_TST_0075", ECAmount.ToString("00.00")), 10f, ScreenMessageStyle.UPPER_CENTER); //#autoLOC_TST_0075 = Required <<1>> ElectricCharge not available to store data
+                                }
+                            }
+                            else
+                            {
+                                ScreenMessages.PostScreenMessage(Localizer.Format("#autoLOC_TST_0076"), 10f, ScreenMessageStyle.UPPER_CENTER); //#autoLOC_TST_0076 = Not enough storage capacity to store data
+                            }
+                        }
+                    }
+                }
+            }
+            Events["reviewScience"].guiActive = scienceData.Count > 0;
+        }
+
+        [KSPAction("expfillDrive")]
+        public void expfillActivateAction(KSPActionParam param)
+        {
+            expfillDrive();
+        }
+
+
+        [KSPEvent(name = "reviewScience", active = true, guiActive = false, externalToEVAOnly = false, guiName = "#autoLOC_TST_0077")] //#autoLOC_TST_0077 = Review Data
         public void reviewScience()
         {
             ReviewData();
@@ -165,11 +237,15 @@ namespace TarsierSpaceTech
 
         public override string GetInfo()
         {
-            return "Capacity: " + Capacity + "Mits\n";
+            string returnInfo = string.Empty;
+            returnInfo = Localizer.Format("#autoLOC_TST_0078", Capacity); // #autoLOC_TST_0078 = Capacity: <<1>>Mits\n
+            returnInfo += Localizer.Format("#autoLOC_TST_0276") + ": "+ corruption.ToString("#0.##") + "%\n";
+            returnInfo += Localizer.Format("#autoLOC_TST_0277") + ": " + powerUsage.ToString("#0.###") + Localizer.Format("#autoLOC_6002100") + "\n";
+            return returnInfo;
         }
 
         // Results Dialog Page Callbacks
-        
+
         private void _onPageDiscard(ScienceData data)
         {
             DumpData(data);
@@ -182,20 +258,18 @@ namespace TarsierSpaceTech
 
         private void _onPageTransmit(ScienceData data)
         {
-            List<IScienceDataTransmitter> transmitters = vessel.FindPartModulesImplementing<IScienceDataTransmitter>();
-            if (transmitters.Count > 0)
+            IScienceDataTransmitter transmitter = ScienceUtil.GetBestTransmitter(vessel);
+
+            if (transmitter != null)
             {
-                IScienceDataTransmitter transmitter = transmitters.FirstOrDefault(t => t.CanTransmit());
-                if (transmitter != null)
-                {
-                    transmitter.TransmitData(new List<ScienceData> { data });
-                    _DataAmount -= data.dataAmount;
-                    scienceData.Remove(data);
-                }
+                List<ScienceData> dataToSend = new List<ScienceData>();
+                dataToSend.Add(data);
+                transmitter.TransmitData(dataToSend);
+                scienceData.Remove(data);                
             }
             else
             {
-                ScreenMessages.PostScreenMessage("No Comms Devices on this vessel. Cannot Transmit Data.", 3f, ScreenMessageStyle.UPPER_CENTER);
+                ScreenMessages.PostScreenMessage(Localizer.Format("#autoLOC_TST_0079"), 3f, ScreenMessageStyle.UPPER_CENTER); //#autoLOC_TST_0079 = No Comms Devices on this vessel. Cannot Transmit Data.
             }
         }
 
@@ -212,7 +286,7 @@ namespace TarsierSpaceTech
             }
         }
         
-        [KSPEvent(active = true, externalToEVAOnly = true, guiActiveUnfocused = true, guiName = "Collect Data", unfocusedRange = 2)]
+        [KSPEvent(active = true, externalToEVAOnly = true, guiActiveUnfocused = true, guiName = "#autoLOC_TST_0044", unfocusedRange = 2)] //#autoLOC_TST_0044 = Collect Data
         public void CollectScience()
         {
             List<ModuleScienceContainer> containers = FlightGlobals.ActiveVessel.FindPartModulesImplementing<ModuleScienceContainer>();
@@ -223,16 +297,16 @@ namespace TarsierSpaceTech
                     if (container.StoreData(new List<IScienceDataContainer> {this}, false))
                     {
                         //ScreenMessages.PostScreenMessage("Transferred Data to " + vessel.vesselName, 3f, ScreenMessageStyle.UPPER_CENTER);
-                        ScreenMessages.PostScreenMessage("<color=#99ff00ff>[" + base.part.partInfo.title + "]: All Items Collected.</color>", 5f, ScreenMessageStyle.UPPER_LEFT);
+                        ScreenMessages.PostScreenMessage(Localizer.Format("#autoLOC_TST_0045", part.partInfo.title), 5f, ScreenMessageStyle.UPPER_LEFT); //#autoLOC_TST_0045 = <color=#99ff00ff>[<<1>>]: All Items Collected.</color>
                     }
                     else
                     {
-                        ScreenMessages.PostScreenMessage("<color=orange>[" + base.part.partInfo.title + "]: Not all items could be Collected.</color>", 5f, ScreenMessageStyle.UPPER_LEFT);
+                        ScreenMessages.PostScreenMessage(Localizer.Format("#autoLOC_TST_0046", part.partInfo.title), 5f, ScreenMessageStyle.UPPER_LEFT); //#autoLOC_TST_0046 = <color=orange>[<<1>>]: Not all items could be Collected.</color>
                     }
                 }
                 else
                 {
-                    ScreenMessages.PostScreenMessage("<color=#99ff00ff>[" + base.part.partInfo.title + "]: Nothing to Collect.</color>", 3f, ScreenMessageStyle.UPPER_CENTER);
+                    ScreenMessages.PostScreenMessage(Localizer.Format("#autoLOC_TST_0047", part.partInfo.title), 3f, ScreenMessageStyle.UPPER_CENTER); //#autoLOC_TST_0047 = <color=#99ff00ff>[<<1>>]: Nothing to Collect.</color>
                 }
             }
         }
@@ -240,7 +314,7 @@ namespace TarsierSpaceTech
         // IScienceDataContainer
         public void DumpData(ScienceData data)
         {
-            ScreenMessages.PostScreenMessage(string.Concat(new string[]{"<color=#ff9900ff>[",base.part.partInfo.title,"]: ",data.title," Removed.</color>"}), 5f, ScreenMessageStyle.UPPER_LEFT);
+            ScreenMessages.PostScreenMessage(Localizer.Format("#autoLOC_TST_0233", part.partInfo.title, data.title), 5f, ScreenMessageStyle.UPPER_LEFT); //#autoLOC_TST_0233 = <color=#ff9900ff>[<<1>>]: <<2>> Removed.</color>
             _DataAmount -= data.dataAmount;
             scienceData.Remove(data);
             Events["reviewScience"].guiActive = scienceData.Count > 0;
@@ -264,10 +338,10 @@ namespace TarsierSpaceTech
                 ExperimentResultDialogPage page = new ExperimentResultDialogPage(
                     part,
                     data,
-                    data.transmitValue,
-                    data.labBoost,
+                    data.baseTransmitValue,
+                    data.transmitBonus,
                     true,
-                    "If you transmit this data it will only be worth: " + Mathf.Round(data.transmitValue * 100) + "% of the full science value",
+                    Localizer.Format("#autoLOC_TST_0051", Mathf.Round(data.baseTransmitValue * 100)), //#autoLOC_TST_0051 = If you transmit this data it will only be worth: <<1>>% of the full science value
                     true,
                     labSearch,
                     _onPageDiscard,
@@ -284,10 +358,10 @@ namespace TarsierSpaceTech
             ExperimentResultDialogPage page = new ExperimentResultDialogPage(
                     part,
                     data,
-                    data.transmitValue,
-                    data.labBoost,
+                    data.baseTransmitValue,
+                    data.transmitBonus,
                     true,
-                    "If you transmit this data it will only be worth: " + Mathf.Round(data.transmitValue * 100) + "% of the full science value",
+                    Localizer.Format("#autoLOC_TST_0051", Mathf.Round(data.baseTransmitValue * 100)), //#autoLOC_TST_0051 = If you transmit this data it will only be worth: <<1>>% of the full science value
                     true,
                     labSearch,
                     _onPageDiscard,

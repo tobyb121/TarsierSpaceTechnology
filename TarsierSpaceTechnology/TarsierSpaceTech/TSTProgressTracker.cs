@@ -24,9 +24,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using Contracts;
+using KSP.Localization;
+using UniLinq;
 using RSTUtils;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -40,6 +40,7 @@ namespace TarsierSpaceTech
 
         private static bool isRSSactive;
         private static bool isOPMactive;
+        private static bool isNHactive;
         private static bool isRBactive;
 
         //ResearchBodies Mod vars
@@ -47,11 +48,10 @@ namespace TarsierSpaceTech
         private Rect RBWindowPos = new Rect(Screen.width / 2 - 200, Screen.height / 2 - 200, 0, 0);
         private bool showRBWindow;
         private string RBPopupMsg = string.Empty;
-        private float ScienceReward = 20;
+        private int ScienceReward = 20; // This should actually be coming from the Telescope Part attached ModuleTrackBodies PartModule field. - One day when I have time to make the code changes.
+        
 
-        public Dictionary<CelestialBody, bool> TrackedBodies = new Dictionary<CelestialBody, bool>();
-        public Dictionary<CelestialBody, int> ResearchState = new Dictionary<CelestialBody, int>();
-        private List<CelestialBody> BodyList = new List<CelestialBody>();
+        //private List<CelestialBody> BodyList = new List<CelestialBody>();
         private List<string> bodyNames = new List<string>(); 
 
 
@@ -69,6 +69,7 @@ namespace TarsierSpaceTech
             Instance = this;
             isRSSactive = Utilities.IsRSSInstalled;
             isOPMactive = Utilities.IsOPMInstalled;
+            isNHactive = Utilities.IsNHInstalled;
             isRBactive = Utilities.IsResearchBodiesInstalled;
             bodyNames = FlightGlobals.Bodies.Where(p => p.Radius > 100).Select(p => p.name).ToList();  //List of CBs where radius > 100m (exclude Sigma Binaries)
 
@@ -76,11 +77,17 @@ namespace TarsierSpaceTech
             {
                 try
                 {
-                    RBWrapper.InitRBDBWrapper();
+                    if (!RBWrapper.APIRBReady)
+                        RBWrapper.InitRBWrapper();
                     RBwindowID = Utilities.getnextrandomInt();
-                    LoadRBConfig();
-                    if (RBWrapper.APIDBReady)
+
+                    if (RBWrapper.APIRBReady)
                         GameEvents.OnScienceRecieved.Add(processScience);
+                    else
+                    {
+                        Utilities.Log("Initialise of ResearchBodies interface failed unexpectedly. Interface disabled.");
+                        isRBactive = false;
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -146,9 +153,9 @@ namespace TarsierSpaceTech
             Instance.TelescopeData[body.name] = true;
         }
 
-        public static void setChemCamContractComplete(CelestialBody body)
+        public static void setChemCamContractComplete(string targetname)
         {
-            Instance.ChemCamData[body.name] = true;
+            Instance.ChemCamData[targetname] = true;
         }
 
         public static string GetNextTelescopeTarget()
@@ -170,38 +177,47 @@ namespace TarsierSpaceTech
                 }
                 else
                 {
-                    if (Utilities.IsKopInstalled)  // If Kopernicus is installed, but not RSS or OPM use a list of the planets in order
+                    if (isNHactive) // If New Horizons Planets Mod is installed
                     {
-                        
-                        target = Instance.bodyNames.FirstOrDefault(s => !Instance.TelescopeData[s]);
+                        target = TSTMstStgs.Instance.TSTnhplanets.NHPlanetOrder.FirstOrDefault(s => !Instance.TelescopeData[s]);
                         if (target == default(string))
-                            target = Instance.bodyNames[Random.Range(0, Instance.bodyNames.Count)];
+                            target = TSTMstStgs.Instance.TSTnhplanets.NHPlanetOrder[Random.Range(0, TSTMstStgs.Instance.TSTnhplanets.NHPlanetOrder.Length)];
                     }
-                    else  //Default Stock
+                    else
                     {
-                        target = TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder.FirstOrDefault(s => !Instance.TelescopeData[s]);
-                        if (target == default(string))
-                            target = TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder[Random.Range(0, TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder.Length)];
+                        if (Utilities.IsKopInstalled)  // If Kopernicus is installed, but not RSS or OPM use a list of the planets in order
+                        {
+
+                            target = Instance.bodyNames.FirstOrDefault(s => !Instance.TelescopeData[s]);
+                            if (target == default(string))
+                                target = Instance.bodyNames[Random.Range(0, Instance.bodyNames.Count)];
+                        }
+                        else  //Default Stock
+                        {
+                            target = TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder.FirstOrDefault(s => !Instance.TelescopeData[s]);
+                            if (target == default(string))
+                                target = TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder[Random.Range(0, TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder.Length)];
+                        }
                     }
                 }
             }
             // if ResearchBodies is installed we need to check if the target body has been found. If it has not, then we set the target to default so a contract is not generated at this time.
-            if (TSTMstStgs.Instance.isRBactive && target != default(string))
+            if (isRBactive && RBWrapper.RBactualAPI.enabled && target != default(string))
             {
                 try
                 {
-                    if (RBWrapper.APISCReady)
+                    if (RBWrapper.APIRBReady)
                     {
                         //if (RBWrapper.RBSCactualAPI.enabled)
                         //{
-                        List<KeyValuePair<CelestialBody, bool>> trackbodyentry = TSTMstStgs.Instance.TrackedBodies.Where(e => e.Key.name == target).ToList();
+                        List<KeyValuePair<CelestialBody, RBWrapper.CelestialBodyInfo>> trackbodyentry = TSTMstStgs.Instance.RBCelestialBodies.Where(e => e.Key.name == target).ToList();
                         if (trackbodyentry.Count != 1)
                         {
                             Utilities.Log("Unable to set target {0} at this time as it is not a tracked body", target);
                             target = default(string);
                             return target;
                         }
-                        if (trackbodyentry[0].Value == false)
+                        if (trackbodyentry[0].Value.isResearched == false)
                         {
                             Utilities.Log("Unable to set target {0} at this time as it is not discovered", target);
                             target = default(string);
@@ -230,82 +246,47 @@ namespace TarsierSpaceTech
             return !isActive || Instance.TelescopeData[body.name];
         }
 
-        public static Contract.ContractPrestige getTelescopePrestige(string bodyName)
+        public static bool HasChemCamCompleted(string entry)
         {
-            int i = 0;
-            int significant = 4;
-            int exceptional = 7;
+            return !isActive || Instance.ChemCamData[entry];
+        }
 
-            if (isRSSactive) //If Real Solar System is installed
+        public static Contract.ContractPrestige getTelescopePrestige(TSTSpaceTelescope.TargetableObject body)
+        {
+            double distance = 0f;
+            if (body.type == typeof(TSTGalaxy))
             {
-                i = Array.IndexOf(TSTMstStgs.Instance.TSTrssplanets.RSSPlanetOrder, bodyName);
-                significant = 3;
-                exceptional = 7;
+                Vector3d bodyPos = body.position;
+                CelestialBody HmePlanet = Planetarium.fetch.Home;
+                Vector3d hmeplntPos = HmePlanet.getPositionAtUT(0);
+                distance = Math.Sqrt(Math.Pow(bodyPos.x - hmeplntPos.x, 2) + Math.Pow(bodyPos.y - hmeplntPos.y, 2) + Math.Pow(bodyPos.z - hmeplntPos.z, 2));
             }
             else
             {
-                if (isOPMactive) // If Outer Planets Mod is installed
-                {
-                    i = Array.IndexOf(TSTMstStgs.Instance.TSTopmplanets.OPMPlanetOrder, bodyName);
-                    significant = 7;
-                    exceptional = 17;
-                }
-                else
-                {
-                    if (Utilities.IsKopInstalled)
-                    {
-                        i = Array.IndexOf(Instance.bodyNames.ToArray(), bodyName);
-                    }
-                    else  //Default Stock
-                    {
-                        i = Array.IndexOf(TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder, bodyName);
-                    }
-                }
+                distance = Utilities.DistanceFromHomeWorld(body.name);
             }
-            if (i < significant)
+            if (distance < 13000000000)
+            {
                 return Contract.ContractPrestige.Trivial;
-            if (i < exceptional)
+            }
+            if (distance < 20000000000)
+            {
                 return Contract.ContractPrestige.Significant;
+            }
             return Contract.ContractPrestige.Exceptional;
         }
 
         public static Contract.ContractPrestige getChemCamPrestige(CelestialBody body)
         {
-            int i = 0;
-            int significant = 4;
-            int exceptional = 7;
-
-            if (isRSSactive) //If Real Solar System is installed
+            double distance = Utilities.DistanceFromHomeWorld(body.name);
+            if (distance < 13000000000)
             {
-                i = Array.IndexOf(TSTMstStgs.Instance.TSTrssplanets.RSSPlanetOrder, body.name);
-                significant = 3;
-                exceptional = 7;
-            }
-            else
-            {
-                if (isOPMactive) // If Outer Planets Mod is installed
-                {
-                    i = Array.IndexOf(TSTMstStgs.Instance.TSTopmplanets.OPMPlanetOrder, body.name);
-                    significant = 7;
-                    exceptional = 17;
-                }
-                else
-                {
-                    if (Utilities.IsKopInstalled)
-                    {
-                        i = Array.IndexOf(Instance.bodyNames.ToArray(), body.name);
-                    }
-                    else  //Default Stock
-                    {
-                        i = Array.IndexOf(TSTMstStgs.Instance.TSTstockplanets.StockPlanetOrder, body.name);
-                    }
-                }
-            }
-
-            if (i < significant)
                 return Contract.ContractPrestige.Trivial;
-            if (i < exceptional)
+            }
+            if (distance < 20000000000)
+            {
                 return Contract.ContractPrestige.Significant;
+            }
             return Contract.ContractPrestige.Exceptional;
         }
 
@@ -363,19 +344,49 @@ namespace TarsierSpaceTech
                 {
                     foreach (CelestialBody b in FlightGlobals.Bodies.Where(p => p.Radius > 100 && p.pqsController != null))
                     {
-                        if (chemCamNode.HasValue(b.name))
-                            ChemCamData[b.name] = chemCamNode.GetValue(b.name) == "true";
+                        List<string> biomes = ResearchAndDevelopment.GetBiomeTags(b, true);
+                        if (biomes.Count > 1)
+                        {
+                            foreach (string biome in biomes)
+                            {
+                                string nodename = b.name + "," + biome;
+                                if (chemCamNode.HasValue(nodename))
+                                    ChemCamData[nodename] = chemCamNode.GetValue(nodename) == "true";
+                                else
+                                {
+                                    ChemCamData[nodename] = false;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if (chemCamNode.HasValue(b.name))
+                                ChemCamData[b.name] = chemCamNode.GetValue(b.name) == "true";
+                            else
+                            {
+                                ChemCamData[b.name] = false;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    foreach (CelestialBody b in FlightGlobals.Bodies.Where(p => p.Radius > 100 && p.pqsController != null))
+                    {
+                        List<string> biomes = ResearchAndDevelopment.GetBiomeTags(b, true);
+                        if (biomes.Count > 1)
+                        {
+                            foreach (string biome in biomes)
+                            {
+                                string nodename = b.name + "," + biome;
+                                ChemCamData[nodename] = false;
+                            }
+                        }
                         else
                         {
                             ChemCamData[b.name] = false;
                         }
                     }
-                    
-                }
-                else
-                {
-                    foreach (CelestialBody b in FlightGlobals.Bodies.Where(p => p.Radius > 100 && p.pqsController != null))
-                        ChemCamData[b.name] = false;
                 }
             }
             catch (Exception ex)
@@ -396,104 +407,26 @@ namespace TarsierSpaceTech
         }
 
         #region ResearchBodies
-
-        public void LoadRBConfig()
-        {
-            TrackedBodies.Clear();
-            ResearchState.Clear();
-            if (!File.Exists("saves/" + HighLogic.SaveFolder + "/researchbodies.cfg"))
-            {
-                ConfigNode file = new ConfigNode();
-                ConfigNode node = file.AddNode("RESEARCHBODIES");
-
-                BodyList = FlightGlobals.Bodies;
-                BodyList = BodyList.Concat(TSTGalaxies.CBGalaxies).ToList();
-
-
-                foreach (CelestialBody cb in BodyList)
-                {
-                    ConfigNode cbCfg = node.AddNode("BODY");
-                    cbCfg.AddValue("body", cb.GetName());
-                    cbCfg.AddValue("isResearched", "false");
-                    cbCfg.AddValue("researchState", "0");
-                    TrackedBodies[cb] = false;
-                    ResearchState[cb] = 0;
-                }
-                file.Save("saves/" + HighLogic.SaveFolder + "/researchbodies.cfg");
-            }
-            else
-            {
-                ConfigNode mainnode = ConfigNode.Load("saves/" + HighLogic.SaveFolder + "/researchbodies.cfg");
-
-                BodyList = FlightGlobals.Bodies;
-                BodyList = BodyList.Concat(TSTGalaxies.CBGalaxies).ToList();
-
-                foreach (CelestialBody cb in BodyList)
-                {
-                    bool fileContainsCB = false;
-                    foreach (ConfigNode node in mainnode.GetNode("RESEARCHBODIES").nodes)
-                    {
-                        if (cb.GetName().Contains(node.GetValue("body")))
-                        {
-                            bool ignore = false;
-                            bool.TryParse(node.GetValue("ignore"), out ignore);
-                            if (ignore)
-                            {
-                                TrackedBodies[cb] = true;
-                                ResearchState[cb] = 100;
-                            }
-                            else
-                            {
-                                TrackedBodies[cb] = bool.Parse(node.GetValue("isResearched"));
-                                if (node.HasValue("researchState"))
-                                {
-                                    ResearchState[cb] = int.Parse(node.GetValue("researchState"));
-                                }
-                                else
-                                {
-                                    ConfigNode cbNode = null;
-                                    foreach (ConfigNode cbSettingNode in mainnode.GetNode("RESEARCHBODIES").nodes)
-                                    {
-                                        if (cbSettingNode.GetValue("body") == cb.GetName())
-                                            cbNode = cbSettingNode;
-                                    }
-                                    if (cbNode != null) cbNode.AddValue("researchState", "0");
-                                    mainnode.Save("saves/" + HighLogic.SaveFolder + "/researchbodies.cfg");
-                                    ResearchState[cb] = 0;
-                                }
-                            }
-                            fileContainsCB = true;
-                        }
-                    }
-                    if (!fileContainsCB)
-                    {
-                        ConfigNode newNodeForCB = mainnode.GetNode("RESEARCHBODIES").AddNode("BODY");
-                        newNodeForCB.AddValue("body", cb.GetName());
-                        newNodeForCB.AddValue("isResearched", "false");
-                        newNodeForCB.AddValue("researchState", "0");
-                        newNodeForCB.AddValue("ignore", "false");
-                        TrackedBodies[cb] = false; ResearchState[cb] = 0;
-                        mainnode.Save("saves/" + HighLogic.SaveFolder + "/researchbodies.cfg");
-                    }
-                }
-            }
-        }
-
+        
         private void processScience(float science, ScienceSubject scienceSubject, ProtoVessel vessel, bool whoKnows)
         {
-            if (isRBactive)
+            if (isRBactive && RBWrapper.RBactualAPI.enabled)
             {
                 if (scienceSubject.id.Contains("TarsierSpaceTech.SpaceTelescope"))
                 {
-                    if (scienceSubject.title.Contains("Space Telescope picture of "))
+                    int index = scienceSubject.id.IndexOf("LookingAt");
+                    if (index != -1)                        
                     {
-                        string bodyName = scienceSubject.title.Substring(27);
-                        CelestialBody body = BodyList.FirstOrDefault(a => a.theName == bodyName);
-                        if (body != null)
+                        string[] tmpIDelements = scienceSubject.id.Split('@');
+                        string[] valuesasarray = { "LookingAt" };
+                        string[] splitvars = tmpIDelements[1].Split(valuesasarray, StringSplitOptions.None);
+                        string bodyName = splitvars[1];                        
+                        KeyValuePair<CelestialBody, RBWrapper.CelestialBodyInfo> foundbodyentry = TSTMstStgs.Instance.RBCelestialBodies.FirstOrDefault(a => a.Key.name == bodyName);
+                        if (foundbodyentry.Key != null)
                         {
                             try
                             {
-                                processResearchBody(body);
+                                processResearchBody(foundbodyentry.Key);
                             }
                             catch (Exception ex)
                             {
@@ -510,122 +443,55 @@ namespace TarsierSpaceTech
             }            
         }
 
-        private void processResearchBody(CelestialBody body)
+        private void processResearchBody(CelestialBody bodyFound)
         {
-            //If ResearchObjects is installed this method is called when a picture is taken, we need to check if we have discovered this object before or not. If we haven't - discover it.
+            //If ResearchBodies is installed this method is called when a picture is taken, we need to check if we have discovered this object before or not. If we haven't - discover it.
             //If we have, increase the research amount.
             bool foundBody = false, withParent = false;
-            string bodyFound = string.Empty, parentBody = string.Empty;
-
-            LoadRBConfig();
-
+            CelestialBody parentBody = null;
             
-            if (!TrackedBodies[body])  //This body has not been previously discovered
+            
+            if (!TSTMstStgs.Instance.RBCelestialBodies[bodyFound].isResearched)  //This body has not been previously discovered
             {
-                foundBody = true;
-                if (HighLogic.CurrentGame.Mode != Game.Modes.SANDBOX) //give science reward for finding a new body
-                {
-                    ResearchAndDevelopment.Instance.AddScience(ScienceReward, TransactionReasons.None);
-                    ScreenMessages.PostScreenMessage("Added " + ScienceReward + " science points !", 5.0f, ScreenMessageStyle.UPPER_CENTER);
-                }
-                ConfigNode mainnode = ConfigNode.Load("saves/" + HighLogic.SaveFolder + "/researchbodies.cfg");
-                
-                    if (body.referenceBody.DiscoveryInfo.Level == DiscoveryLevels.Presence)  // If the parent body of our newly discovered body is also not discovered - we discover both.
-                    {
-                        TrackedBodies[body.referenceBody] = true;
-                        TrackedBodies[body] = true;
-                        withParent = true;
-                        parentBody = body.referenceBody.GetName();
-                        //I'm not sure we really need to write this to the ResearchBodies config file, because we aren't for other changes.. but just to be on the safe side.
-                        foreach (ConfigNode node in mainnode.GetNode("RESEARCHBODIES").nodes)
-                        {
-                            if (node.GetValue("body") == body.referenceBody.GetName())
-                            {
-                                node.SetValue("isResearched", "true");
-                            }
-                            if (node.GetValue("body") == body.GetName())
-                            {
-                                node.SetValue("isResearched", "true");
-                            }
-                            try
-                            {
-                                if (node.GetValue("body") == body.referenceBody.referenceBody.GetName() && (body.referenceBody.referenceBody.DiscoveryInfo.Level == DiscoveryLevels.Appearance || body.referenceBody.referenceBody.DiscoveryInfo.Level == DiscoveryLevels.Presence))
-                                {
-                                    node.SetValue("isResearched", "true");
-                                }
-                            }
-                            catch { }
-                        }
-                        Utilities.Log_Debug("[ResearchBodies] Found body " + body.GetName() + " orbiting around " + body.referenceBody.GetName() + " !");
-                    }
-                    else  //The parent body is already known, we are discovering just the one body.
-                    {
-                        TrackedBodies[body] = true;
-                        withParent = false;
-                        foreach (ConfigNode node in mainnode.GetNode("RESEARCHBODIES").nodes)
-                        {
-                            if (node.GetValue("body") == body.GetName())
-                            {
-                                node.SetValue("isResearched", "true");
-                            }
-                        }
-                        Utilities.Log_Debug("[ResearchBodies] Found body " + body.GetName() + " !");
-                    }
-                
-                bodyFound = body.GetName();
-                mainnode.Save("saves/" + HighLogic.SaveFolder + "/researchbodies.cfg");
+                foundBody = RBWrapper.RBactualAPI.FoundBody(0, bodyFound, out withParent, out parentBody);
             }
             else //This body has been previously discovered, so a new picture means Increase the Research amount
             {
-                foundBody = false;
-                if (ResearchState[body] < 100)
-                {
-                    ResearchState[body] += 20;
-
-                    ConfigNode mainnode = ConfigNode.Load("saves/" + HighLogic.SaveFolder + "/researchbodies.cfg");
-                    ConfigNode bodyNode = null;
-                    foreach (ConfigNode node in mainnode.GetNode("RESEARCHBODIES").nodes)
-                    {
-                        if (node.GetValue("body") == body.GetName())
-                            bodyNode = node;
-                    }
-                    if (bodyNode != null) bodyNode.SetValue("researchState", ResearchState[body].ToString());
-                    mainnode.Save("saves/" + HighLogic.SaveFolder + "/researchbodies.cfg");
-                }
+                RBWrapper.RBactualAPI.Research(bodyFound, ScienceReward);
             }
 
             if (foundBody) //If we found a new body we create some screen messages
             {
-                if (RBWrapper.APIDBReady)
+                if (RBWrapper.APIRBReady)
                 {
                     if (RBPopupMsg != string.Empty)
                     {
-                        if (RBWrapper.RBDBactualAPI.DiscoveryMessage.ContainsKey(bodyFound))
+                        if (TSTMstStgs.Instance.RBCelestialBodies.ContainsKey(bodyFound))
                         {
-                            RBPopupMsg = RBPopupMsg + " \r" + RBWrapper.RBDBactualAPI.DiscoveryMessage[bodyFound];
+                            RBPopupMsg = RBPopupMsg + " \r" + Localizer.Format("#autoLOC_RBodies_discovery_" + bodyFound.bodyName);
                         }
                     }
                     else
                     {
-                        if (RBWrapper.RBDBactualAPI.DiscoveryMessage.ContainsKey(bodyFound))
+                        if (TSTMstStgs.Instance.RBCelestialBodies.ContainsKey(bodyFound))
                         {
-                            RBPopupMsg = RBWrapper.RBDBactualAPI.DiscoveryMessage[bodyFound];
+                            RBPopupMsg = Localizer.Format("#autoLOC_RBodies_discovery_" + bodyFound.bodyName);
                         }
                     }
-                    ScreenMessages.PostScreenMessage("Discovered new body " + body.name, 5.0f, ScreenMessageStyle.UPPER_CENTER);
+                    ScreenMessages.PostScreenMessage(Localizer.Format("#autoLOC_TST_0064", bodyFound.displayName), 5.0f, ScreenMessageStyle.UPPER_CENTER); //#autoLOC_TST_0064 = Discovered new body <<1>>
                     if (withParent)
                     {
-                        if (RBWrapper.RBDBactualAPI.DiscoveryMessage.ContainsKey(parentBody))
+                        if (RBWrapper.RBactualAPI.CelestialBodies.ContainsKey(parentBody))
                         {
-                            RBPopupMsg = RBPopupMsg + " \r" + RBWrapper.RBDBactualAPI.DiscoveryMessage[parentBody];
+                            RBPopupMsg = RBPopupMsg + " \r" + Localizer.Format("#autoLOC_RBodies_discovery_" + parentBody.bodyName);
                         }
-                        ScreenMessages.PostScreenMessage("Discovered new body " + parentBody, 5.0f, ScreenMessageStyle.UPPER_CENTER);
+                        ScreenMessages.PostScreenMessage(Localizer.Format("#autoLOC_TST_0064", parentBody.displayName), 5.0f, ScreenMessageStyle.UPPER_CENTER); //#autoLOC_TST_0064 = Discovered new body <<1>>
                     }
                     showRBWindow = true;
                 }
                 else
                 {
-                    ScreenMessages.PostScreenMessage("Discovered new body " + body.name, 5.0f, ScreenMessageStyle.UPPER_CENTER);
+                    ScreenMessages.PostScreenMessage(Localizer.Format("#autoLOC_TST_0064", bodyFound.displayName), 5.0f, ScreenMessageStyle.UPPER_CENTER); //#autoLOC_TST_0064 = Discovered new body <<1>>
                 }
 
             }
@@ -636,7 +502,7 @@ namespace TarsierSpaceTech
             if (!Utilities.isPauseMenuOpen)
             {
                 if (showRBWindow)
-                    RBWindowPos = GUILayout.Window(RBwindowID, RBWindowPos, RBWindow, "Research Bodies", GUILayout.Width(200));
+                    RBWindowPos = GUILayout.Window(RBwindowID, RBWindowPos, RBWindow, Localizer.Format("#autoLOC_TST_0063"), GUILayout.Width(200)); //#autoLOC_TST_0063 = Research Bodies
 
             }
         }
@@ -645,7 +511,7 @@ namespace TarsierSpaceTech
             GUILayout.BeginVertical();
             GUILayout.Label(RBPopupMsg, GUILayout.ExpandWidth(false));
             GUILayout.Space(10);
-            if (GUILayout.Button("Close"))
+            if (GUILayout.Button(Localizer.Format("#autoLOC_TST_0065"))) //#autoLOC_TST_0065 = Close
             {
                 showRBWindow = false;
                 RBPopupMsg = string.Empty;
