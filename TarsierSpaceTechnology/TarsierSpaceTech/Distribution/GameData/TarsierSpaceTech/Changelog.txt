@@ -1,4 +1,6 @@
-﻿V7.1
+﻿V7.2
+	Fix integration with ResearchBodies so ResearchBodies discovered bodies still show even if a TST contract has not been completed for them.
+V7.1
 	Re-compile for KSP 1.3.1
 V7.0
 	Fix List of Celestial Bodies display for targeting in the Telescopes UI.
