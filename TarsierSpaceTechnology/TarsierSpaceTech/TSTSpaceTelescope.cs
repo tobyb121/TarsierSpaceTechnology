@@ -71,6 +71,7 @@ namespace TarsierSpaceTech
 
         private bool _showTarget;
         private Vessel _vessel;
+        private bool isRBInstalled = false;
 
         [KSPField(isPersistant = true)] public bool Active;
 
@@ -284,6 +285,7 @@ namespace TarsierSpaceTech
             Utilities.Log_Debug("TSTTel Added Input Callback");
             //if (Active) //Moved to OnUpdate so we can process any override/disable event parameters correctly.
             //    StartCoroutine(openCamera());
+            isRBInstalled = Utilities.IsResearchBodiesInstalled;
         }
 
         public void OnDestroy()
@@ -1211,7 +1213,7 @@ namespace TarsierSpaceTech
                         data.dataAmount.ToString(), data.baseTransmitValue.ToString(), data.transmitBonus.ToString(),
                         data.labValue.ToString());
                     //If ResearchBodies is installed check if body is already found or not, if it isn't change the screen message to say "Unknown Body"
-                    if (Utilities.IsResearchBodiesInstalled && RBWrapper.RBactualAPI.enabled)
+                    if (isRBInstalled && RBWrapper.RBactualAPI.enabled)
                     {
                         KeyValuePair<CelestialBody, RBWrapper.CelestialBodyInfo> keyvalue = new KeyValuePair<CelestialBody, RBWrapper.CelestialBodyInfo>();
                         foreach (KeyValuePair<CelestialBody, RBWrapper.CelestialBodyInfo> kvp in TSTMstStgs.Instance.RBCelestialBodies)
@@ -1431,7 +1433,7 @@ namespace TarsierSpaceTech
                 _onPageTransmit,
                 _onPageSendToLab);
             //If ResearchBodies is installed we check if the body is discovered or not. If it isn't we change the science results page text.
-            if (Utilities.IsResearchBodiesInstalled && RBWrapper.RBactualAPI.enabled)
+            if (isRBInstalled && RBWrapper.RBactualAPI.enabled)
             {
                 if (data.subjectID.Contains("TarsierSpaceTech.SpaceTelescope"))
                 {                    
