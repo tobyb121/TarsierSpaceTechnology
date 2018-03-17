@@ -955,7 +955,7 @@ namespace TarsierSpaceTech
             for (int i = 0; i < cbTargetList.Count; i++)
             {
                 //If Career Game and Not Progress completed on this body skip it. 
-                if (!TSTProgressTracker.HasTelescopeCompleted(cbTargetList[i]) && HighLogic.CurrentGame.Mode == Game.Modes.CAREER && (!TSTMstStgs.Instance.isRBloaded || !RBWrapper.RBactualAPI.enabled))
+                if (HighLogic.CurrentGame.Mode == Game.Modes.CAREER && !TSTProgressTracker.HasTelescopeCompleted(cbTargetList[i]) && (!TSTMstStgs.Instance.isRBloaded || !RBWrapper.RBactualAPI.enabled))
                 {
                     continue;
                 }
@@ -1029,7 +1029,7 @@ namespace TarsierSpaceTech
             for (int i = 0; i < galaxyTargetList.Count; i++)
             {
                 //If Career Game and Not Progress completed on this body skip it. 
-                if (!TSTProgressTracker.HasTelescopeCompleted(galaxyTargetList[i]) && HighLogic.CurrentGame.Mode == Game.Modes.CAREER && (!TSTMstStgs.Instance.isRBloaded || !RBWrapper.RBactualAPI.enabled))
+                if (HighLogic.CurrentGame.Mode == Game.Modes.CAREER && !TSTProgressTracker.HasTelescopeCompleted(galaxyTargetList[i]) && (!TSTMstStgs.Instance.isRBloaded || !RBWrapper.RBactualAPI.enabled))
                 {
                     continue;
                 }
