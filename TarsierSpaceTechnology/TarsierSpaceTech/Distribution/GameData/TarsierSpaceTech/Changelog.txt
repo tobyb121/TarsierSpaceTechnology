@@ -1,4 +1,6 @@
-﻿V7.4
+﻿V7.5
+	Re-compile for KSP 1.6.x
+V7.4
 	Re-compile for KSP 1.5.x
 V7.3
 	Re-compile for KSP 1.4.1
