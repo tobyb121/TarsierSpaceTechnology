@@ -1,4 +1,7 @@
-﻿V7.5
+﻿V7.6
+	Re-compile for KSP 1.7.x (include required code changes)
+	Fixed planet shadows when viewing planets on the other side of the sun.
+V7.5
 	Re-compile for KSP 1.6.x
 V7.4
 	Re-compile for KSP 1.5.x

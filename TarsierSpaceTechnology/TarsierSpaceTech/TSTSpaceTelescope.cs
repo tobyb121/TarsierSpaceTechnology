@@ -123,6 +123,10 @@ namespace TarsierSpaceTech
 
         private int targetId;
         private List<TargetableObject> lookingAtObjects;
+        public List<TargetableObject> LookingAtObjects
+        {
+            get { return lookingAtObjects; }
+        }
         private List<TargetableObject> possibletargetObjects;
         private List<CelestialBody> cbTargetList;
         private List<CelestialBody> galaxyTargetList;
@@ -218,8 +222,11 @@ namespace TarsierSpaceTech
             _animationTransform = Utilities.FindChildRecursive(transform, animationTransformName);
             zeroRotation = cameraTransform.localRotation;
             if (state != StartState.Editor)
+            {
                 _camera = cameraTransform.gameObject.AddComponent<TSTCameraModule>();
-            
+                _camera.telescopeReference = this;
+            }
+
             //_animation = _baseTransform.animation;
             if (_animationTransform != null)
             {
@@ -286,6 +293,7 @@ namespace TarsierSpaceTech
             //if (Active) //Moved to OnUpdate so we can process any override/disable event parameters correctly.
             //    StartCoroutine(openCamera());
             isRBInstalled = Utilities.IsResearchBodiesInstalled;
+            getTargetObjectList();
         }
 
         public void OnDestroy()
@@ -718,7 +726,7 @@ namespace TarsierSpaceTech
             Utilities.Log_Debug("Taking Picture");
             _scienceData.Clear();
             Utilities.Log_Debug("Checking Look At");
-            getLookingAt();
+            getLookingAt(true);
             Utilities.Log_Debug("Looking at: {0} celestial objects", lookingAtObjects.Count.ToString());
             for (int i=0; i < lookingAtObjects.Count; i++)
             {
@@ -785,11 +793,13 @@ namespace TarsierSpaceTech
             }            
         }
 
-        private void getLookingAt()
+        private void getLookingAt(bool logmsgs = false)
         {
-            lookingAtObjects.Clear();            
-            getTargetObjectList();
-            Utilities.Log_Debug("getLookingAt start");
+            lookingAtObjects.Clear();
+            if (logmsgs)
+            {
+                Utilities.Log_Debug("getLookingAt start");
+            }
             for (int i = 0; i < possibletargetObjects.Count; i++)
             {
                 TargetableObject obj = possibletargetObjects[i];            
@@ -797,22 +807,37 @@ namespace TarsierSpaceTech
                 float distance = r.magnitude;
                 double theta = Vector3d.Angle(cameraTransform.forward, r);
                 double visibleWidth = 2*obj.size/distance*180/Mathf.PI;
-                Utilities.Log_Debug("getLookingAt about to calc fov");
+                if (logmsgs)
+                {
+                    Utilities.Log_Debug("getLookingAt about to calc fov");
+                }
+
                 double fov = 0.05*_camera.fov;
-                Utilities.Log_Debug("{0}: distance= {1}, theta= {2}, visibleWidth= {3}, fov= {4}", obj.name,
-                    distance.ToString(), theta.ToString(), visibleWidth.ToString(), fov.ToString());
+                if (logmsgs)
+                {
+                    Utilities.Log_Debug("{0}: distance= {1}, theta= {2}, visibleWidth= {3}, fov= {4}", obj.name,
+                        distance.ToString(), theta.ToString(), visibleWidth.ToString(), fov.ToString());
+                }
                 if (theta < _camera.fov/2)
                 {
-                    Utilities.Log_Debug("Looking at: {0}", obj.name);
+                    if (logmsgs)
+                    {
+                        Utilities.Log_Debug("Looking at: {0}", obj.name);
+                    }
+
                     if (visibleWidth > fov)
                     {
-                        Utilities.Log_Debug("Can see: {0}", obj.name);
+                        if (logmsgs)
+                        {
+                            Utilities.Log_Debug("Can see: {0}", obj.name);
+                        }
+
                         lookingAtObjects.Add(obj);
                     }
                 }
             }            
         }
-
+        
         public override void OnSave(ConfigNode node)
         {
             Utilities.Log_Debug("OnSave Telescope");
@@ -1093,10 +1118,11 @@ namespace TarsierSpaceTech
                 {
                     if (!Textures.StylesSet) Textures.SetupStyles();
 
-                    if (FlightUIModeController.Instance.Mode != FlightUIMode.ORBITAL && _camera.Enabled &&
+                    if (!MapView.MapIsEnabled && _camera.Enabled &&
                         windowState != WindowState.Hidden
                         && vessel.isActiveVessel && !Utilities.isPauseMenuOpen)
                     {
+                        getLookingAt();
                         windowPos = GUILayout.Window(CAMwindowID, windowPos, WindowGUI, "Space Telescope",
                             GUILayout.Width(windowState == WindowState.Small ? GUI_WIDTH_SMALL : GUI_WIDTH_LARGE),
                             GUILayout.Height(windowState == WindowState.Small ? GUI_WIDTH_SMALL : GUI_WIDTH_LARGE));

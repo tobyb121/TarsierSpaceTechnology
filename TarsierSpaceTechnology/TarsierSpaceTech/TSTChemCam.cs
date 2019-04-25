@@ -236,7 +236,7 @@ namespace TarsierSpaceTech
 		public void OnGUI()
 		{
             if (Time.timeSinceLevelLoad < 2f) return;
-            if (!_inEditor && _camera.Enabled && vessel.isActiveVessel && FlightUIModeController.Instance.Mode != FlightUIMode.ORBITAL && !Utilities.isPauseMenuOpen)
+            if (!_inEditor && _camera.Enabled && vessel.isActiveVessel && !MapView.MapIsEnabled && !Utilities.isPauseMenuOpen)
 			{
 				if (!Textures.StylesSet) Textures.SetupStyles();
 
