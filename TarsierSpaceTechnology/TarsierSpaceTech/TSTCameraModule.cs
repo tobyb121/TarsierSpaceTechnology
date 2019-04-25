@@ -65,6 +65,7 @@ namespace TarsierSpaceTech
         private float TanRadFOV;
         private RenderTexture activeRT;
         private float staticPressure;
+        public TSTSpaceTelescope telescopeReference;
 
         //Const - but we don't use constants for Garbage collector
         private double KPtoAtms = 0.009869232;
@@ -269,6 +270,18 @@ namespace TarsierSpaceTech
             }
 
             //Render ScaledSpace
+            Vector3d sunRotation = Sun.Instance.sunRotation;
+            bool sunRotationChanged = false;
+            if (telescopeReference != null)
+            {
+                if (telescopeReference.LookingAtObjects.Count > 0)
+                {
+                    Vector3d newSunRotation = ((Vector3d)telescopeReference.LookingAtObjects[0].position - (ScaledSpace.LocalToScaledSpace(Sun.Instance.transform.position))).normalized;
+                    Sun.Instance.gameObject.transform.forward = newSunRotation;
+                    sunRotationChanged = true;
+                }
+            }
+            
             //Render Atmospheres
             foreach (AtmosphereFromGround afg in atmospheres)
             {
@@ -309,7 +322,11 @@ namespace TarsierSpaceTech
             _farCam.camera.Render(); // render camera 01
             _nearCam.camera.Render(); // render camera 00
             _texture2D.ReadPixels(new Rect(0, 0, textureWidth, textureHeight), 0, 0); // read the camera pixels into the texture2D
-            _texture2D.Apply();            
+            _texture2D.Apply();
+            if (sunRotationChanged)
+            {
+                Sun.Instance.sunRotation = sunRotation;
+            }
             RenderTexture.active = activeRT;
             return _texture2D;
         }
