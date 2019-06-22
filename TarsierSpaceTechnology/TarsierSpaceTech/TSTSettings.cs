@@ -85,6 +85,7 @@ namespace TarsierSpaceTech
             {
                 loadRBthisscene = true;
             }
+            GameEvents.OnGameSettingsApplied.Add(ApplySettings);
         }
 
         public void Update()
@@ -115,6 +116,15 @@ namespace TarsierSpaceTech
             TSTnhplanets.Save(globalNode);
             globalNode.Save(globalConfigFilename);
             Utilities.Log_Debug("TSTMstStgs OnSave: \n {0}" , globalNode.ToString());
+            GameEvents.OnGameSettingsApplied.Add(ApplySettings);
+        }
+
+        private void ApplySettings()
+        {
+            if (Instance && TSTsettings != null)
+            {
+                TSTsettings.ApplySettings();
+            }
         }
 
         #region Assembly/Class Information
@@ -237,7 +247,8 @@ namespace TarsierSpaceTech
                 TSTsettingsNode.TryGetValue("repDiscoveredChem", ref repDiscoveredChem);
                 TSTsettingsNode.TryGetValue("fundsUndiscoveredChem", ref fundsUndiscoveredChem);
                 TSTsettingsNode.TryGetValue("fundsdiscoveredChem", ref fundsdiscoveredChem);
-
+                TSTsettingsNode.TryGetValue("photoOnlyChemCamContracts", ref photoOnlyChemCamContracts);
+                
                 ApplySettings();
                 Utilities.Log_Debug("TSTSettings load complete");
             }
@@ -313,6 +324,7 @@ namespace TarsierSpaceTech
             settingsNode.AddValue("repDiscoveredChem", repDiscoveredChem);
             settingsNode.AddValue("fundsUndiscoveredChem", fundsUndiscoveredChem);
             settingsNode.AddValue("fundsdiscoveredChem", fundsdiscoveredChem);
+            settingsNode.AddValue("photoOnlyChemCamContracts", photoOnlyChemCamContracts);
             Utilities.Log_Debug("TSTSettings save complete");
         }
     }

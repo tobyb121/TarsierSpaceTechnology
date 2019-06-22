@@ -38,6 +38,11 @@ namespace TarsierSpaceTech
 
         protected override string GetNotes()
         {
+            if (Root != null)
+            {
+                return Root.Synopsys;
+            }
+
             return "";
         }
 
@@ -53,8 +58,6 @@ namespace TarsierSpaceTech
         {
             Utilities.Log_Debug("Removing Callback for science data received on contract");
             GameEvents.OnScienceRecieved.Remove(OnScienceData);
-            //GameEvents.OnScienceRecieved.Remove(OnScienceData);
-            
         }
 
         protected override string GetHashString()
@@ -82,7 +85,7 @@ namespace TarsierSpaceTech
 
         private void OnScienceData(float amount, ScienceSubject subject, ProtoVessel vessel, bool notsure)        
         {
-            Utilities.Log_Debug("Received Science Data from " + vessel.vesselName + " subject=" + subject.id + " amount=" + amount.ToString("000.00") + " bool=" + notsure);
+            Utilities.Log_Debug("Received Science Data from " + vessel != null ? vessel.vesselName : "Unknown Vessel" + " subject=" + subject.id + " amount=" + amount.ToString("000.00") + " bool=" + notsure);
             bool match=true;
             foreach (string f in matchFields)
             {

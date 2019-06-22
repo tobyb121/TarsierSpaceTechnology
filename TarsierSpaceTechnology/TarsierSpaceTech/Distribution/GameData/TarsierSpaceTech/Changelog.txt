@@ -1,4 +1,9 @@
-﻿V7.6
+﻿V7.7
+	Re-compile for KSP 1.7.2 (include required code changes).
+	Fixed NRE on experiment science return in 1.7.2.
+	Added contract synopsis text to contract notes that will now show in the stock contracts app.
+	Fixed game settings not applying correct in-game when changed.
+V7.6
 	Re-compile for KSP 1.7.x (include required code changes)
 	Fixed planet shadows when viewing planets on the other side of the sun.
 V7.5
