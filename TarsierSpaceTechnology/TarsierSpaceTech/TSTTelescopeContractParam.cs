@@ -37,6 +37,10 @@ namespace TarsierSpaceTech
 
         protected override string GetNotes()
         {
+            if (Root != null)
+            {
+                return Root.Synopsys;
+            }
             return "";
         }
 
