@@ -1,4 +1,7 @@
-﻿V7.7
+﻿V7.8
+	Re-compile for KSP 1.8.x.
+	Fix the Planet and Galaxy selection list on the Telescopes.
+V7.7
 	Re-compile for KSP 1.7.2 (include required code changes).
 	Fixed NRE on experiment science return in 1.7.2.
 	Added contract synopsis text to contract notes that will now show in the stock contracts app.
