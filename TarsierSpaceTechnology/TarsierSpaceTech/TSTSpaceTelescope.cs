@@ -979,13 +979,13 @@ namespace TarsierSpaceTech
             int newTarget = -1;
             for (int i = 0; i < cbTargetList.Count; i++)
             {
-                //If Career Game and Not Progress completed on this body skip it. 
-                if (HighLogic.CurrentGame.Mode == Game.Modes.CAREER && !TSTProgressTracker.HasTelescopeCompleted(cbTargetList[i]))
+                //If we are filtering the list to only contract targets and this body is not in the list skip it (career game only).
+                if (HighLogic.CurrentGame.Mode == Game.Modes.CAREER && filterContractTargets && !contractTargets.Contains(cbTargetList[i].name))
                 {
                     continue;
                 }
-                //If we are filtering the list to only contract targets and this body is not in the list skip it (career game only).
-                if (HighLogic.CurrentGame.Mode == Game.Modes.CAREER && filterContractTargets && !contractTargets.Contains(cbTargetList[i].name))
+                //If Career Game and Not Progress completed on this body skip it. 
+                if (HighLogic.CurrentGame.Mode == Game.Modes.CAREER && !filterContractTargets && !TSTProgressTracker.HasTelescopeCompleted(cbTargetList[i]))
                 {
                     continue;
                 }
@@ -1053,16 +1053,16 @@ namespace TarsierSpaceTech
             int newTarget = -1;
             for (int i = 0; i < galaxyTargetList.Count; i++)
             {
-                //If Career Game and Not Progress completed on this body skip it. 
-                if (HighLogic.CurrentGame.Mode == Game.Modes.CAREER && !TSTProgressTracker.HasTelescopeCompleted(galaxyTargetList[i]))
-                {
-                    continue;
-                }
                 //If we are filtering the list to only contract targets and this body is not in the list skip it (career game only).
                 if (HighLogic.CurrentGame.Mode == Game.Modes.CAREER && filterContractTargets && !contractTargets.Contains(galaxyTargetList[i].name))
                 {
                     continue;
-                }                
+                }
+                //If Career Game and Not Progress completed on this body skip it. 
+                if (HighLogic.CurrentGame.Mode == Game.Modes.CAREER && !filterContractTargets && !TSTProgressTracker.HasTelescopeCompleted(galaxyTargetList[i]))
+                {
+                    continue;
+                }
                 //If ResearchBodies is installed and enabled, check if body is researched, if not skip it.
                 if (TSTMstStgs.Instance.isRBloaded && RBWrapper.RBactualAPI.enabled)
                 {

@@ -1,4 +1,7 @@
-﻿V7.8
+﻿V7.9
+	Fix Bodies/Galaxies not appearing even when part of an active contract and toggling "show only contract targets" in the Telescope UI in career games.
+	Fix the broken chem cam when trying to open it in flight.
+V7.8
 	Re-compile for KSP 1.8.x.
 	Fix the Planet and Galaxy selection list on the Telescopes.
 V7.7

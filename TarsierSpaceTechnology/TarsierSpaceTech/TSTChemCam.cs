@@ -147,7 +147,7 @@ namespace TarsierSpaceTech
 		        _lazerObj.SetPosition(0, new Vector3(0, 0, 0));
 		        _lazerObj.SetPosition(1, new Vector3(0, 0, 5));
 		        _lazerObj.useWorldSpace = false;
-		        _lazerObj.material = new Material(Shader.Find("Particles/Additive"));
+		        _lazerObj.material = new Material(Shader.Find("Legacy Shaders/Particles/Additive"));
 		        _lazerObj.material.color = Color.red;
 		        _lazerObj.SetColors(Color.red, Color.red);
 		    }
