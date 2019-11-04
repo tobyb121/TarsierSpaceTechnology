@@ -15,7 +15,7 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
+    <DebugType>portable</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
@@ -236,8 +236,8 @@ xcopy "$(TargetPath)" "$(ProjectDir)Distribution\GameData\$(ProjectName)\Plugins
 xcopy "$(TargetDir)$(ProjectName).pdb" "$(ProjectDir)Distribution\GameData\$(ProjectName)\Plugins\" /Y
 
 cd "$(TargetDir)"
-"%25MONO_EXE_DIR%25" "%25PDB2MDB_EXE_DIR%25" "$(TargetFileName)"
-xcopy "$(TargetDir)$(ProjectName).dll.mdb" "$(ProjectDir)Distribution\GameData\$(ProjectName)\Plugins\" /Y
+REM "%25MONO_EXE_DIR%25" "%25PDB2MDB_EXE_DIR%25" "$(TargetFileName)"
+REM xcopy "$(TargetDir)$(ProjectName).dll.mdb" "$(ProjectDir)Distribution\GameData\$(ProjectName)\Plugins\" /Y
 
 where /q %25ZA_DIR%25:7za.exe
 if %25ERRORLEVEL%25 == 1 (
