@@ -202,7 +202,6 @@
     <Content Include="Distribution\GameData\TarsierSpaceTech\Icons\TSTIconOff.png" />
     <Content Include="Distribution\GameData\TarsierSpaceTech\Icons\TSTIconOn.png" />
     <Content Include="Distribution\GameData\TarsierSpaceTech\Icons\TSTToolTipBox.png" />
-    <Content Include="Distribution\GameData\TarsierSpaceTech\MiniAVC Licence.txt" />
     <Content Include="LocalDev\7za_dir.txt" />
     <Content Include="LocalDev\ksp_dir.txt" />
     <Content Include="LocalDev\mono_exe.txt" />
