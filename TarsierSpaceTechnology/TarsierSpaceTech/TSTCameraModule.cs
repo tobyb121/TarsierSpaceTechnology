@@ -70,6 +70,7 @@ namespace TarsierSpaceTech
         //Const - but we don't use constants for Garbage collector
         private double KPtoAtms = 0.009869232;
         public float SkyboxExposure = 1;
+        private bool singleCamera;
 
         public Texture2D Texture2D
         {
@@ -91,12 +92,14 @@ namespace TarsierSpaceTech
                 TanRadFOV = Mathf.Tan(value / Mathf.Rad2Deg) / Mathf.Tan(Mathf.Deg2Rad * CameraHelper.DEFAULT_FOV);
                 _zoomLevel = -Mathf.Log10(TanRadFOV);
                 _nearCam.fov = value;
-                _farCam.fov = value;
+                if (!singleCamera)
+                {
+                    _farCam.fov = value;
+                    _farCamFS.fov = value;
+                }
                 _scaledSpaceCam.fov = value;
                 _galaxyCam.fov = value;
-
                 _nearCamFS.fov = value;
-                _farCamFS.fov = value;
                 _scaledSpaceCamFS.fov = value;
                 _galaxyCamFS.fov = value;
             }
@@ -111,7 +114,10 @@ namespace TarsierSpaceTech
                 _enabled = value;
                 _galaxyCam.enabled = value;
                 _scaledSpaceCam.enabled = value;
-                _farCam.enabled = value;
+                if (!singleCamera)
+                {
+                    _farCam.enabled = value;
+                }
                 _nearCam.enabled = value;                
                 skyboxRenderers = (from Renderer r in (FindObjectsOfType(typeof(Renderer)) as IEnumerable<Renderer>) where (r.name == "XP" || r.name == "XN" || r.name == "YP" || r.name == "YN" || r.name == "ZP" || r.name == "ZN") select r).ToArray();
                 scaledSpaceFaders = FindObjectsOfType<ScaledSpaceFader>();
@@ -130,22 +136,29 @@ namespace TarsierSpaceTech
         {
             Utilities.Log_Debug("{0}:Setting up cameras" , GetType().Name);
             //Utilities.DumpCameras();
+            if (GameSettings.GraphicsVersion == GameSettings.GraphicsType.D3D11)
+            {
+                singleCamera = true;
+            }
             _galaxyCam = new CameraHelper(gameObject, Utilities.findCameraByName("GalaxyCamera"), _renderTexture, 17, false);
             _scaledSpaceCam = new CameraHelper(gameObject, Utilities.findCameraByName("Camera ScaledSpace"), _renderTexture, 18, false);
-            _farCam = new CameraHelper(gameObject, Utilities.findCameraByName("Camera 01"), _renderTexture, 19, true);
+            if (!singleCamera)
+            {
+                _farCam = new CameraHelper(gameObject, Utilities.findCameraByName("Camera 01"), _renderTexture, 19, true);
+                _farCam.reset();
+                _farCamFS = new CameraHelper(gameObject, Utilities.findCameraByName("Camera 01"), _renderTextureFS, 23, true);
+                _farCamFS.reset();
+            }
             _nearCam = new CameraHelper(gameObject, Utilities.findCameraByName("Camera 00"), _renderTexture, 20, true);
             _galaxyCamFS = new CameraHelper(gameObject, Utilities.findCameraByName("GalaxyCamera"), _renderTextureFS, 21, false);
             _scaledSpaceCamFS = new CameraHelper(gameObject, Utilities.findCameraByName("Camera ScaledSpace"), _renderTextureFS, 22, false);
-            _farCamFS = new CameraHelper(gameObject, Utilities.findCameraByName("Camera 01"), _renderTextureFS, 23, true);
             _nearCamFS = new CameraHelper(gameObject, Utilities.findCameraByName("Camera 00"), _renderTextureFS, 24, true);
             setupRenderTexture();
             _galaxyCam.reset();
             _scaledSpaceCam.reset();
-            _farCam.reset();
             _nearCam.reset();
             _galaxyCamFS.reset();
             _scaledSpaceCamFS.reset();
-            _farCamFS.reset();
             _nearCamFS.reset();
             if (TSTMstStgs.Instance != null)
             {
@@ -154,7 +167,10 @@ namespace TarsierSpaceTech
             TanRadDfltFOV = Mathf.Tan(Mathf.Deg2Rad*CameraHelper.DEFAULT_FOV);
             
             Utilities.Log_Debug("{0}: skyBoxCam CullingMask = {1}, camera.nearClipPlane = {2}, camera.farClipPlane = {3}" , GetType().Name , _scaledSpaceCam.camera.cullingMask , _scaledSpaceCam.camera.nearClipPlane , _scaledSpaceCam.camera.farClipPlane);
-            Utilities.Log_Debug("{0}: farCam CullingMask = {1}, camera.farClipPlane = {2}", GetType().Name, _farCam.camera.cullingMask , _farCam.camera.farClipPlane);
+            if (!singleCamera)
+            {
+                Utilities.Log_Debug("{0}: farCam CullingMask = {1}, camera.farClipPlane = {2}", GetType().Name, _farCam.camera.cullingMask, _farCam.camera.farClipPlane);
+            }
             Utilities.Log_Debug("{0}: nearCam CullingMask = {1}, camera.farClipPlane = {2}", GetType().Name, _nearCam.camera.cullingMask , _nearCam.camera.farClipPlane);
             Utilities.Log_Debug("{0}: Camera setup complete", GetType().Name);    
             
@@ -166,12 +182,14 @@ namespace TarsierSpaceTech
             {
                 _galaxyCam.reset();
                 _scaledSpaceCam.reset();
-                _farCam.reset();
+                if (!singleCamera)
+                {
+                    _farCam.reset();
+                    _farCamFS.reset();
+                }
                 _nearCam.reset();
-
                 _galaxyCamFS.reset();
                 _scaledSpaceCamFS.reset();                               
-                _farCamFS.reset();                
                 _nearCamFS.reset();
                 draw();
             }
@@ -191,11 +209,14 @@ namespace TarsierSpaceTech
             tmpZoom = Mathf.Pow(10, -_zoomLevel);
             tmpfov = Mathf.Rad2Deg * Mathf.Atan(tmpZoom * TanRadDfltFOV);
             _scaledSpaceCam.fov = tmpfov;
-            _farCam.fov = tmpfov;
+            if (!singleCamera)
+            {
+                _farCam.fov = tmpfov;
+                _farCamFS.fov = tmpfov;
+            }
+
             _nearCam.fov = tmpfov;
-            
             _scaledSpaceCamFS.fov = tmpfov;
-            _farCamFS.fov = tmpfov;
             _nearCamFS.fov = tmpfov;    
         }
 
@@ -213,7 +234,10 @@ namespace TarsierSpaceTech
             {
                 _galaxyCam.renderTarget.Release();
                 _scaledSpaceCam.renderTarget.Release();
-                _farCam.renderTarget.Release();
+                if (!singleCamera)
+                {
+                    _farCam.renderTarget.Release();
+                }
                 _nearCam.renderTarget.Release();
                 _renderTexture.Release();
             }
@@ -224,7 +248,10 @@ namespace TarsierSpaceTech
             {
                 _galaxyCamFS.renderTarget.Release();
                 _scaledSpaceCamFS.renderTarget.Release();
-                _farCamFS.renderTarget.Release();
+                if (!singleCamera)
+                {
+                    _farCamFS.renderTarget.Release();
+                }
                 _nearCamFS.renderTarget.Release();
                 _renderTextureFS.Release();
             }
@@ -235,11 +262,14 @@ namespace TarsierSpaceTech
             _texture2DFullSze = new Texture2D(Screen.width, Screen.height, TextureFormat.RGB24, false, false);
             _galaxyCam.renderTarget = _renderTexture;
             _scaledSpaceCam.renderTarget = _renderTexture;
-            _farCam.renderTarget = _renderTexture;
+            if (!singleCamera)
+            {
+                _farCam.renderTarget = _renderTexture;
+                _farCamFS.renderTarget = _renderTextureFS;
+            }
             _nearCam.renderTarget = _renderTexture;
             _galaxyCamFS.renderTarget = _renderTextureFS;
             _scaledSpaceCamFS.renderTarget = _renderTextureFS;
-            _farCamFS.renderTarget = _renderTextureFS;
             _nearCamFS.renderTarget = _renderTextureFS;
             Utilities.Log_Debug("{0}:Finish Setting Up Render Texture", GetType().Name);
         }
@@ -319,7 +349,10 @@ namespace TarsierSpaceTech
                 }
             }
 
-            _farCam.camera.Render(); // render camera 01
+            if (!singleCamera)
+            {
+                _farCam.camera.Render(); // render camera 01
+            }
             _nearCam.camera.Render(); // render camera 00
             _texture2D.ReadPixels(new Rect(0, 0, textureWidth, textureHeight), 0, 0); // read the camera pixels into the texture2D
             _texture2D.Apply();
@@ -336,8 +369,11 @@ namespace TarsierSpaceTech
             activeRT = RenderTexture.active;
             RenderTexture.active = _renderTextureFS;
             _galaxyCamFS.reset();
-            _scaledSpaceCamFS.reset();              
-            _farCamFS.reset();            
+            _scaledSpaceCamFS.reset();
+            if (!singleCamera)
+            {
+                _farCamFS.reset();
+            }
             _nearCamFS.reset();
 
 
@@ -399,7 +435,10 @@ namespace TarsierSpaceTech
                 }
             }
 
-            _farCamFS.camera.Render(); // render camera 01
+            if (!singleCamera)
+            {
+                _farCamFS.camera.Render(); // render camera 01
+            }
             _nearCamFS.camera.Render(); // render camera 00
 
 
