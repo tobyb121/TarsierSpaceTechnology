@@ -1,4 +1,7 @@
-﻿V7.10
+﻿V7.11
+	Update for KSP 1.10.x
+	Russian Localization udpates courtesy of Davian Lin 
+V7.10
 	Update for KSP 1.9.x
 	Remove mini AVC support.
 	Chinese Localization by 6DYZBX.
