@@ -198,6 +198,7 @@ namespace TarsierSpaceTech
 
             if (DOEFlareDrawType == null)
             {
+                LogFormatted("Failed grabbing DOE FlareDraw Instance");
                 return false;
             }
 
