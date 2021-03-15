@@ -1,6 +1,7 @@
 ﻿V7.12
 	Update for KSP 1.11.x
-	Added Inventory/EVA construction settings for the chemcam and science drives.	
+	Added Inventory/EVA construction settings for the chemcam and science drives.
+	Updated Chinese Translations courtesy of WC12366 
 V7.11
 	Update for KSP 1.10.x
 	Russian Localization udpates courtesy of Davian Lin 
