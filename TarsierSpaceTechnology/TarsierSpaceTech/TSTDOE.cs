@@ -65,11 +65,13 @@ namespace TarsierSpaceTech
                     }
                 }
             }
+
             DOEPresent = DOEWrapper.InitDOEWrapper();
             // DOEPresent = AssemblyLoader.loadedAssemblies.Any(a => a.assembly.GetName().Name == "DistantObject");
+            TimingManager.UpdateAdd(TimingManager.TimingStage.Early, OnUpdate);
         }
 
-        private void Update()
+        private void OnUpdate()
         {
 
             bool ExternalControl = false;
@@ -124,7 +126,12 @@ namespace TarsierSpaceTech
 
 
             
-        }        
+        }
+
+        private void OnDestroy()
+        {
+            TimingManager.UpdateRemove(TimingManager.TimingStage.Early, OnUpdate);
+        }
     }
    
     /// <summary>

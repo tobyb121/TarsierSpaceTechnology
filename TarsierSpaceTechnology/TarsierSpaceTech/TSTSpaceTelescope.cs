@@ -60,6 +60,7 @@ namespace TarsierSpaceTech
         private Animation _animationOpen;
         private Transform _animationTransform;
         private Transform _baseTransform;
+        [SerializeField]
         internal TSTCameraModule _camera;
 
         private bool _inEditor;
