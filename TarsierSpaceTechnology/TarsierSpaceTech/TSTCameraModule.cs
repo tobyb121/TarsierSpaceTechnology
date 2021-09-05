@@ -312,7 +312,7 @@ namespace TarsierSpaceTech
                     {
                         Vector3d newSunRotation = (lookingAt.scaledBody.transform.position - Sun.Instance.sun.scaledBody.transform.position).normalized;
                         Sun.Instance.gameObject.transform.forward = newSunRotation;
-                        Debug.DrawLine(Sun.Instance.sun.scaledBody.transform.position,  (newSunRotation*1000000) + Sun.Instance.sun.scaledBody.transform.position, Color.yellow, 4);
+                        //Debug.DrawLine(Sun.Instance.sun.scaledBody.transform.position,  (newSunRotation*1000000) + Sun.Instance.sun.scaledBody.transform.position, Color.yellow, 4);
                         sunRotationChanged = true;
                     }
                 }

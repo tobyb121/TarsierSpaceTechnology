@@ -1,5 +1,7 @@
 ﻿V7.13
-	Update for KSP 1.12.x	
+	Update for KSP 1.12.x
+	Fix DOE mod integration.
+	Fix Sun/Shadow orientation on objects in telescopes view window.
 V7.12
 	Update for KSP 1.11.x
 	Added Inventory/EVA construction settings for the chemcam and science drives.
