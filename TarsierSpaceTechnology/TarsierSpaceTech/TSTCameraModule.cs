@@ -30,7 +30,8 @@ using UnityEngine;
 
 namespace TarsierSpaceTech
 {
-    class TSTCameraModule : MonoBehaviour
+    [System.Serializable]
+    public class TSTCameraModule : MonoBehaviour
     {
         private int textureWidth = 256; 
         private int textureHeight = 256;
@@ -304,11 +305,16 @@ namespace TarsierSpaceTech
             bool sunRotationChanged = false;
             if (telescopeReference != null)
             {
-                if (telescopeReference.LookingAtObjects.Count > 0)
+                if (telescopeReference.LookingAtObjects.Count > 0 && telescopeReference.LookingAtObjects[0].type == typeof(CelestialBody))
                 {
-                    Vector3d newSunRotation = ((Vector3d)telescopeReference.LookingAtObjects[0].position - (ScaledSpace.LocalToScaledSpace(Sun.Instance.transform.position))).normalized;
-                    Sun.Instance.gameObject.transform.forward = newSunRotation;
-                    sunRotationChanged = true;
+                    CelestialBody lookingAt = telescopeReference.LookingAtObjects[0].BaseObject as CelestialBody;
+                    if (lookingAt != null)
+                    {
+                        Vector3d newSunRotation = (lookingAt.scaledBody.transform.position - Sun.Instance.sun.scaledBody.transform.position).normalized;
+                        Sun.Instance.gameObject.transform.forward = newSunRotation;
+                        //Debug.DrawLine(Sun.Instance.sun.scaledBody.transform.position,  (newSunRotation*1000000) + Sun.Instance.sun.scaledBody.transform.position, Color.yellow, 4);
+                        sunRotationChanged = true;
+                    }
                 }
             }
             
@@ -488,7 +494,7 @@ namespace TarsierSpaceTech
         }
     }
 
-    internal class CameraHelper
+    public class CameraHelper
     {
         public CameraHelper(GameObject parent, Camera copyFrom, RenderTexture renderTarget, float depth, bool attachToParent)
         {
@@ -496,6 +502,7 @@ namespace TarsierSpaceTech
             _renderTarget = renderTarget;
             _parent = parent;
             _go = new GameObject();
+            _go.name = "TST_" + copyFrom.name;
             _camera = _go.AddComponent<Camera>();
             _depth = depth;
             _attachToParent = attachToParent;

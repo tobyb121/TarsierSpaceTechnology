@@ -166,7 +166,7 @@ namespace TarsierSpaceTech
             {
                 IEnumerable<CelestialBody> availableBodies = FlightGlobals.Bodies
                     //.Where(b => !TSTMstStgs.Instance.TSTgasplanets.TarsierPlanetOrder.Contains(b.name) && b.Radius > 100 && b.pqsController != null); //Exclude the GasPlanets
-                    .Where(b => b.Radius > 100 && b.pqsController != null);  //Exclude the GasPlanets & Sigma Binaries
+                    .Where(b => b.Radius > 100 && b.pqsController != null && b.hasSolidSurface);  //Exclude the GasPlanets & Sigma Binaries
                 if (!availableBodies.Any())
                 {
                     Utilities.Log_Debug("There are no Bodies that have been photographed, cannot generate ChemCam Contract at this time");

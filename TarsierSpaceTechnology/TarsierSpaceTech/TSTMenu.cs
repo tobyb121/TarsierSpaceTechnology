@@ -232,8 +232,9 @@ namespace TarsierSpaceTech
         
         public void OnDestroy()
         {
-            TSTMenuAppLToolBar.Destroy();
-            
+            if (TSTMenuAppLToolBar != null)
+                TSTMenuAppLToolBar.Destroy();
+
             TSTMstStgs.Instance.TSTsettings.FwindowPosX = FwindowPos.x;
             TSTMstStgs.Instance.TSTsettings.FwindowPosY = FwindowPos.y;
 
